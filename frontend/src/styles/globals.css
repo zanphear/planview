@@ -84,6 +84,13 @@
   animation: fade-in 0.15s ease-out;
 }
 
+/* Responsive: notification panel full-width on small screens */
+@media (max-width: 640px) {
+  .w-96 {
+    width: 100vw !important;
+  }
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 6px;

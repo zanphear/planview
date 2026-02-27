@@ -5,20 +5,21 @@ import { X } from 'lucide-react';
 interface ToastItem {
   id: number;
   message: string;
+  action?: { label: string; onClick: () => void };
 }
 
-let addToast: ((message: string) => void) | null = null;
+let addToast: ((message: string, action?: { label: string; onClick: () => void }) => void) | null = null;
 let nextId = 0;
 
 function ToastContainer() {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
-  const add = useCallback((message: string) => {
+  const add = useCallback((message: string, action?: { label: string; onClick: () => void }) => {
     const id = nextId++;
-    setToasts((prev) => [...prev, { id, message }]);
+    setToasts((prev) => [...prev, { id, message, action }]);
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 4000);
+    }, action ? 6000 : 4000);
   }, []);
 
   const remove = useCallback((id: number) => {
@@ -40,6 +41,18 @@ function ToastContainer() {
           className="bg-gray-900 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-3 max-w-sm animate-slide-in"
         >
           <span className="text-sm flex-1">{toast.message}</span>
+          {toast.action && (
+            <button
+              onClick={() => {
+                toast.action!.onClick();
+                remove(toast.id);
+              }}
+              className="text-sm font-medium px-2 py-0.5 rounded hover:bg-white/20 transition-colors shrink-0"
+              style={{ color: '#A855F7' }}
+            >
+              {toast.action.label}
+            </button>
+          )}
           <button
             onClick={() => remove(toast.id)}
             className="text-gray-400 hover:text-white shrink-0"
@@ -65,13 +78,12 @@ function ensureMounted() {
 }
 
 export const Toast = {
-  show(message: string) {
+  show(message: string, action?: { label: string; onClick: () => void }) {
     ensureMounted();
-    // Small delay to ensure mount is complete
     if (addToast) {
-      addToast(message);
+      addToast(message, action);
     } else {
-      setTimeout(() => addToast?.(message), 50);
+      setTimeout(() => addToast?.(message, action), 50);
     }
   },
 };

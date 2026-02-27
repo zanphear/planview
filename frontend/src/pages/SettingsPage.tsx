@@ -21,6 +21,7 @@ export function SettingsPage() {
   const setDarkMode = useUIStore((s) => s.setDarkMode);
   const [tab, setTab] = useState<Tab>('profile');
   const [name, setName] = useState(user?.name || '');
+  const [initials, setInitials] = useState(user?.initials || '');
   const [colour, setColour] = useState(user?.colour || '#8A00E5');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -35,6 +36,7 @@ export function SettingsPage() {
   useEffect(() => {
     if (user) {
       setName(user.name);
+      setInitials(user.initials || '');
       setColour(user.colour);
     }
   }, [user]);
@@ -43,7 +45,7 @@ export function SettingsPage() {
     if (!workspace || !user) return;
     setSaving(true);
     try {
-      await membersApi.update(workspace.id, user.id, { name, colour });
+      await membersApi.update(workspace.id, user.id, { name, colour, initials: initials || undefined });
       await fetchMe();
       setSaved(true);
       Toast.show('Profile updated');
@@ -103,10 +105,10 @@ export function SettingsPage() {
     <div className="max-w-3xl mx-auto p-6">
       <h2 className="text-xl font-semibold mb-6" style={{ color: 'var(--color-text)' }}>Settings</h2>
 
-      <div className="flex gap-6">
+      <div className="flex flex-col sm:flex-row gap-6">
         {/* Sidebar */}
-        <div className="w-48 shrink-0">
-          <nav className="space-y-1">
+        <div className="sm:w-48 shrink-0">
+          <nav className="flex sm:flex-col gap-1 overflow-x-auto pb-2 sm:pb-0">
             {tabs.map((t) => (
               <button
                 key={t.id}
@@ -163,6 +165,18 @@ export function SettingsPage() {
                   className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 text-sm bg-[var(--color-surface)] text-[var(--color-text)]"
                   style={{ borderColor: 'var(--color-border)', '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Initials (2 chars)</label>
+                <input
+                  value={initials}
+                  onChange={(e) => setInitials(e.target.value.slice(0, 2).toUpperCase())}
+                  maxLength={2}
+                  placeholder="Auto"
+                  className="w-24 px-3 py-2 border rounded-lg outline-none focus:ring-2 text-sm bg-[var(--color-surface)] text-[var(--color-text)]"
+                  style={{ borderColor: 'var(--color-border)', '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
+                />
+                <p className="text-xs mt-1" style={{ color: 'var(--color-text-secondary)' }}>Leave blank for auto-generated</p>
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Email</label>
@@ -736,7 +750,7 @@ function DataTab({ workspaceId }: { workspaceId?: string }) {
       <div>
         <h4 className="text-sm font-medium mb-2" style={{ color: 'var(--color-text)' }}>Import Tasks</h4>
         <p className="text-xs mb-3" style={{ color: 'var(--color-text-secondary)' }}>
-          Upload a CSV or JSON file. Use the same format as the export.
+          Upload a CSV or JSON file. Supports Planview, Trello JSON exports, and Asana CSV exports.
         </p>
         <input
           ref={fileRef}

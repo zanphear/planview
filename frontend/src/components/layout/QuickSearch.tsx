@@ -2,12 +2,13 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, X, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { tasksApi, type Task } from '../../api/tasks';
+import { membersApi } from '../../api/users';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
 import { useProjectStore } from '../../stores/projectStore';
 import { useTeamStore } from '../../stores/teamStore';
 
 interface SearchResult {
-  type: 'task' | 'project' | 'team';
+  type: 'task' | 'project' | 'team' | 'member';
   id: string;
   name: string;
   meta?: string;
@@ -73,6 +74,19 @@ export function QuickSearch() {
         .forEach((t) => {
           matched.push({ type: 'team', id: t.id, name: t.name, link: `/teams/${t.id}` });
         });
+
+      // Search members via API
+      try {
+        const { data: memberData } = await membersApi.list(workspace.id);
+        memberData
+          .filter((m) => m.name.toLowerCase().includes(lowerQ) || m.email?.toLowerCase().includes(lowerQ))
+          .slice(0, 3)
+          .forEach((m) => {
+            matched.push({ type: 'member', id: m.id, name: m.name, meta: m.email || undefined, link: '/settings' });
+          });
+      } catch {
+        // Ignore
+      }
 
       // Search tasks via API
       try {

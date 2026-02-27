@@ -1,7 +1,8 @@
 import uuid
-from datetime import date
+from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -23,6 +24,7 @@ from app.utils.auth import get_current_user
 from app.websocket.events import emit_event
 from app.services.notification_service import notify_task_assigned
 from app.services.activity_service import record_activity
+from app.services.recurrence_service import expand_recurrence
 
 router = APIRouter(prefix="/workspaces/{workspace_id}/tasks", tags=["tasks"])
 
@@ -56,6 +58,7 @@ async def list_tasks(
     since: date | None = None,
     until: date | None = None,
     tag_id: uuid.UUID | None = None,
+    search: str | None = None,
     filter: str | None = Query(None, description="backlog|timeline"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -76,6 +79,8 @@ async def list_tasks(
         query = query.where(Task.assignees.any(User.id == assignee))
     if tag_id:
         query = query.where(Task.tags.any(Tag.id == tag_id))
+    if search:
+        query = query.where(Task.name.ilike(f"%{search}%"))
     if filter == "backlog":
         query = query.where(Task.date_from.is_(None))
     elif filter == "timeline":
@@ -155,6 +160,44 @@ async def create_task(
             )
 
     return created_task
+
+
+# --- Reorder (must be before /{task_id} routes) ---
+
+class ReorderItem(BaseModel):
+    id: uuid.UUID
+    sort_order: int
+
+
+class ReorderRequest(BaseModel):
+    items: list[ReorderItem]
+
+
+@router.put("/reorder", response_model=list[TaskResponse])
+async def reorder_tasks(
+    workspace_id: uuid.UUID,
+    data: ReorderRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    task_ids = [item.id for item in data.items]
+    order_map = {item.id: item.sort_order for item in data.items}
+
+    result = await db.execute(
+        _task_query(workspace_id).where(Task.id.in_(task_ids))
+    )
+    tasks = list(result.scalars().unique().all())
+
+    for task in tasks:
+        if task.id in order_map:
+            task.sort_order = order_map[task.id]
+
+    await db.commit()
+
+    result = await db.execute(
+        _task_query(workspace_id).where(Task.id.in_(task_ids)).order_by(Task.sort_order)
+    )
+    return list(result.scalars().unique().all())
 
 
 @router.get("/{task_id}", response_model=TaskResponse)
@@ -246,7 +289,84 @@ async def update_task(
                     actor_id=current_user.id, actor_name=current_user.name,
                 )
 
+    # Recurring task: create next occurrence when marked done
+    if (
+        update_data.get("status") == "done"
+        and updated_task.is_recurring
+        and updated_task.recurrence_rule
+    ):
+        await _create_next_recurrence(db, updated_task, workspace_id, current_user)
+
     return updated_task
+
+
+async def _create_next_recurrence(
+    db: AsyncSession,
+    task: Task,
+    workspace_id: uuid.UUID,
+    actor: User,
+):
+    """Create the next occurrence of a recurring task."""
+    task_start = task.date_from or date.today()
+    duration_days = 0
+    if task.date_from and task.date_to:
+        duration_days = (task.date_to - task.date_from).days
+
+    # Find the next occurrence after today
+    tomorrow = date.today() + timedelta(days=1)
+    far_future = tomorrow + timedelta(days=365)
+
+    next_dates = list(expand_recurrence(
+        task.recurrence_rule,
+        start=task_start,
+        range_start=tomorrow,
+        range_end=far_future,
+        duration_days=duration_days,
+    ))
+
+    if not next_dates:
+        return
+
+    next_from, next_to = next_dates[0]
+
+    new_task = Task(
+        name=task.name,
+        description=task.description,
+        colour=task.colour,
+        status="todo",
+        date_from=next_from,
+        date_to=next_to,
+        start_time=task.start_time,
+        end_time=task.end_time,
+        time_estimate_minutes=task.time_estimate_minutes,
+        time_estimate_mode=task.time_estimate_mode,
+        is_recurring=True,
+        recurrence_rule=task.recurrence_rule,
+        project_id=task.project_id,
+        segment_id=task.segment_id,
+        workspace_id=workspace_id,
+    )
+    db.add(new_task)
+    await db.flush()
+
+    # Copy assignees
+    for assignee in task.assignees:
+        await db.execute(task_assignees.insert().values(task_id=new_task.id, user_id=assignee.id))
+
+    # Copy tags
+    for tag in task.tags:
+        await db.execute(task_tags.insert().values(task_id=new_task.id, tag_id=tag.id))
+
+    await db.commit()
+
+    # Re-fetch with relationships
+    result = await db.execute(_task_query(workspace_id).where(Task.id == new_task.id))
+    created_task = result.scalar_one()
+
+    await emit_event(str(workspace_id), "task.created", {
+        "task": _task_to_dict(created_task),
+        "actor_id": str(actor.id),
+    })
 
 
 @router.delete("/{task_id}", status_code=204)

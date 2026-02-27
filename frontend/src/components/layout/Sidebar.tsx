@@ -32,6 +32,9 @@ export function Sidebar() {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [managingTeam, setManagingTeam] = useState<Team | null>(null);
 
+  const toggleSidebar = useUIStore((s) => s.toggleSidebar);
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+
   if (collapsed) return null;
 
   const favouriteTeams = teams.filter((t) => t.is_favourite);
@@ -134,8 +137,13 @@ export function Sidebar() {
   };
 
   return (
+    <>
+      {/* Mobile overlay backdrop */}
+      {isMobile && (
+        <div className="fixed inset-0 bg-black/40 z-30" onClick={toggleSidebar} />
+      )}
     <aside
-      className="w-60 flex flex-col shrink-0 overflow-y-auto"
+      className={`${isMobile ? 'fixed inset-y-0 left-0 z-40' : ''} w-60 flex flex-col shrink-0 overflow-y-auto`}
       style={{ background: 'linear-gradient(180deg, var(--color-sidebar-bg) 0%, #2D1B4E 100%)' }}
     >
       {/* Logo + Workspace */}
@@ -383,5 +391,6 @@ export function Sidebar() {
         />
       )}
     </aside>
+    </>
   );
 }

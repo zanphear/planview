@@ -89,7 +89,7 @@ export function DashboardPage() {
   const done = stats.by_status['done'] || 0;
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
+    <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-6">
       {/* Greeting */}
       <div>
         <h2 className="text-2xl font-bold" style={{ color: 'var(--color-text)' }}>

@@ -77,4 +77,7 @@ export const tasksApi = {
 
   bulkUpdate: (workspaceId: string, data: { task_ids: string[] } & Partial<Task> & { assignee_ids?: string[] }) =>
     api.put<Task[]>(`/workspaces/${workspaceId}/tasks`, data),
+
+  reorder: (workspaceId: string, items: { id: string; sort_order: number }[]) =>
+    api.put<Task[]>(`/workspaces/${workspaceId}/tasks/reorder`, { items }),
 };

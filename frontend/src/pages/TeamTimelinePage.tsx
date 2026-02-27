@@ -1,7 +1,9 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
+import { Share2, Users } from 'lucide-react';
 import { Timeline, type Swimlane, type MilestoneData } from '../components/timeline/Timeline';
 import { TaskDetail } from '../components/task/TaskDetail';
+import { EmptyState } from '../components/shared/EmptyState';
 import { useWorkspaceStore } from '../stores/workspaceStore';
 import { useUIStore } from '../stores/uiStore';
 import { useTeamStore } from '../stores/teamStore';
@@ -14,7 +16,6 @@ import { addDays, format, startOfWeek, ZOOM_CONFIGS } from '../utils/dates';
 import { useRealtimeTasks } from '../hooks/useRealtimeTasks';
 import { useTaskContextActions } from '../hooks/useTaskContextActions';
 import { ShareTimelineModal } from '../components/modals/ShareTimelineModal';
-import { Share2 } from 'lucide-react';
 
 export function TeamTimelinePage() {
   const { teamId } = useParams<{ teamId: string }>();
@@ -123,17 +124,25 @@ export function TeamTimelinePage() {
       )}
 
       <div className="flex-1 overflow-hidden">
-        <Timeline
-          swimlanes={swimlanes}
-          milestones={milestones}
-          startDate={startDate}
-          zoom={zoom}
-          onZoomChange={setZoom}
-          onTaskClick={setSelectedTask}
-          onTaskUpdate={handleTaskUpdate}
-          onCreateTask={handleCreateTask}
-          onContextAction={handleContextAction}
-        />
+        {tasks.length === 0 && swimlanes.length > 0 ? (
+          <EmptyState
+            icon={<Users size={48} />}
+            title="No tasks scheduled"
+            description="Click on the timeline grid to create tasks for team members."
+          />
+        ) : (
+          <Timeline
+            swimlanes={swimlanes}
+            milestones={milestones}
+            startDate={startDate}
+            zoom={zoom}
+            onZoomChange={setZoom}
+            onTaskClick={setSelectedTask}
+            onTaskUpdate={handleTaskUpdate}
+            onCreateTask={handleCreateTask}
+            onContextAction={handleContextAction}
+          />
+        )}
       </div>
 
       {selectedTask && (

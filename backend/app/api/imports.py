@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.user import User
-from app.services.import_service import import_tasks_csv, import_tasks_json
+from app.services.import_service import import_tasks_csv, import_tasks_json, import_asana_csv
 from app.utils.auth import get_current_user
 
 router = APIRouter(
@@ -27,6 +27,11 @@ async def import_tasks(
     content = (await file.read()).decode("utf-8")
 
     if file.filename.endswith(".csv"):
+        # Detect Asana CSV by checking for Asana-specific headers
+        first_line = content.split("\n")[0] if content else ""
+        if "Section/Column" in first_line or "Task ID" in first_line:
+            tasks = await import_asana_csv(db, workspace_id, content)
+            return {"imported": len(tasks), "message": f"Imported {len(tasks)} tasks from Asana"}
         tasks = await import_tasks_csv(db, workspace_id, content)
     elif file.filename.endswith(".json"):
         tasks = await import_tasks_json(db, workspace_id, content)

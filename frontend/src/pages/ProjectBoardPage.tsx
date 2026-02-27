@@ -1,6 +1,6 @@
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { Plus, Inbox } from 'lucide-react';
+import { Plus, Inbox, Download } from 'lucide-react';
 import { Board } from '../components/board/Board';
 import { TaskDetail } from '../components/task/TaskDetail';
 import { BulkActionBar } from '../components/board/BulkActionBar';
@@ -13,6 +13,7 @@ import { useWSEvent } from '../hooks/WebSocketContext';
 import { tasksApi, type Task } from '../api/tasks';
 import { membersApi, type User } from '../api/users';
 import { EmptyState } from '../components/shared/EmptyState';
+import { Toast } from '../components/shared/Toast';
 
 export function ProjectBoardPage() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -117,15 +118,51 @@ export function ProjectBoardPage() {
     } catch (err) { console.error('Bulk assign failed:', err); }
   }, [workspace, selectedIds, updateTaskInStore]);
 
+  const pendingDeleteRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
   const handleBulkDelete = useCallback(async () => {
     if (!workspace) return;
     const ids = Array.from(selectedIds);
-    try {
-      await Promise.all(ids.map((id) => tasksApi.delete(workspace.id, id)));
-      ids.forEach((id) => removeTaskFromStore(id));
-      setSelectedIds(new Set());
-    } catch (err) { console.error('Bulk delete failed:', err); }
-  }, [workspace, selectedIds, removeTaskFromStore]);
+    const deletedTasks = tasks.filter((t) => ids.includes(t.id));
+
+    // Optimistic removal
+    ids.forEach((id) => removeTaskFromStore(id));
+    setSelectedIds(new Set());
+
+    // Delayed actual delete with undo
+    Toast.show(`${ids.length} task${ids.length > 1 ? 's' : ''} deleted`, {
+      label: 'Undo',
+      onClick: () => {
+        if (pendingDeleteRef.current) clearTimeout(pendingDeleteRef.current);
+        deletedTasks.forEach((t) => addTask(t));
+      },
+    });
+
+    pendingDeleteRef.current = setTimeout(async () => {
+      try {
+        await Promise.all(ids.map((id) => tasksApi.delete(workspace.id, id)));
+      } catch (err) {
+        console.error('Bulk delete failed:', err);
+        deletedTasks.forEach((t) => addTask(t));
+      }
+    }, 5000);
+  }, [workspace, selectedIds, tasks, removeTaskFromStore, addTask]);
+
+  const handleExport = useCallback(async (fmt: string) => {
+    if (!workspace) return;
+    const token = localStorage.getItem('access_token');
+    const res = await fetch(`/api/v1/workspaces/${workspace.id}/export/tasks.${fmt}?project_id=${projectId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${project?.name || 'tasks'}.${fmt}`;
+    a.click();
+    URL.revokeObjectURL(url);
+    Toast.show(`Exported as ${fmt.toUpperCase()}`);
+  }, [workspace, projectId, project]);
 
   return (
     <div className="h-full flex flex-col p-6">
@@ -140,9 +177,33 @@ export function ProjectBoardPage() {
           )}
         </div>
 
-        {/* Filters + Quick add */}
+        {/* Filters + Export + Quick add */}
         <div className="flex items-center gap-3">
           <FilterBar filters={filters} onChange={setFilters} members={members} />
+          <div className="relative group">
+            <button
+              className="p-1.5 rounded-lg hover:bg-[var(--color-grey-2)] transition-colors"
+              style={{ color: 'var(--color-text-secondary)' }}
+              title="Export tasks"
+            >
+              <Download size={16} />
+            </button>
+            <div
+              className="absolute right-0 top-full mt-1 w-28 rounded-lg border shadow-lg py-1 hidden group-hover:block z-10"
+              style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+            >
+              {['csv', 'json', 'ics'].map((fmt) => (
+                <button
+                  key={fmt}
+                  onClick={() => handleExport(fmt)}
+                  className="w-full text-left px-3 py-1.5 text-sm hover:bg-[var(--color-grey-1)] transition-colors"
+                  style={{ color: 'var(--color-text)' }}
+                >
+                  {fmt.toUpperCase()}
+                </button>
+              ))}
+            </div>
+          </div>
           <input
             type="text"
             value={newTaskName}

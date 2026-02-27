@@ -107,7 +107,7 @@ export function TaskDetail({ task: initialTask, members, onClose }: TaskDetailPr
       <div className="fixed inset-0 bg-black/20 z-40" onClick={onClose} />
     <div
       ref={panelRef}
-      className="fixed inset-y-0 right-0 w-[480px] shadow-2xl z-50 flex flex-col border-l animate-slide-in"
+      className="fixed inset-y-0 right-0 w-full sm:w-[480px] shadow-2xl z-50 flex flex-col border-l animate-slide-in"
       style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
     >
       {/* Header */}

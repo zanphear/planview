@@ -1,6 +1,8 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
+import { CalendarDays } from 'lucide-react';
 import { Timeline, type Swimlane, type MilestoneData } from '../components/timeline/Timeline';
 import { TaskDetail } from '../components/task/TaskDetail';
+import { EmptyState } from '../components/shared/EmptyState';
 import { useWorkspaceStore } from '../stores/workspaceStore';
 import { useAuthStore } from '../stores/authStore';
 import { useUIStore } from '../stores/uiStore';
@@ -99,17 +101,25 @@ export function MyWorkPage() {
       </div>
 
       <div className="flex-1 overflow-hidden">
-        <Timeline
-          swimlanes={swimlanes}
-          milestones={milestones}
-          startDate={startDate}
-          zoom={zoom}
-          onZoomChange={setZoom}
-          onTaskClick={setSelectedTask}
-          onTaskUpdate={handleTaskUpdate}
-          onCreateTask={handleCreateTask}
-          onContextAction={handleContextAction}
-        />
+        {tasks.length === 0 ? (
+          <EmptyState
+            icon={<CalendarDays size={48} />}
+            title="No tasks assigned to you"
+            description="Tasks assigned to you will appear on your personal timeline. Click on the timeline to create one."
+          />
+        ) : (
+          <Timeline
+            swimlanes={swimlanes}
+            milestones={milestones}
+            startDate={startDate}
+            zoom={zoom}
+            onZoomChange={setZoom}
+            onTaskClick={setSelectedTask}
+            onTaskUpdate={handleTaskUpdate}
+            onCreateTask={handleCreateTask}
+            onContextAction={handleContextAction}
+          />
+        )}
       </div>
 
       {selectedTask && (

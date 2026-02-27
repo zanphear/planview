@@ -9,16 +9,18 @@ interface BoardColumnProps {
   onTaskClick: (task: Task) => void;
   selectedIds?: Set<string>;
   onToggleSelect?: (taskId: string) => void;
+  isOverColumn?: boolean;
 }
 
-export function BoardColumn({ status, tasks, onTaskClick, selectedIds, onToggleSelect }: BoardColumnProps) {
+export function BoardColumn({ status, tasks, onTaskClick, selectedIds, onToggleSelect, isOverColumn }: BoardColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: status.id });
+  const highlight = isOver || isOverColumn;
 
   return (
     <div
       ref={setNodeRef}
       className={`flex flex-col w-72 shrink-0 rounded-xl transition-colors`}
-      style={{ backgroundColor: isOver ? 'var(--color-primary-light)' : 'var(--color-grey-1)' }}
+      style={{ backgroundColor: highlight ? 'var(--color-primary-light)' : 'var(--color-grey-1)' }}
     >
       {/* Column header */}
       <div className="px-3 py-2.5 flex items-center gap-2">
