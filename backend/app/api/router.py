@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
 from app.api import (
-    activity, attachments, auth, clients, comments, export, milestones,
+    activity, attachments, auth, clients, comments, export, imports, milestones,
     notifications, projects, sharing, stats, tags, tasks, teams, time_off,
     timeline, users, workspaces,
 )
@@ -20,6 +20,7 @@ api_router.include_router(comments.router)
 api_router.include_router(notifications.router)
 api_router.include_router(attachments.router)
 api_router.include_router(export.router)
+api_router.include_router(imports.router)
 api_router.include_router(sharing.router)
 api_router.include_router(time_off.router)
 api_router.include_router(tags.router)

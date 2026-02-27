@@ -21,6 +21,8 @@ class TaskCreate(BaseModel):
     project_id: uuid.UUID | None = None
     segment_id: uuid.UUID | None = None
     parent_id: uuid.UUID | None = None
+    is_recurring: bool = False
+    recurrence_rule: str | None = None
     assignee_ids: list[uuid.UUID] = []
     tag_ids: list[uuid.UUID] = []
 
@@ -41,6 +43,8 @@ class TaskUpdate(BaseModel):
     segment_id: uuid.UUID | None = None
     sort_order: int | None = None
     parent_id: uuid.UUID | None = None
+    is_recurring: bool | None = None
+    recurrence_rule: str | None = None
     assignee_ids: list[uuid.UUID] | None = None
     tag_ids: list[uuid.UUID] | None = None
 

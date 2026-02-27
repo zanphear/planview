@@ -105,6 +105,8 @@ async def create_task(
         end_time=data.end_time,
         time_estimate_minutes=data.time_estimate_minutes,
         time_estimate_mode=data.time_estimate_mode,
+        is_recurring=data.is_recurring,
+        recurrence_rule=data.recurrence_rule,
         project_id=data.project_id,
         segment_id=data.segment_id,
         parent_id=data.parent_id,

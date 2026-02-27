@@ -13,6 +13,9 @@ import { TaskAttachments } from './TaskAttachments';
 import { RichTextEditor } from './RichTextEditor';
 import { TagPicker } from './TagPicker';
 import { TaskSubtasks } from './TaskSubtasks';
+import { RecurrencePicker } from './RecurrencePicker';
+import { useWSEvent } from '../../hooks/WebSocketContext';
+import { useAuthStore } from '../../stores/authStore';
 import type { User } from '../../api/users';
 
 interface TaskDetailProps {
@@ -43,6 +46,18 @@ export function TaskDetail({ task: initialTask, members, onClose }: TaskDetailPr
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
+
+  // Real-time: update panel when another user edits this task
+  const currentUserId = useAuthStore((s) => s.user?.id);
+  useWSEvent('task.updated', (data) => {
+    if (data.actor_id === currentUserId) return;
+    const updated = data.task as Task;
+    if (updated.id === task.id) {
+      setTask(updated);
+      setNameValue(updated.name);
+      updateTaskInStore(updated);
+    }
+  }, [currentUserId, task.id, updateTaskInStore]);
 
   const save = useCallback(
     async (updates: Record<string, unknown>) => {
@@ -190,6 +205,13 @@ export function TaskDetail({ task: initialTask, members, onClose }: TaskDetailPr
             )}
           </div>
         </div>
+
+        {/* Recurrence */}
+        <RecurrencePicker
+          isRecurring={task.is_recurring}
+          rule={task.recurrence_rule}
+          onChange={(isRecurring, recurrence_rule) => save({ is_recurring: isRecurring, recurrence_rule })}
+        />
 
         {/* Assignees */}
         <div>

@@ -1,13 +1,14 @@
-import { useState, useEffect } from 'react';
-import { User, Palette, Bell, Shield, LogOut, Sun, Moon, Users, UserPlus, Trash2, Copy, Check } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { User, Palette, Bell, Shield, LogOut, Sun, Moon, Users, UserPlus, Trash2, Copy, Check, Download, Upload } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { useWorkspaceStore } from '../stores/workspaceStore';
 import { useUIStore } from '../stores/uiStore';
 import { membersApi, type User as UserType } from '../api/users';
+import { importsApi } from '../api/imports';
 import { ColourPicker } from '../components/task/ColourPicker';
 import { Avatar } from '../components/shared/Avatar';
 
-type Tab = 'profile' | 'workspace' | 'members' | 'appearance' | 'notifications';
+type Tab = 'profile' | 'workspace' | 'members' | 'appearance' | 'notifications' | 'data';
 
 export function SettingsPage() {
   const user = useAuthStore((s) => s.user);
@@ -90,6 +91,7 @@ export function SettingsPage() {
     { id: 'workspace', label: 'Workspace', icon: <Shield size={16} /> },
     { id: 'appearance', label: 'Appearance', icon: <Palette size={16} /> },
     { id: 'notifications', label: 'Notifications', icon: <Bell size={16} /> },
+    { id: 'data', label: 'Import / Export', icon: <Download size={16} /> },
   ];
 
   return (
@@ -419,7 +421,106 @@ export function SettingsPage() {
               </p>
             </div>
           )}
+
+          {tab === 'data' && (
+            <DataTab workspaceId={workspace?.id} />
+          )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function DataTab({ workspaceId }: { workspaceId?: string }) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<string | null>(null);
+
+  const handleExport = async (fmt: string) => {
+    if (!workspaceId) return;
+    // We need to fetch with auth headers, then trigger download
+    const token = localStorage.getItem('access_token');
+    const res = await fetch(`/api/v1/workspaces/${workspaceId}/export/tasks.${fmt}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `tasks.${fmt}`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !workspaceId) return;
+    setImporting(true);
+    setImportResult(null);
+    try {
+      const { data } = await importsApi.importTasks(workspaceId, file);
+      setImportResult(data.message);
+    } catch (err) {
+      setImportResult('Import failed. Check file format.');
+    }
+    setImporting(false);
+    if (fileRef.current) fileRef.current.value = '';
+  };
+
+  return (
+    <div className="space-y-5">
+      <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>Import / Export</h3>
+
+      {/* Export */}
+      <div>
+        <h4 className="text-sm font-medium mb-2" style={{ color: 'var(--color-text)' }}>Export Tasks</h4>
+        <p className="text-xs mb-3" style={{ color: 'var(--color-text-secondary)' }}>
+          Download all tasks in your preferred format.
+        </p>
+        <div className="flex gap-2">
+          {['csv', 'json', 'ics'].map((fmt) => (
+            <button
+              key={fmt}
+              onClick={() => handleExport(fmt)}
+              className="px-3 py-1.5 text-sm border rounded-lg flex items-center gap-1.5 hover:bg-[var(--color-grey-1)] transition-colors"
+              style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
+            >
+              <Download size={14} />
+              {fmt.toUpperCase()}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <hr style={{ borderColor: 'var(--color-border)' }} />
+
+      {/* Import */}
+      <div>
+        <h4 className="text-sm font-medium mb-2" style={{ color: 'var(--color-text)' }}>Import Tasks</h4>
+        <p className="text-xs mb-3" style={{ color: 'var(--color-text-secondary)' }}>
+          Upload a CSV or JSON file. Use the same format as the export.
+        </p>
+        <input
+          ref={fileRef}
+          type="file"
+          accept=".csv,.json"
+          onChange={handleImport}
+          className="hidden"
+        />
+        <button
+          onClick={() => fileRef.current?.click()}
+          disabled={importing}
+          className="px-3 py-1.5 text-sm border rounded-lg flex items-center gap-1.5 hover:bg-[var(--color-grey-1)] transition-colors disabled:opacity-50"
+          style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
+        >
+          <Upload size={14} />
+          {importing ? 'Importing...' : 'Choose File'}
+        </button>
+        {importResult && (
+          <p className="text-sm mt-2" style={{ color: importResult.includes('failed') ? 'var(--color-danger)' : 'var(--color-success)' }}>
+            {importResult}
+          </p>
+        )}
       </div>
     </div>
   );
