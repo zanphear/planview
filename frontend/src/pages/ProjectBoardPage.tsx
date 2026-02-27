@@ -6,6 +6,8 @@ import { TaskDetail } from '../components/task/TaskDetail';
 import { useWorkspaceStore } from '../stores/workspaceStore';
 import { useTaskStore } from '../stores/taskStore';
 import { useProjectStore } from '../stores/projectStore';
+import { useAuthStore } from '../stores/authStore';
+import { useWSEvent } from '../hooks/WebSocketContext';
 import { tasksApi, type Task } from '../api/tasks';
 import { membersApi, type User } from '../api/users';
 
@@ -20,7 +22,33 @@ export function ProjectBoardPage() {
   const [members, setMembers] = useState<User[]>([]);
   const [newTaskName, setNewTaskName] = useState('');
 
+  const userId = useAuthStore((s) => s.user?.id);
+  const updateTaskInStore = useTaskStore((s) => s.updateTask);
+  const removeTaskFromStore = useTaskStore((s) => s.removeTask);
   const project = projects.find((p) => p.id === projectId);
+
+  // Real-time: task created in this project
+  useWSEvent('task.created', (data) => {
+    if (data.actor_id === userId) return;
+    const task = data.task as Task;
+    if (task.project_id === projectId) addTask(task);
+  }, [userId, projectId, addTask]);
+
+  // Real-time: task updated
+  useWSEvent('task.updated', (data) => {
+    const task = data.task as Task;
+    if (task.project_id === projectId) {
+      updateTaskInStore(task);
+    } else {
+      // Task was moved out of this project
+      removeTaskFromStore(task.id);
+    }
+  }, [projectId, updateTaskInStore, removeTaskFromStore]);
+
+  // Real-time: task deleted
+  useWSEvent('task.deleted', (data) => {
+    removeTaskFromStore(data.task_id as string);
+  }, [removeTaskFromStore]);
 
   useEffect(() => {
     if (workspace && projectId) {

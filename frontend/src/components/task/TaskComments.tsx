@@ -1,8 +1,9 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { Send, Trash2, Pencil, X, Check } from 'lucide-react';
 import { commentsApi, type Comment } from '../../api/comments';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
 import { useAuthStore } from '../../stores/authStore';
+import { useWSEvent } from '../../hooks/WebSocketContext';
 import { Avatar } from '../shared/Avatar';
 
 interface TaskCommentsProps {
@@ -18,6 +19,8 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
   const [editBody, setEditBody] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const commentsEndRef = useRef<HTMLDivElement>(null);
+
   const fetchComments = useCallback(async () => {
     if (!workspace) return;
     const { data } = await commentsApi.list(workspace.id, taskId);
@@ -27,6 +30,29 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
   useEffect(() => {
     fetchComments();
   }, [fetchComments]);
+
+  // Real-time comment updates
+  useWSEvent('comment.created', (data) => {
+    if (data.task_id !== taskId) return;
+    const comment = data.comment as Comment;
+    setComments((prev) => {
+      if (prev.some((c) => c.id === comment.id)) return prev;
+      return [...prev, comment];
+    });
+    // Auto-scroll to new comment
+    setTimeout(() => commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+  }, [taskId]);
+
+  useWSEvent('comment.updated', (data) => {
+    if (data.task_id !== taskId) return;
+    const comment = data.comment as Comment;
+    setComments((prev) => prev.map((c) => (c.id === comment.id ? comment : c)));
+  }, [taskId]);
+
+  useWSEvent('comment.deleted', (data) => {
+    if (data.task_id !== taskId) return;
+    setComments((prev) => prev.filter((c) => c.id !== data.comment_id));
+  }, [taskId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -144,6 +170,7 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
         {comments.length === 0 && (
           <p className="text-xs text-gray-400 italic">No comments yet</p>
         )}
+        <div ref={commentsEndRef} />
       </div>
 
       {/* Add comment */}

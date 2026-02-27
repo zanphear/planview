@@ -13,6 +13,8 @@ import { api } from '../api/client';
 import type { Task } from '../api/tasks';
 import { addDays, format, startOfWeek } from '../utils/dates';
 import { ZOOM_CONFIGS } from '../utils/dates';
+import { useRealtimeTasks } from '../hooks/useRealtimeTasks';
+import { useTaskContextActions } from '../hooks/useTaskContextActions';
 
 interface Segment {
   id: string;
@@ -36,6 +38,14 @@ export function ProjectTimelinePage() {
 
   const project = projects.find((p) => p.id === projectId);
   const startDate = useMemo(() => startOfWeek(addDays(new Date(), -7), { weekStartsOn: 1 }), []);
+
+  // Real-time task updates — only include tasks for this project
+  const projectFilter = useCallback(
+    (task: Task) => task.project_id === projectId,
+    [projectId],
+  );
+  useRealtimeTasks(setTasks, projectFilter);
+  const handleContextAction = useTaskContextActions(setTasks, setSelectedTask);
 
   useEffect(() => {
     if (!workspace || !projectId) return;
@@ -134,6 +144,7 @@ export function ProjectTimelinePage() {
           onTaskClick={setSelectedTask}
           onTaskUpdate={handleTaskUpdate}
           onCreateTask={handleCreateTask}
+          onContextAction={handleContextAction}
         />
       </div>
 

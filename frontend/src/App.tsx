@@ -6,7 +6,7 @@ import { useTeamStore } from './stores/teamStore';
 import { useProjectStore } from './stores/projectStore';
 import { useUIStore } from './stores/uiStore';
 import { useNotificationStore } from './stores/notificationStore';
-import { useWebSocket } from './hooks/useWebSocket';
+import { WebSocketProvider, useWSEvent } from './hooks/WebSocketContext';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { LoginPage } from './pages/LoginPage';
 import { ProjectBoardPage } from './pages/ProjectBoardPage';
@@ -19,6 +19,7 @@ import { Sidebar } from './components/layout/Sidebar';
 import { TopBar } from './components/layout/TopBar';
 import { QuickSearch } from './components/layout/QuickSearch';
 import { Toast } from './components/shared/Toast';
+import { ErrorBoundary } from './components/shared/ErrorBoundary';
 
 function ProtectedLayout() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -42,9 +43,6 @@ function ProtectedLayout() {
   }), [setZoom, toggleSidebar]);
   useKeyboardShortcuts(shortcuts);
 
-  // WebSocket connection for the current workspace
-  const { on } = useWebSocket(currentWorkspace?.id);
-
   useEffect(() => {
     if (isAuthenticated && !user) {
       fetchMe();
@@ -65,15 +63,12 @@ function ProtectedLayout() {
   }, [currentWorkspace, fetchTeams, fetchProjects]);
 
   // Listen for real-time notification events
-  useEffect(() => {
-    const unsub = on('notification.new', (data) => {
-      if (data.user_id === user?.id) {
-        incrementUnread();
-        Toast.show(data.title as string);
-      }
-    });
-    return unsub;
-  }, [on, user, incrementUnread]);
+  useWSEvent('notification.new', (data) => {
+    if (data.user_id === user?.id) {
+      incrementUnread();
+      Toast.show(data.title as string);
+    }
+  }, [user, incrementUnread]);
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
@@ -84,8 +79,10 @@ function ProtectedLayout() {
       <Sidebar />
       <div className="flex flex-col flex-1 overflow-hidden">
         <TopBar />
-        <main className="flex-1 overflow-auto bg-gray-50 p-6">
-          <Outlet />
+        <main className="flex-1 overflow-auto p-6" style={{ backgroundColor: 'var(--color-bg)' }}>
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </div>
       <QuickSearch />
@@ -95,20 +92,29 @@ function ProtectedLayout() {
 
 function DashboardPage() {
   return (
-    <div className="text-gray-500">
-      <h2 className="text-xl font-semibold text-gray-800 mb-2">Welcome to Planview</h2>
-      <p>Select a team or project from the sidebar to get started.</p>
+    <div className="flex flex-col items-center justify-center h-full text-center">
+      <img src="/logo-color.png" alt="Siemens Energy" className="h-12 mb-6 opacity-80" />
+      <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--color-text)' }}>Welcome to Planview</h2>
+      <p className="text-[var(--color-text-secondary)] max-w-md">
+        Select a team or project from the sidebar to get started with visual planning and scheduling.
+      </p>
     </div>
   );
 }
 
 export default function App() {
+  const currentWorkspace = useWorkspaceStore((s) => s.currentWorkspace);
+
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/shared/:token" element={<SharedTimelinePage />} />
-        <Route path="/" element={<ProtectedLayout />}>
+        <Route path="/" element={
+          <WebSocketProvider workspaceId={currentWorkspace?.id}>
+            <ProtectedLayout />
+          </WebSocketProvider>
+        }>
           <Route index element={<DashboardPage />} />
           <Route path="my-work" element={<MyWorkPage />} />
           <Route path="teams/:teamId" element={<TeamTimelinePage />} />

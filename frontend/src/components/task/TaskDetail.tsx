@@ -10,6 +10,7 @@ import { AssigneePicker } from './AssigneePicker';
 import { TaskChecklist } from './TaskChecklist';
 import { TaskComments } from './TaskComments';
 import { TaskAttachments } from './TaskAttachments';
+import { RichTextEditor } from './RichTextEditor';
 import type { User } from '../../api/users';
 
 interface TaskDetailProps {
@@ -173,12 +174,12 @@ export function TaskDetail({ task: initialTask, members, onClose }: TaskDetailPr
         {/* Description */}
         <div>
           <label className="block text-xs font-medium text-gray-500 mb-1">Description</label>
-          <textarea
-            value={task.description || ''}
-            onChange={(e) => save({ description: e.target.value })}
-            placeholder="Add a description..."
-            rows={3}
-            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+          <RichTextEditor
+            content={task.description || ''}
+            onChange={(html) => {
+              // Only save if content actually changed (avoid loops)
+              if (html !== task.description) save({ description: html });
+            }}
           />
         </div>
 

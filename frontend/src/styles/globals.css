@@ -1,20 +1,50 @@
 @import "tailwindcss";
 
 :root {
-  --color-primary: #4186E0;
-  --color-primary-hover: #3575CC;
-  --color-sidebar-bg: #1e1e2e;
-  --color-sidebar-text: #cdd6f4;
-  --color-sidebar-hover: #313244;
+  /* Siemens Energy brand colours */
+  --color-primary: #8A00E5;
+  --color-primary-hover: #7200BD;
+  --color-primary-light: #F3E5FF;
+  --color-teal: #009999;
+  --color-teal-hover: #007A7A;
+  --color-sidebar-bg: #1B1534;
+  --color-sidebar-text: #E0D8F0;
+  --color-sidebar-hover: #2D2450;
+  --color-sidebar-active: #4D217A;
   --color-topbar-bg: #ffffff;
-  --color-bg: #f5f5f5;
+  --color-bg: #F8F8F8;
   --color-surface: #ffffff;
-  --color-text: #1e1e2e;
-  --color-text-secondary: #6c7086;
-  --color-border: #e0e0e0;
+  --color-text: #1B1534;
+  --color-text-secondary: #6B6B8D;
+  --color-border: #E0E0E0;
   --color-danger: #E44332;
   --color-success: #5CBF4D;
   --color-warning: #F0C239;
+  --color-grey-1: #F8F8F8;
+  --color-grey-2: #F0F0F0;
+}
+
+.dark {
+  --color-primary: #A855F7;
+  --color-primary-hover: #9333EA;
+  --color-primary-light: #2D1B4E;
+  --color-teal: #2DD4BF;
+  --color-teal-hover: #14B8A6;
+  --color-sidebar-bg: #0F0D1A;
+  --color-sidebar-text: #C4B5D8;
+  --color-sidebar-hover: #1E1A2E;
+  --color-sidebar-active: #3B1F5E;
+  --color-topbar-bg: #1A1826;
+  --color-bg: #121020;
+  --color-surface: #1E1C2A;
+  --color-text: #E8E4F0;
+  --color-text-secondary: #9B92B0;
+  --color-border: #2E2B3D;
+  --color-danger: #F87171;
+  --color-success: #4ADE80;
+  --color-warning: #FBBF24;
+  --color-grey-1: #1A1826;
+  --color-grey-2: #252336;
 }
 
 * {
@@ -24,9 +54,10 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
   background-color: var(--color-bg);
   color: var(--color-text);
+  transition: background-color 0.2s, color 0.2s;
 }
 
 #root {
@@ -41,4 +72,32 @@ body {
 
 .animate-slide-in {
   animation: slide-in 0.2s ease-out;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.15s ease-out;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-secondary);
 }

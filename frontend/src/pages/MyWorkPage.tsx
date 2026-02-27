@@ -11,6 +11,8 @@ import { membersApi, type User } from '../api/users';
 import type { Task } from '../api/tasks';
 import { addDays, format, startOfWeek } from '../utils/dates';
 import { ZOOM_CONFIGS } from '../utils/dates';
+import { useRealtimeTasks } from '../hooks/useRealtimeTasks';
+import { useTaskContextActions } from '../hooks/useTaskContextActions';
 
 export function MyWorkPage() {
   const workspace = useWorkspaceStore((s) => s.currentWorkspace);
@@ -24,6 +26,14 @@ export function MyWorkPage() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   const startDate = useMemo(() => startOfWeek(addDays(new Date(), -7), { weekStartsOn: 1 }), []);
+
+  // Real-time task updates — only include tasks assigned to current user
+  const myFilter = useCallback(
+    (task: Task) => task.assignees?.some((a) => a.id === user?.id) ?? false,
+    [user],
+  );
+  useRealtimeTasks(setTasks, myFilter);
+  const handleContextAction = useTaskContextActions(setTasks, setSelectedTask);
 
   useEffect(() => {
     if (!workspace || !user) return;
@@ -98,6 +108,7 @@ export function MyWorkPage() {
           onTaskClick={setSelectedTask}
           onTaskUpdate={handleTaskUpdate}
           onCreateTask={handleCreateTask}
+          onContextAction={handleContextAction}
         />
       </div>
 

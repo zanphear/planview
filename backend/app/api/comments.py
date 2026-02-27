@@ -56,11 +56,11 @@ async def create_comment(
     )
     comment = result.scalar_one()
 
-    # Broadcast WebSocket event
+    # Broadcast WebSocket event with full comment data
+    comment_data = CommentResponse.model_validate(comment).model_dump(mode="json")
     await emit_event(str(workspace_id), "comment.created", {
         "task_id": str(task_id),
-        "comment_id": str(comment.id),
-        "user_name": current_user.name,
+        "comment": comment_data,
     })
 
     # Notify task assignees
@@ -107,6 +107,14 @@ async def update_comment(
     comment.body = data.body
     await db.commit()
     await db.refresh(comment)
+
+    # Broadcast update
+    comment_data = CommentResponse.model_validate(comment).model_dump(mode="json")
+    await emit_event(str(workspace_id), "comment.updated", {
+        "task_id": str(task_id),
+        "comment": comment_data,
+    })
+
     return comment
 
 
@@ -129,3 +137,9 @@ async def delete_comment(
 
     await db.delete(comment)
     await db.commit()
+
+    # Broadcast deletion
+    await emit_event(str(workspace_id), "comment.deleted", {
+        "task_id": str(task_id),
+        "comment_id": str(comment_id),
+    })

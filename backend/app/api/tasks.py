@@ -20,8 +20,15 @@ from app.schemas.task import (
     TaskUpdate,
 )
 from app.utils.auth import get_current_user
+from app.websocket.events import emit_event
+from app.services.notification_service import notify_task_assigned
 
 router = APIRouter(prefix="/workspaces/{workspace_id}/tasks", tags=["tasks"])
+
+
+def _task_to_dict(task) -> dict:
+    """Serialize a Task ORM object to a JSON-safe dict for WS broadcast."""
+    return TaskResponse.model_validate(task).model_dump(mode="json")
 
 
 def _task_query(workspace_id: uuid.UUID):
@@ -117,7 +124,24 @@ async def create_task(
 
     # Re-fetch with relationships
     result = await db.execute(_task_query(workspace_id).where(Task.id == task.id))
-    return result.scalar_one()
+    created_task = result.scalar_one()
+
+    # Broadcast task.created event
+    await emit_event(str(workspace_id), "task.created", {
+        "task": _task_to_dict(created_task),
+        "actor_id": str(current_user.id),
+    })
+
+    # Notify assignees
+    for uid in (data.assignee_ids or []):
+        if uid != current_user.id:
+            await notify_task_assigned(
+                db, workspace_id=workspace_id, task_id=created_task.id,
+                task_name=created_task.name, assignee_id=uid,
+                actor_id=current_user.id, actor_name=current_user.name,
+            )
+
+    return created_task
 
 
 @router.get("/{task_id}", response_model=TaskResponse)
@@ -165,6 +189,9 @@ async def update_task(
         tags = await db.execute(select(Tag).where(Tag.id.in_(tag_ids)))
         task.tags = list(tags.scalars().all())
 
+    # Track previous assignee IDs for notification diff
+    prev_assignee_ids = {a.id for a in task.assignees}
+
     for field, value in update_data.items():
         setattr(task, field, value)
 
@@ -172,7 +199,26 @@ async def update_task(
 
     # Re-fetch
     result = await db.execute(_task_query(workspace_id).where(Task.id == task_id))
-    return result.scalar_one()
+    updated_task = result.scalar_one()
+
+    # Broadcast task.updated event
+    await emit_event(str(workspace_id), "task.updated", {
+        "task": _task_to_dict(updated_task),
+        "actor_id": str(current_user.id),
+    })
+
+    # Notify newly assigned users
+    if assignee_ids is not None:
+        new_ids = set(assignee_ids) - prev_assignee_ids
+        for uid in new_ids:
+            if uid != current_user.id:
+                await notify_task_assigned(
+                    db, workspace_id=workspace_id, task_id=updated_task.id,
+                    task_name=updated_task.name, assignee_id=uid,
+                    actor_id=current_user.id, actor_name=current_user.name,
+                )
+
+    return updated_task
 
 
 @router.delete("/{task_id}", status_code=204)
@@ -191,6 +237,12 @@ async def delete_task(
 
     await db.delete(task)
     await db.commit()
+
+    # Broadcast task.deleted event
+    await emit_event(str(workspace_id), "task.deleted", {
+        "task_id": str(task_id),
+        "actor_id": str(current_user.id),
+    })
 
 
 # --- Bulk update ---
@@ -239,7 +291,16 @@ async def bulk_update_tasks(
     result = await db.execute(
         _task_query(workspace_id).where(Task.id.in_(data.task_ids))
     )
-    return result.scalars().unique().all()
+    updated_tasks = list(result.scalars().unique().all())
+
+    # Broadcast each updated task
+    for t in updated_tasks:
+        await emit_event(str(workspace_id), "task.updated", {
+            "task": _task_to_dict(t),
+            "actor_id": str(current_user.id),
+        })
+
+    return updated_tasks
 
 
 # --- Checklists ---

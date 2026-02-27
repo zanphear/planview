@@ -16,9 +16,10 @@ interface TimelineSwimlaneProps {
   onTaskClick: (task: Task) => void;
   onDragStart?: (taskId: string, mode: DragMode, e: React.MouseEvent, dateFrom: string, dateTo: string, laneId: string) => void;
   onCreateTask?: (laneId: string, date: string) => void;
+  onContextAction?: (action: string, task: Task) => void;
 }
 
-export function TimelineSwimlane({ laneId, label, labelColour, tasks, dates, zoom, dragState, onTaskClick, onDragStart, onCreateTask }: TimelineSwimlaneProps) {
+export function TimelineSwimlane({ laneId, label, labelColour, tasks, dates, zoom, dragState, onTaskClick, onDragStart, onCreateTask, onContextAction }: TimelineSwimlaneProps) {
   const config = ZOOM_CONFIGS[zoom];
   const rangeStart = dates[0];
 
@@ -116,6 +117,7 @@ export function TimelineSwimlane({ laneId, label, labelColour, tasks, dates, zoo
                   isDragging={beingDragged}
                   onClick={() => onTaskClick(task)}
                   onDragStart={onDragStart ? (mode, e) => onDragStart(task.id, mode, e, task.date_from!, task.date_to!, laneId) : undefined}
+                  onContextAction={onContextAction}
                 />
               </div>
             );

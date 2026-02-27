@@ -11,6 +11,8 @@ import { tasksApi } from '../api/tasks';
 import { membersApi, type User } from '../api/users';
 import type { Task } from '../api/tasks';
 import { addDays, format, startOfWeek, ZOOM_CONFIGS } from '../utils/dates';
+import { useRealtimeTasks } from '../hooks/useRealtimeTasks';
+import { useTaskContextActions } from '../hooks/useTaskContextActions';
 
 export function TeamTimelinePage() {
   const { teamId } = useParams<{ teamId: string }>();
@@ -26,6 +28,14 @@ export function TeamTimelinePage() {
 
   const team = teams.find((t) => t.id === teamId);
   const startDate = useMemo(() => startOfWeek(addDays(new Date(), -7), { weekStartsOn: 1 }), []);
+
+  // Real-time task updates — only include tasks assigned to a team member
+  const memberIds = useMemo(() => new Set(team?.members.map((m) => m.id) || []), [team]);
+  const teamFilter = useCallback(
+    (task: Task) => task.assignees?.some((a) => memberIds.has(a.id)) ?? false,
+    [memberIds],
+  );
+  useRealtimeTasks(setTasks, teamFilter);
 
   useEffect(() => {
     if (!workspace || !teamId) return;
@@ -76,6 +86,8 @@ export function TeamTimelinePage() {
     }
   }, [workspace]);
 
+  const handleContextAction = useTaskContextActions(setTasks, setSelectedTask);
+
   const handleTaskUpdate = useCallback(async (taskId: string, updates: { date_from?: string; date_to?: string; laneId?: string }) => {
     if (!workspace) return;
     const apiData: Record<string, unknown> = {};
@@ -109,6 +121,7 @@ export function TeamTimelinePage() {
           onTaskClick={setSelectedTask}
           onTaskUpdate={handleTaskUpdate}
           onCreateTask={handleCreateTask}
+          onContextAction={handleContextAction}
         />
       </div>
 

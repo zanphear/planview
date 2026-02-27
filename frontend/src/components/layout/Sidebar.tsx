@@ -52,10 +52,16 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="w-60 bg-[#1e1e2e] text-[#cdd6f4] flex flex-col shrink-0 overflow-y-auto">
-      {/* Workspace switcher */}
+    <aside
+      className="w-60 flex flex-col shrink-0 overflow-y-auto"
+      style={{ background: 'linear-gradient(180deg, var(--color-sidebar-bg) 0%, #2D1B4E 100%)' }}
+    >
+      {/* Logo + Workspace */}
       <div className="px-4 py-3 border-b border-white/10">
-        <button className="flex items-center gap-2 w-full hover:bg-white/5 rounded px-2 py-1.5">
+        <div className="flex items-center gap-2.5 mb-2 px-1">
+          <img src="/logo-white.png" alt="Siemens Energy" className="h-5 opacity-90" />
+        </div>
+        <button className="flex items-center gap-2 w-full hover:bg-white/5 rounded px-2 py-1.5 text-[var(--color-sidebar-text)]">
           <span className="font-semibold text-sm truncate">{workspace?.name || 'Workspace'}</span>
           <ChevronDown size={14} className="ml-auto opacity-60" />
         </button>
@@ -66,7 +72,11 @@ export function Sidebar() {
         <NavLink
           to="/my-work"
           className={({ isActive }) =>
-            `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm ${isActive ? 'bg-white/10 text-white' : 'hover:bg-white/5'}`
+            `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
+              isActive
+                ? 'bg-[var(--color-sidebar-active)] text-white'
+                : 'text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)]'
+            }`
           }
         >
           <User size={16} />
@@ -85,7 +95,7 @@ export function Sidebar() {
             <NavLink
               key={team.id}
               to={`/teams/${team.id}`}
-              className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-sm hover:bg-white/5"
+              className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-sm text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)]"
             >
               {team.name}
             </NavLink>
@@ -94,7 +104,7 @@ export function Sidebar() {
             <NavLink
               key={project.id}
               to={`/projects/${project.id}/board`}
-              className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-sm hover:bg-white/5"
+              className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-sm text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)]"
             >
               <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: project.colour }} />
               {project.name}
@@ -121,7 +131,11 @@ export function Sidebar() {
             key={team.id}
             to={`/teams/${team.id}`}
             className={({ isActive }) =>
-              `flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-sm ${isActive ? 'bg-white/10 text-white' : 'hover:bg-white/5'}`
+              `flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                isActive
+                  ? 'bg-[var(--color-sidebar-active)] text-white'
+                  : 'text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)]'
+              }`
             }
           >
             {team.name}
@@ -166,7 +180,11 @@ export function Sidebar() {
           return (
             <div
               key={project.id}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm group ${isProjectActive ? 'bg-white/10 text-white' : 'hover:bg-white/5'}`}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm group transition-colors ${
+                isProjectActive
+                  ? 'bg-[var(--color-sidebar-active)] text-white'
+                  : 'text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)]'
+              }`}
             >
               <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: project.colour }} />
               <NavLink
@@ -216,7 +234,7 @@ export function Sidebar() {
       <div className="px-2 py-2 border-t border-white/10">
         <NavLink
           to="/settings"
-          className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm hover:bg-white/5"
+          className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)] transition-colors"
         >
           <Settings size={16} />
           Settings
