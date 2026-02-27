@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+*.egg
+.venv/
+venv/
+
+# Node
+node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Docker
+postgres_data/
+
+# Uploads
+uploads/
+
+# OS
+.DS_Store
+Thumbs.db
+*:Zone.Identifier
+
+# Build prompt (not needed in repo)
+planview-build-prompt.md
