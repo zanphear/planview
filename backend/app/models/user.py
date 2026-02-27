@@ -25,6 +25,8 @@ class User(Base, UUIDPrimaryKey, TimestampMixin):
     role: Mapped[str] = mapped_column(String(20), server_default=text("'regular'"), nullable=False)
     pin_on_top: Mapped[bool] = mapped_column(Boolean, server_default="false", nullable=False)
     notification_prefs: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    totp_secret: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    totp_enabled: Mapped[bool] = mapped_column(Boolean, server_default="false", nullable=False)
 
     workspace_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False

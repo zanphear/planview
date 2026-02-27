@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Users, FolderKanban, Star, Settings, User, ChevronDown, Plus, LayoutGrid, Calendar, MoreHorizontal, Activity } from 'lucide-react';
+import { Users, FolderKanban, Star, Settings, User, ChevronDown, Plus, LayoutGrid, Calendar, MoreHorizontal, Activity, TrendingDown } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useUIStore } from '../../stores/uiStore';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
@@ -184,6 +184,32 @@ export function Sidebar() {
         >
           <Activity size={16} />
           Activity
+        </NavLink>
+        <NavLink
+          to="/calendar"
+          className={({ isActive }) =>
+            `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
+              isActive
+                ? 'bg-[var(--color-sidebar-active)] text-white'
+                : 'text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)]'
+            }`
+          }
+        >
+          <Calendar size={16} />
+          Calendar
+        </NavLink>
+        <NavLink
+          to="/burndown"
+          className={({ isActive }) =>
+            `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
+              isActive
+                ? 'bg-[var(--color-sidebar-active)] text-white'
+                : 'text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)]'
+            }`
+          }
+        >
+          <TrendingDown size={16} />
+          Burndown
         </NavLink>
       </nav>
 

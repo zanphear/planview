@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Inbox, ChevronDown, ChevronUp, Plus, GripVertical, X } from 'lucide-react';
+import { Inbox, ChevronDown, ChevronUp, Plus, GripVertical, X, FileText } from 'lucide-react';
 import { tasksApi, type Task } from '../../api/tasks';
+import { templatesApi, type TaskTemplate } from '../../api/templates';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
 import { useAuthStore } from '../../stores/authStore';
 import { useUIStore } from '../../stores/uiStore';
@@ -14,6 +15,8 @@ export function Taskbox() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTaskName, setNewTaskName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [templates, setTemplates] = useState<TaskTemplate[]>([]);
+  const [showTemplates, setShowTemplates] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const fetchUnscheduled = useCallback(async () => {
@@ -31,8 +34,11 @@ export function Taskbox() {
   useEffect(() => {
     if (taskboxOpen) {
       fetchUnscheduled();
+      if (workspace) {
+        templatesApi.list(workspace.id).then((res) => setTemplates(res.data)).catch(() => {});
+      }
     }
-  }, [taskboxOpen, fetchUnscheduled]);
+  }, [taskboxOpen, fetchUnscheduled, workspace]);
 
   const handleCreate = async () => {
     if (!workspace || !newTaskName.trim()) return;
@@ -135,6 +141,38 @@ export function Taskbox() {
         ))}
       </div>
 
+      {/* Templates dropdown */}
+      {showTemplates && templates.length > 0 && (
+        <div className="px-3 py-2 border-t space-y-1 max-h-40 overflow-y-auto" style={{ borderColor: 'var(--color-border)' }}>
+          <p className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--color-text-secondary)' }}>
+            Create from template
+          </p>
+          {templates.map((tpl) => (
+            <button
+              key={tpl.id}
+              onClick={async () => {
+                if (!workspace) return;
+                const { data } = await tasksApi.create(workspace.id, {
+                  name: tpl.name,
+                  description: tpl.description,
+                  colour: tpl.colour,
+                  status: tpl.status,
+                  time_estimate_minutes: tpl.time_estimate_minutes,
+                  assignee_ids: user ? [user.id] : [],
+                });
+                setTasks((prev) => [...prev, data]);
+                setShowTemplates(false);
+              }}
+              className="w-full text-left px-2 py-1.5 text-sm rounded-lg hover:bg-[var(--color-grey-1)] transition-colors truncate"
+              style={{ color: 'var(--color-text)' }}
+            >
+              {tpl.colour && <span className="inline-block w-2 h-2 rounded-full mr-1.5" style={{ backgroundColor: tpl.colour }} />}
+              {tpl.name}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Quick add */}
       <div className="px-3 py-2 border-t" style={{ borderColor: 'var(--color-border)' }}>
         <div className="flex items-center gap-2">
@@ -147,6 +185,16 @@ export function Taskbox() {
             className="flex-1 text-sm px-2 py-1.5 border rounded-lg outline-none focus:ring-1"
             style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
           />
+          {templates.length > 0 && (
+            <button
+              onClick={() => setShowTemplates((s) => !s)}
+              className="p-1.5 rounded-lg hover:bg-[var(--color-grey-1)]"
+              style={{ color: showTemplates ? 'var(--color-primary)' : 'var(--color-text-secondary)' }}
+              title="Create from template"
+            >
+              <FileText size={14} />
+            </button>
+          )}
           <button
             onClick={handleCreate}
             disabled={!newTaskName.trim()}

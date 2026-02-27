@@ -26,6 +26,13 @@ class Settings(BaseSettings):
     # Holidays
     holidays_country: str = "GB"
 
+    # Email / SMTP (optional)
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from: str = "noreply@planview.local"
+
     # App
     app_name: str = "Planview"
     app_version: str = "1.0.0"

@@ -5,7 +5,7 @@ interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, totpCode?: string) => Promise<void>;
   register: (name: string, email: string, password: string, workspaceName?: string) => Promise<void>;
   logout: () => void;
   fetchMe: () => Promise<void>;
@@ -16,8 +16,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   isAuthenticated: !!localStorage.getItem('access_token'),
   isLoading: false,
 
-  login: async (email, password) => {
-    const { data } = await authApi.login({ email, password });
+  login: async (email, password, totpCode) => {
+    const { data } = await authApi.login({ email, password, totp_code: totpCode });
     localStorage.setItem('access_token', data.access_token);
     localStorage.setItem('refresh_token', data.refresh_token);
     set({ isAuthenticated: true });

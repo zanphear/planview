@@ -15,6 +15,10 @@ from app.models.notification import Notification
 from app.models.sharing import SharedTimeline
 from app.models.time_off import TimeOff
 from app.models.activity import Activity
+from app.models.task_dependency import TaskDependency
+from app.models.custom_field import CustomField, CustomFieldValue
+from app.models.task_template import TaskTemplate
+from app.models.webhook import Webhook, WebhookLog
 
 __all__ = [
     "Base",
@@ -37,4 +41,10 @@ __all__ = [
     "SharedTimeline",
     "TimeOff",
     "Activity",
+    "TaskDependency",
+    "CustomField",
+    "CustomFieldValue",
+    "TaskTemplate",
+    "Webhook",
+    "WebhookLog",
 ]

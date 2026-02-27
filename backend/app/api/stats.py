@@ -164,3 +164,73 @@ async def get_workspace_stats(
         "projects": projects,
         "workload": workload,
     }
+
+
+@router.get("/burndown")
+async def get_burndown(
+    workspace_id: uuid.UUID,
+    days: int = 30,
+    project_id: uuid.UUID | None = None,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return daily created vs completed counts for burndown chart."""
+    today = date.today()
+    start = today - timedelta(days=days)
+
+    base_filter = [Task.workspace_id == workspace_id]
+    if project_id:
+        base_filter.append(Task.project_id == project_id)
+
+    # Created per day
+    created_q = (
+        select(
+            func.date_trunc("day", Task.created_at).label("day"),
+            func.count(Task.id).label("count"),
+        )
+        .where(*base_filter, Task.created_at >= start)
+        .group_by("day")
+        .order_by("day")
+    )
+    created_rows = await db.execute(created_q)
+    created_map = {str(r.day.date()): r.count for r in created_rows.all()}
+
+    # Completed per day (using updated_at as proxy)
+    completed_q = (
+        select(
+            func.date_trunc("day", Task.updated_at).label("day"),
+            func.count(Task.id).label("count"),
+        )
+        .where(*base_filter, Task.status == "done", Task.updated_at >= start)
+        .group_by("day")
+        .order_by("day")
+    )
+    completed_rows = await db.execute(completed_q)
+    completed_map = {str(r.day.date()): r.count for r in completed_rows.all()}
+
+    # Build daily series
+    points = []
+    current = start
+    remaining = 0
+    # Get initial count of open tasks before start date
+    initial_q = (
+        select(func.count(Task.id))
+        .where(*base_filter, Task.created_at < start, Task.status != "done")
+    )
+    initial_result = await db.execute(initial_q)
+    remaining = initial_result.scalar() or 0
+
+    while current <= today:
+        key = str(current)
+        created_today = created_map.get(key, 0)
+        completed_today = completed_map.get(key, 0)
+        remaining = remaining + created_today - completed_today
+        points.append({
+            "date": key,
+            "created": created_today,
+            "completed": completed_today,
+            "remaining": max(0, remaining),
+        })
+        current += timedelta(days=1)
+
+    return {"points": points, "days": days}

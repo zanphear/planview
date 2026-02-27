@@ -14,6 +14,8 @@ import { RichTextEditor } from './RichTextEditor';
 import { TagPicker } from './TagPicker';
 import { TaskSubtasks } from './TaskSubtasks';
 import { RecurrencePicker } from './RecurrencePicker';
+import { DependencyPicker } from './DependencyPicker';
+import { CustomFieldsEditor } from './CustomFieldsEditor';
 import { useWSEvent } from '../../hooks/WebSocketContext';
 import { useAuthStore } from '../../stores/authStore';
 import type { User } from '../../api/users';
@@ -263,6 +265,12 @@ export function TaskDetail({ task: initialTask, members, onClose }: TaskDetailPr
             }}
           />
         </div>
+
+        {/* Dependencies */}
+        <DependencyPicker taskId={task.id} />
+
+        {/* Custom Fields */}
+        <CustomFieldsEditor taskId={task.id} />
 
         {/* Subtasks */}
         <TaskSubtasks

@@ -25,7 +25,7 @@ export const authApi = {
   register: (data: { name: string; email: string; password: string; workspace_name?: string }) =>
     api.post<TokenResponse>('/auth/register', data),
 
-  login: (data: { email: string; password: string }) =>
+  login: (data: { email: string; password: string; totp_code?: string }) =>
     api.post<TokenResponse>('/auth/login', data),
 
   refresh: (refresh_token: string) =>

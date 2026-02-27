@@ -1,16 +1,20 @@
 import { useState, useEffect, useRef } from 'react';
-import { User, Palette, Bell, Shield, LogOut, Sun, Moon, Users, UserPlus, Trash2, Copy, Check, Download, Upload, AlertTriangle } from 'lucide-react';
+import { User, Palette, Bell, Shield, LogOut, Sun, Moon, Users, UserPlus, Trash2, Copy, Check, Download, Upload, AlertTriangle, Webhook, Lock, Sliders, Plus } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { useWorkspaceStore } from '../stores/workspaceStore';
 import { useUIStore } from '../stores/uiStore';
 import { authApi, membersApi, type User as UserType } from '../api/users';
 import { workspacesApi } from '../api/workspaces';
 import { importsApi } from '../api/imports';
+import { webhooksApi, type Webhook as WebhookType } from '../api/webhooks';
+import { customFieldsApi, type CustomField } from '../api/customFields';
+import { templatesApi, type TaskTemplate } from '../api/templates';
+import { api } from '../api/client';
 import { ColourPicker } from '../components/task/ColourPicker';
 import { Avatar } from '../components/shared/Avatar';
 import { Toast } from '../components/shared/Toast';
 
-type Tab = 'profile' | 'workspace' | 'members' | 'appearance' | 'notifications' | 'data';
+type Tab = 'profile' | 'workspace' | 'members' | 'appearance' | 'notifications' | 'data' | 'security' | 'webhooks' | 'fields' | 'templates';
 
 export function SettingsPage() {
   const user = useAuthStore((s) => s.user);
@@ -99,6 +103,10 @@ export function SettingsPage() {
     { id: 'appearance', label: 'Appearance', icon: <Palette size={16} /> },
     { id: 'notifications', label: 'Notifications', icon: <Bell size={16} /> },
     { id: 'data', label: 'Import / Export', icon: <Download size={16} /> },
+    { id: 'security', label: 'Security', icon: <Lock size={16} /> },
+    { id: 'webhooks', label: 'Webhooks', icon: <Webhook size={16} /> },
+    { id: 'fields', label: 'Custom Fields', icon: <Sliders size={16} /> },
+    { id: 'templates', label: 'Templates', icon: <Copy size={16} /> },
   ];
 
   return (
@@ -423,6 +431,22 @@ export function SettingsPage() {
 
           {tab === 'data' && (
             <DataTab workspaceId={workspace?.id} />
+          )}
+
+          {tab === 'security' && (
+            <TwoFactorTab />
+          )}
+
+          {tab === 'webhooks' && (
+            <WebhooksTab workspaceId={workspace?.id} />
+          )}
+
+          {tab === 'fields' && (
+            <CustomFieldsTab workspaceId={workspace?.id} />
+          )}
+
+          {tab === 'templates' && (
+            <TemplatesTab workspaceId={workspace?.id} />
           )}
         </div>
       </div>
@@ -773,6 +797,563 @@ function DataTab({ workspaceId }: { workspaceId?: string }) {
             {importResult}
           </p>
         )}
+      </div>
+    </div>
+  );
+}
+
+function TwoFactorTab() {
+  const [setupData, setSetupData] = useState<{ secret: string; qr_svg: string } | null>(null);
+  const [code, setCode] = useState('');
+  const [enabled, setEnabled] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const user = useAuthStore((s) => s.user);
+
+  useEffect(() => {
+    setEnabled(!!(user as unknown as Record<string, unknown>)?.totp_enabled);
+  }, [user]);
+
+  const handleSetup = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data } = await api.post('/auth/2fa/setup');
+      setSetupData(data);
+    } catch {
+      setError('Failed to set up 2FA');
+    }
+    setLoading(false);
+  };
+
+  const handleVerify = async () => {
+    if (!code) return;
+    setLoading(true);
+    setError(null);
+    try {
+      await api.post('/auth/2fa/verify', { code });
+      setEnabled(true);
+      setSetupData(null);
+      setCode('');
+      Toast.show('Two-factor authentication enabled');
+    } catch {
+      setError('Invalid code. Try again.');
+    }
+    setLoading(false);
+  };
+
+  const handleDisable = async () => {
+    if (!code) return;
+    setLoading(true);
+    setError(null);
+    try {
+      await api.post('/auth/2fa/disable', { code });
+      setEnabled(false);
+      setCode('');
+      Toast.show('Two-factor authentication disabled');
+    } catch {
+      setError('Invalid code. Try again.');
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="space-y-5">
+      <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>Two-Factor Authentication</h3>
+
+      {enabled && !setupData && (
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-2 h-2 rounded-full bg-green-500" />
+            <span className="text-sm font-medium" style={{ color: 'var(--color-success)' }}>2FA is enabled</span>
+          </div>
+          <p className="text-xs mb-3" style={{ color: 'var(--color-text-secondary)' }}>
+            Enter your current 2FA code to disable it:
+          </p>
+          <div className="flex items-center gap-2">
+            <input
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              placeholder="000000"
+              maxLength={6}
+              className="w-32 px-3 py-2 text-center font-mono border rounded-lg text-sm outline-none"
+              style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+            />
+            <button
+              onClick={handleDisable}
+              disabled={loading || code.length !== 6}
+              className="px-4 py-2 text-sm text-red-600 border border-red-300 rounded-lg disabled:opacity-50"
+            >
+              Disable 2FA
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!enabled && !setupData && (
+        <div>
+          <p className="text-sm mb-3" style={{ color: 'var(--color-text-secondary)' }}>
+            Add an extra layer of security to your account with time-based one-time passwords (TOTP).
+          </p>
+          <button
+            onClick={handleSetup}
+            disabled={loading}
+            className="px-4 py-2 text-white rounded-lg text-sm font-medium disabled:opacity-50"
+            style={{ backgroundColor: 'var(--color-primary)' }}
+          >
+            {loading ? 'Setting up...' : 'Enable 2FA'}
+          </button>
+        </div>
+      )}
+
+      {setupData && (
+        <div className="space-y-4">
+          <p className="text-sm" style={{ color: 'var(--color-text)' }}>
+            Scan this QR code with your authenticator app:
+          </p>
+          <div
+            className="inline-block p-4 rounded-lg"
+            style={{ backgroundColor: 'white' }}
+            dangerouslySetInnerHTML={{ __html: setupData.qr_svg }}
+          />
+          <div>
+            <p className="text-xs mb-1" style={{ color: 'var(--color-text-secondary)' }}>Or enter this code manually:</p>
+            <code className="text-sm font-mono px-2 py-1 rounded" style={{ backgroundColor: 'var(--color-grey-1)', color: 'var(--color-text)' }}>
+              {setupData.secret}
+            </code>
+          </div>
+          <div>
+            <p className="text-sm mb-2" style={{ color: 'var(--color-text)' }}>Enter the code from your app to verify:</p>
+            <div className="flex items-center gap-2">
+              <input
+                value={code}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="000000"
+                maxLength={6}
+                className="w-32 px-3 py-2 text-center font-mono border rounded-lg text-sm outline-none"
+                style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+              />
+              <button
+                onClick={handleVerify}
+                disabled={loading || code.length !== 6}
+                className="px-4 py-2 text-white rounded-lg text-sm font-medium disabled:opacity-50"
+                style={{ backgroundColor: 'var(--color-primary)' }}
+              >
+                Verify & Enable
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {error && <p className="text-xs text-red-500">{error}</p>}
+    </div>
+  );
+}
+
+function WebhooksTab({ workspaceId }: { workspaceId?: string }) {
+  const [webhooks, setWebhooks] = useState<WebhookType[]>([]);
+  const [adding, setAdding] = useState(false);
+  const [name, setName] = useState('');
+  const [url, setUrl] = useState('');
+  const [events, setEvents] = useState('');
+
+  useEffect(() => {
+    if (!workspaceId) return;
+    webhooksApi.list(workspaceId).then((res) => setWebhooks(res.data));
+  }, [workspaceId]);
+
+  const handleCreate = async () => {
+    if (!workspaceId || !name.trim() || !url.trim()) return;
+    try {
+      const eventList = events.trim() ? events.split(',').map((e) => e.trim()) : undefined;
+      const { data } = await webhooksApi.create(workspaceId, { name: name.trim(), url: url.trim(), events: eventList });
+      setWebhooks((prev) => [data, ...prev]);
+      setAdding(false);
+      setName('');
+      setUrl('');
+      setEvents('');
+      Toast.show('Webhook created');
+    } catch {
+      Toast.show('Failed to create webhook');
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!workspaceId) return;
+    await webhooksApi.delete(workspaceId, id);
+    setWebhooks((prev) => prev.filter((w) => w.id !== id));
+    Toast.show('Webhook deleted');
+  };
+
+  const handleToggle = async (wh: WebhookType) => {
+    if (!workspaceId) return;
+    const { data } = await webhooksApi.update(workspaceId, wh.id, { is_active: !wh.is_active });
+    setWebhooks((prev) => prev.map((w) => (w.id === data.id ? data : w)));
+  };
+
+  const AVAILABLE_EVENTS = [
+    'task.created', 'task.updated', 'task.deleted',
+    'comment.created', 'project.created', 'project.updated',
+  ];
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>Webhooks</h3>
+        <button
+          onClick={() => setAdding(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-white rounded-lg text-sm font-medium"
+          style={{ backgroundColor: 'var(--color-primary)' }}
+        >
+          <Plus size={14} />
+          Add Webhook
+        </button>
+      </div>
+
+      <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+        Webhooks send HTTP POST requests to external URLs when events occur.
+      </p>
+
+      {adding && (
+        <div className="p-4 rounded-lg border space-y-3" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-grey-1)' }}>
+          <input
+            autoFocus
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Webhook name"
+            className="w-full px-3 py-2 text-sm border rounded-lg outline-none"
+            style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+          />
+          <input
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="https://example.com/webhook"
+            className="w-full px-3 py-2 text-sm border rounded-lg outline-none"
+            style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+          />
+          <div>
+            <label className="text-xs mb-1 block" style={{ color: 'var(--color-text-secondary)' }}>
+              Events (comma-separated, blank for all)
+            </label>
+            <input
+              value={events}
+              onChange={(e) => setEvents(e.target.value)}
+              placeholder={AVAILABLE_EVENTS.join(', ')}
+              className="w-full px-3 py-2 text-sm border rounded-lg outline-none"
+              style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+            />
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={handleCreate}
+              disabled={!name.trim() || !url.trim()}
+              className="px-4 py-2 text-white rounded-lg text-sm font-medium disabled:opacity-50"
+              style={{ backgroundColor: 'var(--color-primary)' }}
+            >
+              Create
+            </button>
+            <button
+              onClick={() => setAdding(false)}
+              className="px-3 py-2 text-sm rounded-lg"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {webhooks.length === 0 && !adding && (
+        <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>No webhooks configured.</p>
+      )}
+
+      <div className="space-y-2">
+        {webhooks.map((wh) => (
+          <div
+            key={wh.id}
+            className="flex items-center gap-3 p-3 rounded-lg border"
+            style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)' }}
+          >
+            <div
+              className={`w-2 h-2 rounded-full ${wh.is_active ? 'bg-green-500' : 'bg-gray-400'}`}
+            />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate" style={{ color: 'var(--color-text)' }}>{wh.name}</p>
+              <p className="text-xs truncate" style={{ color: 'var(--color-text-secondary)' }}>{wh.url}</p>
+            </div>
+            <button
+              onClick={() => handleToggle(wh)}
+              className="text-xs px-2 py-1 rounded border"
+              style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}
+            >
+              {wh.is_active ? 'Disable' : 'Enable'}
+            </button>
+            <button
+              onClick={() => handleDelete(wh.id)}
+              className="p-1.5 rounded hover:bg-[var(--color-grey-2)]"
+              style={{ color: 'var(--color-danger, #ef4444)' }}
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CustomFieldsTab({ workspaceId }: { workspaceId?: string }) {
+  const [fields, setFields] = useState<CustomField[]>([]);
+  const [adding, setAdding] = useState(false);
+  const [name, setName] = useState('');
+  const [fieldType, setFieldType] = useState('text');
+  const [options, setOptions] = useState('');
+
+  useEffect(() => {
+    if (!workspaceId) return;
+    customFieldsApi.list(workspaceId).then((res) => setFields(res.data));
+  }, [workspaceId]);
+
+  const handleCreate = async () => {
+    if (!workspaceId || !name.trim()) return;
+    try {
+      const optionsJson = fieldType === 'select' && options.trim()
+        ? JSON.stringify(options.split(',').map((o) => o.trim()))
+        : undefined;
+      const { data } = await customFieldsApi.create(workspaceId, { name: name.trim(), field_type: fieldType, options: optionsJson });
+      setFields((prev) => [...prev, data]);
+      setAdding(false);
+      setName('');
+      setFieldType('text');
+      setOptions('');
+      Toast.show('Custom field created');
+    } catch {
+      Toast.show('Failed to create field');
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!workspaceId) return;
+    await customFieldsApi.delete(workspaceId, id);
+    setFields((prev) => prev.filter((f) => f.id !== id));
+    Toast.show('Custom field deleted');
+  };
+
+  const FIELD_TYPES = [
+    { value: 'text', label: 'Text' },
+    { value: 'number', label: 'Number' },
+    { value: 'date', label: 'Date' },
+    { value: 'select', label: 'Dropdown' },
+    { value: 'checkbox', label: 'Checkbox' },
+  ];
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>Custom Fields</h3>
+        <button
+          onClick={() => setAdding(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-white rounded-lg text-sm font-medium"
+          style={{ backgroundColor: 'var(--color-primary)' }}
+        >
+          <Plus size={14} />
+          Add Field
+        </button>
+      </div>
+
+      <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+        Custom fields appear on all tasks in this workspace. Values are set per-task in the task detail panel.
+      </p>
+
+      {adding && (
+        <div className="p-4 rounded-lg border space-y-3" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-grey-1)' }}>
+          <input
+            autoFocus
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Field name"
+            className="w-full px-3 py-2 text-sm border rounded-lg outline-none"
+            style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+          />
+          <select
+            value={fieldType}
+            onChange={(e) => setFieldType(e.target.value)}
+            className="w-full px-3 py-2 text-sm border rounded-lg outline-none"
+            style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+          >
+            {FIELD_TYPES.map((t) => (
+              <option key={t.value} value={t.value}>{t.label}</option>
+            ))}
+          </select>
+          {fieldType === 'select' && (
+            <input
+              value={options}
+              onChange={(e) => setOptions(e.target.value)}
+              placeholder="Option 1, Option 2, Option 3"
+              className="w-full px-3 py-2 text-sm border rounded-lg outline-none"
+              style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+            />
+          )}
+          <div className="flex gap-2">
+            <button
+              onClick={handleCreate}
+              disabled={!name.trim()}
+              className="px-4 py-2 text-white rounded-lg text-sm font-medium disabled:opacity-50"
+              style={{ backgroundColor: 'var(--color-primary)' }}
+            >
+              Create
+            </button>
+            <button
+              onClick={() => setAdding(false)}
+              className="px-3 py-2 text-sm rounded-lg"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {fields.length === 0 && !adding && (
+        <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>No custom fields defined.</p>
+      )}
+
+      <div className="space-y-2">
+        {fields.map((f) => (
+          <div
+            key={f.id}
+            className="flex items-center gap-3 p-3 rounded-lg border"
+            style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)' }}
+          >
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>{f.name}</p>
+              <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                {FIELD_TYPES.find((t) => t.value === f.field_type)?.label || f.field_type}
+                {f.options && ` — ${JSON.parse(f.options).join(', ')}`}
+              </p>
+            </div>
+            <button
+              onClick={() => handleDelete(f.id)}
+              className="p-1.5 rounded hover:bg-[var(--color-grey-2)]"
+              style={{ color: 'var(--color-danger, #ef4444)' }}
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TemplatesTab({ workspaceId }: { workspaceId?: string }) {
+  const [templates, setTemplates] = useState<TaskTemplate[]>([]);
+  const [adding, setAdding] = useState(false);
+  const [tplName, setTplName] = useState('');
+  const [description, setDescription] = useState('');
+  const [status, setStatus] = useState('todo');
+  const [estimate, setEstimate] = useState('');
+
+  useEffect(() => {
+    if (!workspaceId) return;
+    templatesApi.list(workspaceId).then((res) => setTemplates(res.data));
+  }, [workspaceId]);
+
+  const handleCreate = async () => {
+    if (!workspaceId || !tplName.trim()) return;
+    try {
+      const { data } = await templatesApi.create(workspaceId, {
+        name: tplName.trim(),
+        description: description.trim() || null,
+        status,
+        time_estimate_minutes: estimate ? parseInt(estimate) : null,
+      });
+      setTemplates((prev) => [...prev, data]);
+      setAdding(false);
+      setTplName('');
+      setDescription('');
+      setStatus('todo');
+      setEstimate('');
+      Toast.show('Template created');
+    } catch {
+      Toast.show('Failed to create template');
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!workspaceId) return;
+    await templatesApi.delete(workspaceId, id);
+    setTemplates((prev) => prev.filter((t) => t.id !== id));
+    Toast.show('Template deleted');
+  };
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>Task Templates</h3>
+        <button
+          onClick={() => setAdding(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-white rounded-lg text-sm font-medium"
+          style={{ backgroundColor: 'var(--color-primary)' }}
+        >
+          <Plus size={14} />
+          Add Template
+        </button>
+      </div>
+      <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+        Templates let you quickly create tasks with pre-filled fields. Available in the Taskbox.
+      </p>
+      {adding && (
+        <div className="p-4 rounded-lg border space-y-3" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-grey-1)' }}>
+          <input autoFocus value={tplName} onChange={(e) => setTplName(e.target.value)} placeholder="Template name"
+            className="w-full px-3 py-2 text-sm border rounded-lg outline-none"
+            style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }} />
+          <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description (optional)" rows={2}
+            className="w-full px-3 py-2 text-sm border rounded-lg outline-none resize-none"
+            style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }} />
+          <div className="grid grid-cols-2 gap-3">
+            <select value={status} onChange={(e) => setStatus(e.target.value)}
+              className="px-3 py-2 text-sm border rounded-lg outline-none"
+              style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}>
+              <option value="todo">To Do</option>
+              <option value="in_progress">In Progress</option>
+              <option value="blocked">Blocked</option>
+            </select>
+            <input type="number" value={estimate} onChange={(e) => setEstimate(e.target.value)} placeholder="Estimate (mins)"
+              className="px-3 py-2 text-sm border rounded-lg outline-none"
+              style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }} />
+          </div>
+          <div className="flex gap-2">
+            <button onClick={handleCreate} disabled={!tplName.trim()}
+              className="px-4 py-2 text-white rounded-lg text-sm font-medium disabled:opacity-50"
+              style={{ backgroundColor: 'var(--color-primary)' }}>Create</button>
+            <button onClick={() => setAdding(false)} className="px-3 py-2 text-sm rounded-lg"
+              style={{ color: 'var(--color-text-secondary)' }}>Cancel</button>
+          </div>
+        </div>
+      )}
+      {templates.length === 0 && !adding && (
+        <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>No templates created yet.</p>
+      )}
+      <div className="space-y-2">
+        {templates.map((tpl) => (
+          <div key={tpl.id} className="flex items-center gap-3 p-3 rounded-lg border"
+            style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)' }}>
+            {tpl.colour && <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: tpl.colour }} />}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>{tpl.name}</p>
+              <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                {tpl.status}{tpl.time_estimate_minutes && ` · ${tpl.time_estimate_minutes}m`}
+              </p>
+            </div>
+            <button onClick={() => handleDelete(tpl.id)} className="p-1.5 rounded hover:bg-[var(--color-grey-2)]"
+              style={{ color: 'var(--color-danger, #ef4444)' }}>
+              <Trash2 size={14} />
+            </button>
+          </div>
+        ))}
       </div>
     </div>
   );

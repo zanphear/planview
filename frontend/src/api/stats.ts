@@ -28,7 +28,24 @@ export interface WorkspaceStats {
   workload: WorkloadStat[];
 }
 
+export interface BurndownPoint {
+  date: string;
+  created: number;
+  completed: number;
+  remaining: number;
+}
+
+export interface BurndownData {
+  points: BurndownPoint[];
+  days: number;
+}
+
 export const statsApi = {
   get: (workspaceId: string) =>
     api.get<WorkspaceStats>(`/workspaces/${workspaceId}/stats`),
+
+  burndown: (workspaceId: string, days?: number, projectId?: string) =>
+    api.get<BurndownData>(`/workspaces/${workspaceId}/stats/burndown`, {
+      params: { days: days || 30, ...(projectId ? { project_id: projectId } : {}) },
+    }),
 };

@@ -1,9 +1,9 @@
 from fastapi import APIRouter
 
 from app.api import (
-    activity, attachments, auth, clients, comments, export, imports, milestones,
-    notifications, projects, sharing, stats, tags, tasks, teams, time_off,
-    timeline, users, workspaces,
+    activity, attachments, auth, clients, comments, custom_fields, dependencies,
+    export, imports, milestones, notifications, projects, sharing, stats, tags,
+    tasks, teams, templates, time_off, timeline, users, webhooks, workspaces,
 )
 
 api_router = APIRouter(prefix="/api/v1")
@@ -26,3 +26,7 @@ api_router.include_router(time_off.router)
 api_router.include_router(tags.router)
 api_router.include_router(stats.router)
 api_router.include_router(activity.router)
+api_router.include_router(dependencies.router)
+api_router.include_router(custom_fields.router)
+api_router.include_router(templates.router)
+api_router.include_router(webhooks.router)

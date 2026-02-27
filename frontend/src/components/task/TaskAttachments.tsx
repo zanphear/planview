@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { Paperclip, Upload, Trash2, Download, FileText, Image, File as FileIcon } from 'lucide-react';
+import { Paperclip, Upload, Trash2, Download, FileText, Image, File as FileIcon, Eye } from 'lucide-react';
 import { attachmentsApi, type Attachment } from '../../api/attachments';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
 import { useAuthStore } from '../../stores/authStore';
+import { FilePreview } from './FilePreview';
 
 interface TaskAttachmentsProps {
   taskId: string;
@@ -14,6 +15,7 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [previewAtt, setPreviewAtt] = useState<Attachment | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchAttachments = useCallback(async () => {
@@ -53,6 +55,10 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
     if (mimeType.includes('pdf')) return <FileText size={16} style={{ color: 'var(--color-danger)' }} />;
     return <FileIcon size={16} style={{ color: 'var(--color-text-secondary)' }} />;
   };
+
+  const canPreview = (mimeType: string) =>
+    mimeType.startsWith('image/') || mimeType === 'application/pdf' ||
+    mimeType.startsWith('video/') || mimeType.startsWith('audio/');
 
   return (
     <div>
@@ -102,6 +108,16 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
             <span className="flex-1 truncate" style={{ color: 'var(--color-text)' }}>{att.filename}</span>
             <span className="text-xs shrink-0" style={{ color: 'var(--color-text-secondary)' }}>{formatSize(att.file_size)}</span>
             <div className="hidden group-hover:flex items-center gap-1">
+              {canPreview(att.mime_type) && workspace && (
+                <button
+                  onClick={() => setPreviewAtt(att)}
+                  className="p-0.5 hover:opacity-80"
+                  style={{ color: 'var(--color-primary)' }}
+                  title="Preview"
+                >
+                  <Eye size={14} />
+                </button>
+              )}
               {workspace && (
                 <a
                   href={attachmentsApi.downloadUrl(workspace.id, taskId, att.id)}
@@ -126,6 +142,16 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
           </div>
         ))}
       </div>
+
+      {/* File preview modal */}
+      {previewAtt && workspace && (
+        <FilePreview
+          url={attachmentsApi.downloadUrl(workspace.id, taskId, previewAtt.id)}
+          filename={previewAtt.filename}
+          mimeType={previewAtt.mime_type}
+          onClose={() => setPreviewAtt(null)}
+        />
+      )}
     </div>
   );
 }

@@ -7,6 +7,8 @@ export function LoginPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [totpCode, setTotpCode] = useState('');
+  const [needs2fa, setNeeds2fa] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -23,12 +25,17 @@ export function LoginPage() {
       if (isRegister) {
         await register(name, email, password);
       } else {
-        await login(email, password);
+        await login(email, password, totpCode || undefined);
       }
       navigate('/');
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
-      setError(msg || 'Something went wrong');
+      const msg = (err as { response?: { data?: { detail?: string }; status?: number } })?.response?.data?.detail;
+      if (msg === '2FA code required') {
+        setNeeds2fa(true);
+        setError('');
+      } else {
+        setError(msg || 'Something went wrong');
+      }
     } finally {
       setLoading(false);
     }
@@ -91,6 +98,22 @@ export function LoginPage() {
               placeholder="••••••••"
             />
           </div>
+
+          {needs2fa && !isRegister && (
+            <div>
+              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>2FA Code</label>
+              <input
+                type="text"
+                value={totpCode}
+                onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                maxLength={6}
+                autoFocus
+                className="w-full px-3 py-2.5 border rounded-lg focus:ring-2 outline-none transition-shadow text-center font-mono tracking-widest"
+                style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
+                placeholder="000000"
+              />
+            </div>
+          )}
 
           {error && (
             <div className="text-sm px-3 py-2 rounded-lg" style={{ backgroundColor: 'rgba(228, 67, 50, 0.1)', color: 'var(--color-danger)' }}>{error}</div>
