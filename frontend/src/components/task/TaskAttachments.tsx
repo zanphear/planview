@@ -49,23 +49,25 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
   };
 
   const getIcon = (mimeType: string) => {
-    if (mimeType.startsWith('image/')) return <Image size={16} className="text-blue-500" />;
-    if (mimeType.includes('pdf')) return <FileText size={16} className="text-red-500" />;
-    return <FileIcon size={16} className="text-gray-500" />;
+    if (mimeType.startsWith('image/')) return <Image size={16} style={{ color: 'var(--color-primary)' }} />;
+    if (mimeType.includes('pdf')) return <FileText size={16} style={{ color: 'var(--color-danger)' }} />;
+    return <FileIcon size={16} style={{ color: 'var(--color-text-secondary)' }} />;
   };
 
   return (
     <div>
-      <label className="block text-xs font-medium text-gray-500 mb-2">
+      <label className="block text-xs font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
         <Paperclip size={12} className="inline mr-1" />
         Attachments
       </label>
 
       {/* Drop zone */}
       <div
-        className={`border-2 border-dashed rounded-lg p-3 text-center cursor-pointer transition-colors mb-3 ${
-          dragOver ? 'border-blue-400 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
-        }`}
+        className="border-2 border-dashed rounded-lg p-3 text-center cursor-pointer transition-colors mb-3"
+        style={{
+          borderColor: dragOver ? 'var(--color-primary)' : 'var(--color-border)',
+          backgroundColor: dragOver ? 'var(--color-primary-light)' : undefined,
+        }}
         onClick={() => fileInputRef.current?.click()}
         onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
@@ -75,8 +77,8 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
           handleUpload(e.dataTransfer.files);
         }}
       >
-        <Upload size={16} className="mx-auto text-gray-400 mb-1" />
-        <p className="text-xs text-gray-400">
+        <Upload size={16} className="mx-auto mb-1" style={{ color: 'var(--color-text-secondary)' }} />
+        <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
           {uploading ? 'Uploading...' : 'Drop files here or click to upload'}
         </p>
         <input
@@ -93,18 +95,20 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
         {attachments.map((att) => (
           <div
             key={att.id}
-            className="flex items-center gap-2 px-2 py-1.5 bg-gray-50 rounded-lg group text-sm"
+            className="flex items-center gap-2 px-2 py-1.5 rounded-lg group text-sm"
+            style={{ backgroundColor: 'var(--color-grey-1)' }}
           >
             {getIcon(att.mime_type)}
-            <span className="flex-1 truncate text-gray-700">{att.filename}</span>
-            <span className="text-xs text-gray-400 shrink-0">{formatSize(att.file_size)}</span>
+            <span className="flex-1 truncate" style={{ color: 'var(--color-text)' }}>{att.filename}</span>
+            <span className="text-xs shrink-0" style={{ color: 'var(--color-text-secondary)' }}>{formatSize(att.file_size)}</span>
             <div className="hidden group-hover:flex items-center gap-1">
               {workspace && (
                 <a
                   href={attachmentsApi.downloadUrl(workspace.id, taskId, att.id)}
                   target="_blank"
                   rel="noopener"
-                  className="p-0.5 text-gray-400 hover:text-blue-500"
+                  className="p-0.5 hover:opacity-80"
+                  style={{ color: 'var(--color-primary)' }}
                 >
                   <Download size={14} />
                 </a>
@@ -112,7 +116,8 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
               {att.uploaded_by === user?.id && (
                 <button
                   onClick={() => handleDelete(att.id)}
-                  className="p-0.5 text-gray-400 hover:text-red-500"
+                  className="p-0.5 hover:text-[var(--color-danger)]"
+                  style={{ color: 'var(--color-text-secondary)' }}
                 >
                   <Trash2 size={14} />
                 </button>

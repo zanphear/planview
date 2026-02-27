@@ -1,8 +1,9 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { Board } from '../components/board/Board';
 import { TaskDetail } from '../components/task/TaskDetail';
+import { FilterBar, type FilterState } from '../components/shared/FilterBar';
 import { useWorkspaceStore } from '../stores/workspaceStore';
 import { useTaskStore } from '../stores/taskStore';
 import { useProjectStore } from '../stores/projectStore';
@@ -21,6 +22,7 @@ export function ProjectBoardPage() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [members, setMembers] = useState<User[]>([]);
   const [newTaskName, setNewTaskName] = useState('');
+  const [filters, setFilters] = useState<FilterState>({ status: null, assignee: null });
 
   const userId = useAuthStore((s) => s.user?.id);
   const updateTaskInStore = useTaskStore((s) => s.updateTask);
@@ -68,6 +70,13 @@ export function ProjectBoardPage() {
     setNewTaskName('');
   }, [workspace, projectId, newTaskName, addTask]);
 
+  const filteredTasks = useMemo(() => {
+    let result = tasks;
+    if (filters.status) result = result.filter((t) => t.status === filters.status);
+    if (filters.assignee) result = result.filter((t) => t.assignees.some((a) => a.id === filters.assignee));
+    return result;
+  }, [tasks, filters]);
+
   const handleTaskClick = useCallback(
     (task: Task) => {
       // Refresh from store to get latest
@@ -85,25 +94,28 @@ export function ProjectBoardPage() {
           {project && (
             <>
               <div className="w-4 h-4 rounded" style={{ backgroundColor: project.colour }} />
-              <h2 className="text-xl font-semibold">{project.name}</h2>
+              <h2 className="text-xl font-semibold" style={{ color: 'var(--color-text)' }}>{project.name}</h2>
             </>
           )}
         </div>
 
-        {/* Quick add */}
-        <div className="flex items-center gap-2">
+        {/* Filters + Quick add */}
+        <div className="flex items-center gap-3">
+          <FilterBar filters={filters} onChange={setFilters} members={members} />
           <input
             type="text"
             value={newTaskName}
             onChange={(e) => setNewTaskName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleCreateTask()}
             placeholder="New task..."
-            className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 w-60"
+            className="px-3 py-1.5 text-sm border rounded-lg outline-none focus:ring-2 w-60"
+            style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
           />
           <button
             onClick={handleCreateTask}
             disabled={!newTaskName.trim()}
-            className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+            className="flex items-center gap-1 px-3 py-1.5 text-white rounded-lg text-sm font-medium disabled:opacity-50 hover:opacity-90"
+            style={{ backgroundColor: 'var(--color-primary)' }}
           >
             <Plus size={16} />
             Add
@@ -113,7 +125,7 @@ export function ProjectBoardPage() {
 
       {/* Board */}
       <div className="flex-1 overflow-hidden">
-        <Board tasks={tasks} onTaskClick={handleTaskClick} />
+        <Board tasks={filteredTasks} onTaskClick={handleTaskClick} />
       </div>
 
       {/* Task detail panel */}

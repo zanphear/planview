@@ -57,7 +57,7 @@ export function Sidebar() {
       style={{ background: 'linear-gradient(180deg, var(--color-sidebar-bg) 0%, #2D1B4E 100%)' }}
     >
       {/* Logo + Workspace */}
-      <div className="px-4 py-3 border-b border-white/10">
+      <div className="px-4 pt-4 pb-3 border-b border-white/10">
         <div className="flex items-center gap-2.5 mb-2 px-1">
           <img src="/logo-white.png" alt="Siemens Energy" className="h-5 opacity-90" />
         </div>

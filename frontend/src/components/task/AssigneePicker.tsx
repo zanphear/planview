@@ -24,11 +24,12 @@ export function AssigneePicker({ members, selectedIds, onChange }: AssigneePicke
           <button
             key={member.id}
             onClick={() => toggle(member.id)}
-            className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-xs transition-colors ${
-              selected
-                ? 'bg-blue-100 text-blue-800 ring-1 ring-blue-300'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
+            className="flex items-center gap-1.5 px-2 py-1 rounded-full text-xs transition-colors"
+            style={{
+              backgroundColor: selected ? 'var(--color-primary-light)' : 'var(--color-grey-2)',
+              color: selected ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+              boxShadow: selected ? 'inset 0 0 0 1px var(--color-primary)' : undefined,
+            }}
           >
             <Avatar name={member.name} initials={member.initials} colour={member.colour} size={20} />
             {member.name}

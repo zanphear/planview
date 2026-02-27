@@ -127,20 +127,22 @@ export function QuickSearch() {
     >
       <div className="absolute inset-0 bg-black/30" />
       <div
-        className="relative bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden"
+        className="relative rounded-xl shadow-2xl w-full max-w-lg overflow-hidden border"
+        style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100">
-          <Search size={18} className="text-gray-400" />
+        <div className="flex items-center gap-3 px-4 py-3 border-b" style={{ borderColor: 'var(--color-border)' }}>
+          <Search size={18} style={{ color: 'var(--color-text-secondary)' }} />
           <input
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Search tasks, projects, teams..."
-            className="flex-1 text-sm outline-none"
+            className="flex-1 text-sm outline-none bg-transparent"
+            style={{ color: 'var(--color-text)' }}
           />
-          <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-gray-600">
+          <button onClick={() => setOpen(false)} style={{ color: 'var(--color-text-secondary)' }} className="hover:opacity-80">
             <X size={16} />
           </button>
         </div>
@@ -151,29 +153,30 @@ export function QuickSearch() {
               <button
                 key={`${r.type}-${r.id}`}
                 onClick={() => handleSelect(r)}
-                className={`w-full text-left px-4 py-2.5 flex items-center gap-3 text-sm hover:bg-gray-50 ${
-                  idx === selectedIdx ? 'bg-blue-50' : ''
-                }`}
+                className="w-full text-left px-4 py-2.5 flex items-center gap-3 text-sm hover:opacity-90"
+                style={{
+                  backgroundColor: idx === selectedIdx ? 'var(--color-primary-light)' : undefined,
+                }}
               >
-                <span className="text-[10px] font-medium uppercase text-gray-400 w-14">
+                <span className="text-[10px] font-medium uppercase w-14" style={{ color: 'var(--color-text-secondary)' }}>
                   {r.type}
                 </span>
-                <span className="flex-1 truncate text-gray-800">{r.name}</span>
-                {r.meta && <span className="text-xs text-gray-400">{r.meta}</span>}
-                <ArrowRight size={14} className="text-gray-300" />
+                <span className="flex-1 truncate" style={{ color: 'var(--color-text)' }}>{r.name}</span>
+                {r.meta && <span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>{r.meta}</span>}
+                <ArrowRight size={14} style={{ color: 'var(--color-text-secondary)' }} />
               </button>
             ))}
           </div>
         )}
 
         {query && results.length === 0 && (
-          <div className="px-4 py-8 text-center text-sm text-gray-400">No results found</div>
+          <div className="px-4 py-8 text-center text-sm" style={{ color: 'var(--color-text-secondary)' }}>No results found</div>
         )}
 
-        <div className="px-4 py-2 border-t border-gray-100 text-[11px] text-gray-400 flex gap-4">
-          <span><kbd className="px-1 py-0.5 bg-gray-100 rounded text-[10px]">↑↓</kbd> Navigate</span>
-          <span><kbd className="px-1 py-0.5 bg-gray-100 rounded text-[10px]">↵</kbd> Select</span>
-          <span><kbd className="px-1 py-0.5 bg-gray-100 rounded text-[10px]">Esc</kbd> Close</span>
+        <div className="px-4 py-2 border-t text-[11px] flex gap-4" style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}>
+          <span><kbd className="px-1 py-0.5 rounded text-[10px]" style={{ backgroundColor: 'var(--color-grey-2)' }}>↑↓</kbd> Navigate</span>
+          <span><kbd className="px-1 py-0.5 rounded text-[10px]" style={{ backgroundColor: 'var(--color-grey-2)' }}>↵</kbd> Select</span>
+          <span><kbd className="px-1 py-0.5 rounded text-[10px]" style={{ backgroundColor: 'var(--color-grey-2)' }}>Esc</kbd> Close</span>
         </div>
       </div>
     </div>

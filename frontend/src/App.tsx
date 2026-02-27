@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAuthStore } from './stores/authStore';
 import { useWorkspaceStore } from './stores/workspaceStore';
 import { useTeamStore } from './stores/teamStore';
@@ -18,6 +18,8 @@ import { SharedTimelinePage } from './pages/SharedTimelinePage';
 import { Sidebar } from './components/layout/Sidebar';
 import { TopBar } from './components/layout/TopBar';
 import { QuickSearch } from './components/layout/QuickSearch';
+import { Taskbox } from './components/taskbox/Taskbox';
+import { KeyboardShortcutsHelp } from './components/shared/KeyboardShortcutsHelp';
 import { Toast } from './components/shared/Toast';
 import { ErrorBoundary } from './components/shared/ErrorBoundary';
 
@@ -31,7 +33,9 @@ function ProtectedLayout() {
   const fetchProjects = useProjectStore((s) => s.fetchProjects);
   const setZoom = useUIStore((s) => s.setZoomLevel);
   const toggleSidebar = useUIStore((s) => s.toggleSidebar);
+  const setTaskboxOpen = useUIStore((s) => s.setTaskboxOpen);
   const incrementUnread = useNotificationStore((s) => s.incrementUnread);
+  const [showShortcuts, setShowShortcuts] = useState(false);
 
   // Global keyboard shortcuts
   const shortcuts = useMemo(() => ({
@@ -40,7 +44,9 @@ function ProtectedLayout() {
     'q': () => setZoom('Q'),
     'a': () => setZoom('A'),
     'mod+b': () => toggleSidebar(),
-  }), [setZoom, toggleSidebar]);
+    'n': () => setTaskboxOpen(true),
+    '?': () => setShowShortcuts((s) => !s),
+  }), [setZoom, toggleSidebar, setTaskboxOpen]);
   useKeyboardShortcuts(shortcuts);
 
   useEffect(() => {
@@ -86,6 +92,8 @@ function ProtectedLayout() {
         </main>
       </div>
       <QuickSearch />
+      <Taskbox />
+      {showShortcuts && <KeyboardShortcutsHelp onClose={() => setShowShortcuts(false)} />}
     </div>
   );
 }

@@ -39,7 +39,6 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
       if (prev.some((c) => c.id === comment.id)) return prev;
       return [...prev, comment];
     });
-    // Auto-scroll to new comment
     setTimeout(() => commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
   }, [taskId]);
 
@@ -93,7 +92,7 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
 
   return (
     <div>
-      <label className="block text-xs font-medium text-gray-500 mb-2">Comments</label>
+      <label className="block text-xs font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>Comments</label>
 
       {/* Comment list */}
       <div className="space-y-3 mb-3">
@@ -106,23 +105,25 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
             />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-800">
+                <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
                   {comment.user?.name || 'Unknown'}
                 </span>
-                <span className="text-xs text-gray-400">{formatTime(comment.created_at)}</span>
+                <span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>{formatTime(comment.created_at)}</span>
                 {comment.user_id === user?.id && (
                   <div className="hidden group-hover:flex items-center gap-1 ml-auto">
                     {editingId === comment.id ? (
                       <>
                         <button
                           onClick={() => handleEditSave(comment.id)}
-                          className="p-0.5 text-green-500 hover:text-green-700"
+                          className="p-0.5"
+                          style={{ color: 'var(--color-success)' }}
                         >
                           <Check size={14} />
                         </button>
                         <button
                           onClick={() => setEditingId(null)}
-                          className="p-0.5 text-gray-400 hover:text-gray-600"
+                          className="p-0.5"
+                          style={{ color: 'var(--color-text-secondary)' }}
                         >
                           <X size={14} />
                         </button>
@@ -131,13 +132,15 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
                       <>
                         <button
                           onClick={() => { setEditingId(comment.id); setEditBody(comment.body); }}
-                          className="p-0.5 text-gray-400 hover:text-gray-600"
+                          className="p-0.5 hover:opacity-80"
+                          style={{ color: 'var(--color-text-secondary)' }}
                         >
                           <Pencil size={14} />
                         </button>
                         <button
                           onClick={() => handleDelete(comment.id)}
-                          className="p-0.5 text-gray-400 hover:text-red-500"
+                          className="p-0.5 hover:text-[var(--color-danger)]"
+                          style={{ color: 'var(--color-text-secondary)' }}
                         >
                           <Trash2 size={14} />
                         </button>
@@ -158,17 +161,18 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
                     }
                     if (e.key === 'Escape') setEditingId(null);
                   }}
-                  className="w-full mt-1 px-2 py-1 text-sm border border-gray-200 rounded resize-none outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full mt-1 px-2 py-1 text-sm border rounded resize-none outline-none focus:ring-1"
+                  style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
                   rows={2}
                 />
               ) : (
-                <p className="text-sm text-gray-700 whitespace-pre-wrap mt-0.5">{comment.body}</p>
+                <p className="text-sm whitespace-pre-wrap mt-0.5" style={{ color: 'var(--color-text)' }}>{comment.body}</p>
               )}
             </div>
           </div>
         ))}
         {comments.length === 0 && (
-          <p className="text-xs text-gray-400 italic">No comments yet</p>
+          <p className="text-xs italic" style={{ color: 'var(--color-text-secondary)' }}>No comments yet</p>
         )}
         <div ref={commentsEndRef} />
       </div>
@@ -179,7 +183,8 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
           value={body}
           onChange={(e) => setBody(e.target.value)}
           placeholder="Write a comment..."
-          className="flex-1 px-3 py-1.5 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
+          className="flex-1 px-3 py-1.5 text-sm border rounded-lg outline-none focus:ring-2"
+          style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();
@@ -190,7 +195,8 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
         <button
           type="submit"
           disabled={!body.trim() || loading}
-          className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="p-2 text-white rounded-lg disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90"
+          style={{ backgroundColor: 'var(--color-primary)' }}
         >
           <Send size={16} />
         </button>

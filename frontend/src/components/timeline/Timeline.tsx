@@ -129,7 +129,7 @@ export function Timeline({ swimlanes, milestones = [], startDate, zoom, onZoomCh
             ))}
 
             {swimlanes.length === 0 && (
-              <div className="flex items-center justify-center h-40 text-gray-400 text-sm">
+              <div className="flex items-center justify-center h-40 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
                 No tasks to display
               </div>
             )}

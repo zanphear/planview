@@ -28,23 +28,23 @@ export function BoardCard({ task, onClick }: BoardCardProps) {
   return (
     <div
       ref={setNodeRef}
-      style={style}
       {...attributes}
       {...listeners}
       onClick={onClick}
-      className="bg-white rounded-lg border border-gray-200 p-3 cursor-pointer hover:shadow-md transition-shadow group"
+      className="rounded-lg border p-3 cursor-pointer hover:shadow-md transition-shadow group"
+      style={{ ...style, backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
     >
       {/* Colour bar */}
       <div className="h-1 rounded-full mb-2" style={{ backgroundColor: colour }} />
 
       {/* Task name */}
-      <p className="text-sm font-medium text-gray-800 mb-2">
+      <p className="text-sm font-medium mb-2" style={{ color: 'var(--color-text)' }}>
         {task.status_emoji && <span className="mr-1">{task.status_emoji}</span>}
         {task.name}
       </p>
 
       {/* Meta row */}
-      <div className="flex items-center justify-between text-xs text-gray-500">
+      <div className="flex items-center justify-between text-xs" style={{ color: 'var(--color-text-secondary)' }}>
         <div className="flex items-center gap-2">
           {task.date_from && (
             <span className="flex items-center gap-1">
@@ -66,7 +66,10 @@ export function BoardCard({ task, onClick }: BoardCardProps) {
             <Avatar key={a.id} name={a.name} initials={a.initials} colour={a.colour} size={22} />
           ))}
           {task.assignees.length > 3 && (
-            <span className="w-[22px] h-[22px] rounded-full bg-gray-200 flex items-center justify-center text-[10px] font-medium text-gray-600">
+            <span
+              className="w-[22px] h-[22px] rounded-full flex items-center justify-center text-[10px] font-medium"
+              style={{ backgroundColor: 'var(--color-grey-2)', color: 'var(--color-text-secondary)' }}
+            >
               +{task.assignees.length - 3}
             </span>
           )}

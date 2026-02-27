@@ -127,10 +127,10 @@ export function ProjectTimelinePage() {
   return (
     <div className="h-full flex flex-col -m-6">
       {project && (
-        <div className="px-6 py-3 bg-white border-b border-gray-200 flex items-center gap-3 shrink-0">
+        <div className="px-6 py-3 bg-[var(--color-surface)] border-b border-[var(--color-border)] flex items-center gap-3 shrink-0">
           <div className="w-4 h-4 rounded" style={{ backgroundColor: project.colour }} />
-          <h2 className="text-lg font-semibold">{project.name}</h2>
-          <span className="text-sm text-gray-400">Timeline</span>
+          <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>{project.name}</h2>
+          <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Timeline</span>
         </div>
       )}
 

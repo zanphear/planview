@@ -51,17 +51,17 @@ export function TaskBar({ task, left, width, columnWidth, isDragging, onClick, o
   const contextItems: ContextMenuItem[] = [
     {
       label: 'To-do',
-      icon: <Circle size={14} className="text-gray-400" />,
+      icon: <Circle size={14} style={{ color: 'var(--color-text-secondary)' }} />,
       onClick: () => onContextAction?.('status:todo', task),
     },
     {
       label: 'In Progress',
-      icon: <Circle size={14} className="text-blue-500" />,
+      icon: <Circle size={14} style={{ color: 'var(--color-primary)' }} />,
       onClick: () => onContextAction?.('status:in_progress', task),
     },
     {
       label: 'Done',
-      icon: <Circle size={14} className="text-green-500" />,
+      icon: <Circle size={14} style={{ color: 'var(--color-success)' }} />,
       onClick: () => onContextAction?.('status:done', task),
     },
     { label: '', separator: true, onClick: () => {} },
@@ -142,7 +142,7 @@ export function TaskBar({ task, left, width, columnWidth, isDragging, onClick, o
 
         {/* Project name (below task, only if room) */}
         {pixelWidth > 100 && task.project && (
-          <div className="absolute -bottom-3 left-0 text-[9px] text-gray-400 truncate" style={{ maxWidth: pixelWidth }}>
+          <div className="absolute -bottom-3 left-0 text-[9px] truncate" style={{ maxWidth: pixelWidth, color: 'var(--color-text-secondary)' }}>
             {task.project.name}
           </div>
         )}

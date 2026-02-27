@@ -59,15 +59,15 @@ export function TimelineSwimlane({ laneId, label, labelColour, tasks, dates, zoo
   return (
     <div
       data-lane-id={laneId}
-      className={`flex border-b transition-colors ${isDropTarget ? 'bg-blue-50 border-blue-200' : 'border-gray-100'}`}
-      style={{ minHeight: swimlaneHeight }}
+      className={`flex border-b transition-colors ${isDropTarget ? 'ring-1 ring-inset ring-[var(--color-primary)]' : ''}`}
+      style={{ minHeight: swimlaneHeight, borderColor: 'var(--color-border)', backgroundColor: isDropTarget ? 'var(--color-primary-light)' : undefined }}
     >
       {/* Label column */}
-      <div className="w-48 shrink-0 border-r border-gray-200 px-3 py-2 flex items-start gap-2">
+      <div className="w-48 shrink-0 border-r px-3 py-2 flex items-start gap-2" style={{ borderColor: 'var(--color-border)' }}>
         {labelColour && (
           <div className="w-2.5 h-2.5 rounded-full shrink-0 mt-1" style={{ backgroundColor: labelColour }} />
         )}
-        <span className="text-sm font-medium text-gray-700 truncate">{label}</span>
+        <span className="text-sm font-medium truncate" style={{ color: 'var(--color-text)' }}>{label}</span>
       </div>
 
       {/* Tasks area */}
@@ -94,8 +94,12 @@ export function TimelineSwimlane({ laneId, label, labelColour, tasks, dates, zoo
             return (
               <div
                 key={i}
-                className={`border-r border-gray-50 ${weekend ? 'bg-gray-50/50' : ''}`}
-                style={{ width: config.columnWidth }}
+                className="border-r"
+                style={{
+                  width: config.columnWidth,
+                  borderColor: 'color-mix(in srgb, var(--color-border) 40%, transparent)',
+                  backgroundColor: weekend ? 'var(--color-grey-1)' : undefined,
+                }}
               />
             );
           })}

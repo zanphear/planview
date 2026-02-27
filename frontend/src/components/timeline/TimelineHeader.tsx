@@ -24,15 +24,15 @@ export function TimelineHeader({ dates, zoom }: TimelineHeaderProps) {
   }
 
   return (
-    <div className="sticky top-0 z-20 bg-white border-b border-gray-200">
+    <div className="sticky top-0 z-20 border-b" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
       {/* Month row */}
       <div className="flex">
-        <div className="w-48 shrink-0 border-r border-gray-200" />
+        <div className="w-48 shrink-0 border-r" style={{ borderColor: 'var(--color-border)' }} />
         {months.map((month, i) => (
           <div
             key={i}
-            className="text-xs font-medium text-gray-500 px-2 py-1 border-r border-gray-100 text-center"
-            style={{ width: month.span * config.columnWidth }}
+            className="text-xs font-medium px-2 py-1 border-r text-center"
+            style={{ width: month.span * config.columnWidth, color: 'var(--color-text-secondary)', borderColor: 'var(--color-border)' }}
           >
             {month.label}
           </div>
@@ -42,14 +42,19 @@ export function TimelineHeader({ dates, zoom }: TimelineHeaderProps) {
       {/* Day row */}
       {(zoom === 'W' || zoom === 'M') && (
         <div className="flex">
-          <div className="w-48 shrink-0 border-r border-gray-200" />
+          <div className="w-48 shrink-0 border-r" style={{ borderColor: 'var(--color-border)' }} />
           {dates.map((date, i) => (
             <div
               key={i}
-              className={`text-[10px] text-center py-1 border-r border-gray-100 ${
-                isToday(date) ? 'bg-blue-50 font-bold text-blue-600' : isWeekend(date) ? 'bg-gray-50 text-gray-400' : 'text-gray-500'
+              className={`text-[10px] text-center py-1 border-r ${
+                isToday(date) ? 'font-bold' : ''
               }`}
-              style={{ width: config.columnWidth }}
+              style={{
+                width: config.columnWidth,
+                borderColor: 'var(--color-border)',
+                backgroundColor: isToday(date) ? 'var(--color-primary-light)' : isWeekend(date) ? 'var(--color-grey-1)' : undefined,
+                color: isToday(date) ? 'var(--color-primary)' : isWeekend(date) ? 'var(--color-text-secondary)' : 'var(--color-text-secondary)',
+              }}
             >
               {config.dateFormat ? format(date, config.dateFormat) : ''}
             </div>

@@ -7,11 +7,13 @@ interface UIState {
   zoomLevel: ZoomLevel;
   darkMode: boolean;
   quickSearchOpen: boolean;
+  taskboxOpen: boolean;
   toggleSidebar: () => void;
   setZoomLevel: (level: ZoomLevel) => void;
   toggleDarkMode: () => void;
   setDarkMode: (on: boolean) => void;
   setQuickSearchOpen: (open: boolean) => void;
+  setTaskboxOpen: (open: boolean) => void;
 }
 
 function getInitialDarkMode(): boolean {
@@ -34,6 +36,7 @@ export const useUIStore = create<UIState>((set) => ({
   zoomLevel: 'W',
   darkMode: initialDark,
   quickSearchOpen: false,
+  taskboxOpen: false,
   toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
   setZoomLevel: (level) => set({ zoomLevel: level }),
   toggleDarkMode: () =>
@@ -47,4 +50,5 @@ export const useUIStore = create<UIState>((set) => ({
     set({ darkMode: on });
   },
   setQuickSearchOpen: (open) => set({ quickSearchOpen: open }),
+  setTaskboxOpen: (open) => set({ taskboxOpen: open }),
 }));

@@ -15,15 +15,14 @@ export function BoardColumn({ status, tasks, onTaskClick }: BoardColumnProps) {
   return (
     <div
       ref={setNodeRef}
-      className={`flex flex-col w-72 shrink-0 rounded-xl transition-colors ${
-        isOver ? 'bg-blue-50' : 'bg-gray-100'
-      }`}
+      className={`flex flex-col w-72 shrink-0 rounded-xl transition-colors`}
+      style={{ backgroundColor: isOver ? 'var(--color-primary-light)' : 'var(--color-grey-1)' }}
     >
       {/* Column header */}
       <div className="px-3 py-2.5 flex items-center gap-2">
         <span>{status.emoji}</span>
-        <span className="font-medium text-sm text-gray-700">{status.label}</span>
-        <span className="ml-auto text-xs text-gray-400 bg-gray-200 px-1.5 py-0.5 rounded-full">
+        <span className="font-medium text-sm" style={{ color: 'var(--color-text)' }}>{status.label}</span>
+        <span className="ml-auto text-xs px-1.5 py-0.5 rounded-full" style={{ color: 'var(--color-text-secondary)', backgroundColor: 'var(--color-grey-2)' }}>
           {tasks.length}
         </span>
       </div>
