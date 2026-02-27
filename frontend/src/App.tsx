@@ -82,9 +82,9 @@ function ProtectedLayout() {
   }
 
   return (
-    <div className="flex h-full w-full overflow-hidden rounded-xl shadow-lg border border-[var(--color-border)]">
+    <div className="flex h-full w-full overflow-hidden">
       <Sidebar />
-      <div className="flex flex-col flex-1 overflow-hidden">
+      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
         <TopBar />
         <main className="flex-1 overflow-auto" style={{ backgroundColor: 'var(--color-bg)' }}>
           <ErrorBoundary>

@@ -53,12 +53,12 @@ export function Sidebar() {
 
   return (
     <aside
-      className="w-60 flex flex-col shrink-0 overflow-y-auto rounded-l-xl"
+      className="w-60 flex flex-col shrink-0 overflow-y-auto"
       style={{ background: 'linear-gradient(180deg, var(--color-sidebar-bg) 0%, #2D1B4E 100%)' }}
     >
       {/* Logo + Workspace */}
-      <div className="px-4 pt-4 pb-3 border-b border-white/10">
-        <div className="flex items-center gap-2.5 mb-2 px-1">
+      <div className="px-5 pt-5 pb-3 border-b border-white/10">
+        <div className="flex items-center gap-2.5 mb-2">
           <img src="/logo-white.png" alt="Siemens Energy" className="h-5 opacity-90" />
         </div>
         <button className="flex items-center gap-2 w-full hover:bg-white/5 rounded px-2 py-1.5 text-[var(--color-sidebar-text)]">
@@ -68,7 +68,7 @@ export function Sidebar() {
       </div>
 
       {/* My Work */}
-      <nav className="px-2 py-2">
+      <nav className="px-3 py-2">
         <NavLink
           to="/my-work"
           className={({ isActive }) =>
@@ -86,7 +86,7 @@ export function Sidebar() {
 
       {/* Favourites */}
       {(favouriteTeams.length > 0 || favouriteProjects.length > 0) && (
-        <div className="px-2 py-1">
+        <div className="px-3 py-1">
           <div className="px-3 py-1.5 text-xs uppercase tracking-wider text-white/40 flex items-center gap-1.5">
             <Star size={12} />
             Favourites
@@ -95,7 +95,7 @@ export function Sidebar() {
             <NavLink
               key={team.id}
               to={`/teams/${team.id}`}
-              className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-sm text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)]"
+              className="flex items-center gap-2.5 pl-9 pr-3 py-1.5 rounded-lg text-sm text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)]"
             >
               {team.name}
             </NavLink>
@@ -104,7 +104,7 @@ export function Sidebar() {
             <NavLink
               key={project.id}
               to={`/projects/${project.id}/board`}
-              className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-sm text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)]"
+              className="flex items-center gap-2.5 pl-9 pr-3 py-1.5 rounded-lg text-sm text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)]"
             >
               <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: project.colour }} />
               {project.name}
@@ -114,7 +114,7 @@ export function Sidebar() {
       )}
 
       {/* Teams */}
-      <div className="px-2 py-1">
+      <div className="px-3 py-1">
         <div className="px-3 py-1.5 text-xs uppercase tracking-wider text-white/40 flex items-center gap-1.5">
           <Users size={12} />
           Teams
@@ -131,7 +131,7 @@ export function Sidebar() {
             key={team.id}
             to={`/teams/${team.id}`}
             className={({ isActive }) =>
-              `flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${
+              `flex items-center gap-2.5 pl-9 pr-3 py-1.5 rounded-lg text-sm transition-colors ${
                 isActive
                   ? 'bg-[var(--color-sidebar-active)] text-white'
                   : 'text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)]'
@@ -160,7 +160,7 @@ export function Sidebar() {
       </div>
 
       {/* Projects */}
-      <div className="px-2 py-1 flex-1">
+      <div className="px-3 py-1 flex-1">
         <div className="px-3 py-1.5 text-xs uppercase tracking-wider text-white/40 flex items-center gap-1.5">
           <FolderKanban size={12} />
           Projects
@@ -180,7 +180,7 @@ export function Sidebar() {
           return (
             <div
               key={project.id}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm group transition-colors ${
+              className={`flex items-center gap-2 pl-9 pr-3 py-1.5 rounded-lg text-sm group transition-colors ${
                 isProjectActive
                   ? 'bg-[var(--color-sidebar-active)] text-white'
                   : 'text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)]'
@@ -231,7 +231,7 @@ export function Sidebar() {
       </div>
 
       {/* Settings */}
-      <div className="px-2 py-2 border-t border-white/10">
+      <div className="px-3 py-3 border-t border-white/10">
         <NavLink
           to="/settings"
           className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)] transition-colors"

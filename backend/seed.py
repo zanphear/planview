@@ -41,7 +41,7 @@ async def seed():
 
         # Users
         users_data = [
-            ("Alice Johnson", "alice@example.com", "#4186E0", "AJ"),
+            ("Admin", "admin@admin.com", "#4186E0", "AD"),
             ("Bob Smith", "bob@example.com", "#E44332", "BS"),
             ("Charlie Brown", "charlie@example.com", "#5CBF4D", "CB"),
             ("Diana Prince", "diana@example.com", "#9B59B6", "DP"),
@@ -51,8 +51,8 @@ async def seed():
         for name, email, colour, initials in users_data:
             u = User(
                 name=name, email=email, colour=colour, initials=initials,
-                password_hash=hash_password("password123"),
-                role="admin" if email == "alice@example.com" else "regular",
+                password_hash=hash_password("admin" if email == "admin@admin.com" else "password123"),
+                role="owner" if email == "admin@admin.com" else "regular",
                 workspace_id=ws.id,
             )
             db.add(u)
@@ -187,7 +187,7 @@ async def seed():
 
         await db.commit()
         print(f"Seeded: 1 workspace, {len(users)} users, {len(projects)} projects, {len(task_objects)} tasks")
-        print(f"Login: alice@example.com / password123")
+        print(f"Login: admin@admin.com / admin")
 
 
 if __name__ == "__main__":

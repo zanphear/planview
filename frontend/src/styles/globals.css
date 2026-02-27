@@ -47,23 +47,23 @@
   --color-grey-2: #252336;
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+@layer base {
+  html, body {
+    height: 100%;
+    margin: 0;
+  }
 
-body {
-  font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
-  background-color: var(--color-bg);
-  color: var(--color-text);
-  transition: background-color 0.2s, color 0.2s;
-}
+  body {
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    transition: background-color 0.2s, color 0.2s;
+  }
 
-#root {
-  height: 100vh;
-  padding: 8px;
-  background-color: var(--color-grey-2);
+  #root {
+    display: flex;
+    height: 100vh;
+  }
 }
 
 @keyframes slide-in {
