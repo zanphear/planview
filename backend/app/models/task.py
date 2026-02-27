@@ -62,6 +62,7 @@ class Task(Base, UUIDPrimaryKey, TimestampMixin):
     end_time: Mapped[time | None] = mapped_column(Time, nullable=True)
     time_estimate_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
     time_estimate_mode: Mapped[str] = mapped_column(String(10), server_default=text("'total'"), nullable=False)
+    time_logged_minutes: Mapped[int] = mapped_column(Integer, server_default="0", nullable=False)
     is_recurring: Mapped[bool] = mapped_column(Boolean, server_default="false", nullable=False)
     recurrence_rule: Mapped[str | None] = mapped_column(String(500), nullable=True)
     sort_order: Mapped[int] = mapped_column(Integer, server_default="0", nullable=False)

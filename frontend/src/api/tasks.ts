@@ -42,6 +42,7 @@ export interface Task {
   end_time: string | null;
   time_estimate_minutes: number | null;
   time_estimate_mode: string;
+  time_logged_minutes: number;
   is_recurring: boolean;
   recurrence_rule: string | null;
   sort_order: number;

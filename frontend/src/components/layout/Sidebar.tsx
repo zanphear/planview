@@ -1,26 +1,36 @@
 import { useState } from 'react';
-import { Users, FolderKanban, Star, Settings, User, ChevronDown, Plus, LayoutGrid, Calendar } from 'lucide-react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { Users, FolderKanban, Star, Settings, User, ChevronDown, Plus, LayoutGrid, Calendar, MoreHorizontal, Activity } from 'lucide-react';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useUIStore } from '../../stores/uiStore';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
 import { useTeamStore } from '../../stores/teamStore';
 import { useProjectStore } from '../../stores/projectStore';
-import { teamsApi } from '../../api/teams';
-import { projectsApi } from '../../api/projects';
+import { teamsApi, type Team } from '../../api/teams';
+import { projectsApi, type Project } from '../../api/projects';
+import { ProjectEditModal } from '../modals/ProjectEditModal';
+import { TeamManageModal } from '../modals/TeamManageModal';
+import { Toast } from '../shared/Toast';
 
 export function Sidebar() {
   const collapsed = useUIStore((s) => s.sidebarCollapsed);
   const workspace = useWorkspaceStore((s) => s.currentWorkspace);
   const teams = useTeamStore((s) => s.teams);
   const addTeam = useTeamStore((s) => s.addTeam);
+  const updateTeam = useTeamStore((s) => s.updateTeam);
+  const removeTeam = useTeamStore((s) => s.removeTeam);
   const projects = useProjectStore((s) => s.projects);
   const addProject = useProjectStore((s) => s.addProject);
+  const updateProject = useProjectStore((s) => s.updateProject);
+  const removeProject = useProjectStore((s) => s.removeProject);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const [creatingTeam, setCreatingTeam] = useState(false);
   const [newTeamName, setNewTeamName] = useState('');
   const [creatingProject, setCreatingProject] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
+  const [managingTeam, setManagingTeam] = useState<Team | null>(null);
 
   if (collapsed) return null;
 
@@ -51,6 +61,78 @@ export function Sidebar() {
     }
   };
 
+  const handleSaveProject = async (updates: Partial<Project>) => {
+    if (!workspace || !editingProject) return;
+    try {
+      const { data } = await projectsApi.update(workspace.id, editingProject.id, updates);
+      updateProject(data);
+      Toast.show('Project updated');
+    } catch {
+      Toast.show('Failed to update project');
+    }
+  };
+
+  const handleDeleteProject = async () => {
+    if (!workspace || !editingProject) return;
+    try {
+      await projectsApi.delete(workspace.id, editingProject.id);
+      removeProject(editingProject.id);
+      setEditingProject(null);
+      navigate('/my-work');
+      Toast.show('Project deleted');
+    } catch {
+      Toast.show('Failed to delete project');
+    }
+  };
+
+  const handleSaveTeam = async (updates: Partial<Team>) => {
+    if (!workspace || !managingTeam) return;
+    try {
+      const { data } = await teamsApi.update(workspace.id, managingTeam.id, updates);
+      updateTeam(data);
+      Toast.show('Team updated');
+    } catch {
+      Toast.show('Failed to update team');
+    }
+  };
+
+  const handleDeleteTeam = async () => {
+    if (!workspace || !managingTeam) return;
+    try {
+      await teamsApi.delete(workspace.id, managingTeam.id);
+      removeTeam(managingTeam.id);
+      setManagingTeam(null);
+      navigate('/my-work');
+      Toast.show('Team deleted');
+    } catch {
+      Toast.show('Failed to delete team');
+    }
+  };
+
+  const handleToggleProjectFavourite = async (project: Project, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!workspace) return;
+    try {
+      const { data } = await projectsApi.update(workspace.id, project.id, { is_favourite: !project.is_favourite });
+      updateProject(data);
+    } catch (err) {
+      console.error('Failed to toggle favourite:', err);
+    }
+  };
+
+  const handleToggleTeamFavourite = async (team: Team, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!workspace) return;
+    try {
+      const { data } = await teamsApi.update(workspace.id, team.id, { is_favourite: !team.is_favourite });
+      updateTeam(data);
+    } catch (err) {
+      console.error('Failed to toggle favourite:', err);
+    }
+  };
+
   return (
     <aside
       className="w-60 flex flex-col shrink-0 overflow-y-auto"
@@ -58,8 +140,8 @@ export function Sidebar() {
     >
       {/* Logo + Workspace */}
       <div className="px-5 pt-5 pb-3 border-b border-white/10">
-        <div className="flex items-center gap-2.5 mb-2">
-          <img src="/logo-white.png" alt="Siemens Energy" className="h-5 opacity-90" />
+        <div className="flex justify-center mb-2">
+          <img src="/logo-white.png" alt="Siemens Energy" className="h-8 opacity-90" />
         </div>
         <button className="flex items-center gap-2 w-full hover:bg-white/5 rounded px-2 py-1.5 text-[var(--color-sidebar-text)]">
           <span className="font-semibold text-sm truncate">{workspace?.name || 'Workspace'}</span>
@@ -81,6 +163,19 @@ export function Sidebar() {
         >
           <User size={16} />
           My Work
+        </NavLink>
+        <NavLink
+          to="/activity"
+          className={({ isActive }) =>
+            `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
+              isActive
+                ? 'bg-[var(--color-sidebar-active)] text-white'
+                : 'text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)]'
+            }`
+          }
+        >
+          <Activity size={16} />
+          Activity
         </NavLink>
       </nav>
 
@@ -127,19 +222,33 @@ export function Sidebar() {
           </button>
         </div>
         {teams.map((team) => (
-          <NavLink
+          <div
             key={team.id}
-            to={`/teams/${team.id}`}
-            className={({ isActive }) =>
-              `flex items-center gap-2.5 pl-9 pr-3 py-1.5 rounded-lg text-sm transition-colors ${
-                isActive
-                  ? 'bg-[var(--color-sidebar-active)] text-white'
-                  : 'text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)]'
-              }`
-            }
+            className="flex items-center gap-2.5 pl-9 pr-2 py-1.5 rounded-lg text-sm group transition-colors text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)]"
           >
-            {team.name}
-          </NavLink>
+            <NavLink
+              to={`/teams/${team.id}`}
+              className="truncate flex-1"
+            >
+              {team.name}
+            </NavLink>
+            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+              <button
+                onClick={(e) => handleToggleTeamFavourite(team, e)}
+                className="p-1 rounded hover:bg-white/10"
+                title={team.is_favourite ? 'Remove from favourites' : 'Add to favourites'}
+              >
+                <Star size={12} fill={team.is_favourite ? 'currentColor' : 'none'} style={{ color: team.is_favourite ? '#f59e0b' : undefined }} />
+              </button>
+              <button
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); setManagingTeam(team); }}
+                className="p-1 rounded hover:bg-white/10"
+                title="Manage team"
+              >
+                <MoreHorizontal size={12} />
+              </button>
+            </div>
+          </div>
         ))}
         {creatingTeam && (
           <div className="px-2 py-1">
@@ -180,7 +289,7 @@ export function Sidebar() {
           return (
             <div
               key={project.id}
-              className={`flex items-center gap-2 pl-9 pr-3 py-1.5 rounded-lg text-sm group transition-colors ${
+              className={`flex items-center gap-2 pl-9 pr-2 py-1.5 rounded-lg text-sm group transition-colors ${
                 isProjectActive
                   ? 'bg-[var(--color-sidebar-active)] text-white'
                   : 'text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)]'
@@ -208,6 +317,20 @@ export function Sidebar() {
                 >
                   <Calendar size={12} />
                 </NavLink>
+                <button
+                  onClick={(e) => handleToggleProjectFavourite(project, e)}
+                  className="p-1 rounded hover:bg-white/10"
+                  title={project.is_favourite ? 'Remove from favourites' : 'Add to favourites'}
+                >
+                  <Star size={12} fill={project.is_favourite ? 'currentColor' : 'none'} style={{ color: project.is_favourite ? '#f59e0b' : undefined }} />
+                </button>
+                <button
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingProject(project); }}
+                  className="p-1 rounded hover:bg-white/10"
+                  title="Edit project"
+                >
+                  <MoreHorizontal size={12} />
+                </button>
               </div>
             </div>
           );
@@ -240,6 +363,25 @@ export function Sidebar() {
           Settings
         </NavLink>
       </div>
+
+      {/* Modals */}
+      {editingProject && (
+        <ProjectEditModal
+          project={editingProject}
+          onSave={handleSaveProject}
+          onDelete={handleDeleteProject}
+          onClose={() => setEditingProject(null)}
+        />
+      )}
+      {managingTeam && (
+        <TeamManageModal
+          team={managingTeam}
+          onSave={handleSaveTeam}
+          onDelete={handleDeleteTeam}
+          onClose={() => setManagingTeam(null)}
+          onTeamUpdated={updateTeam}
+        />
+      )}
     </aside>
   );
 }

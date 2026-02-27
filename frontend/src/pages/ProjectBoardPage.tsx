@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
-import { Plus } from 'lucide-react';
+import { Plus, Inbox } from 'lucide-react';
 import { Board } from '../components/board/Board';
 import { TaskDetail } from '../components/task/TaskDetail';
 import { BulkActionBar } from '../components/board/BulkActionBar';
@@ -12,6 +12,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useWSEvent } from '../hooks/WebSocketContext';
 import { tasksApi, type Task } from '../api/tasks';
 import { membersApi, type User } from '../api/users';
+import { EmptyState } from '../components/shared/EmptyState';
 
 export function ProjectBoardPage() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -165,12 +166,20 @@ export function ProjectBoardPage() {
 
       {/* Board */}
       <div className="flex-1 overflow-hidden">
-        <Board
-          tasks={filteredTasks}
-          onTaskClick={handleTaskClick}
-          selectedIds={selectedIds}
-          onToggleSelect={handleToggleSelect}
-        />
+        {tasks.length === 0 ? (
+          <EmptyState
+            icon={<Inbox size={48} />}
+            title="No tasks yet"
+            description="Create your first task using the input above, or press N for quick add."
+          />
+        ) : (
+          <Board
+            tasks={filteredTasks}
+            onTaskClick={handleTaskClick}
+            selectedIds={selectedIds}
+            onToggleSelect={handleToggleSelect}
+          />
+        )}
       </div>
 
       {/* Bulk action bar */}

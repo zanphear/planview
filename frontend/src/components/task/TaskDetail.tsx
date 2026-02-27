@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { X, Users as UsersIcon, Clock } from 'lucide-react';
+import { X, Users as UsersIcon, Clock, Play, Square, Timer } from 'lucide-react';
 import { tasksApi, type Task } from '../../api/tasks';
 import { checklistsApi } from '../../api/checklists';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
@@ -206,6 +206,14 @@ export function TaskDetail({ task: initialTask, members, onClose }: TaskDetailPr
           </div>
         </div>
 
+        {/* Time Tracking */}
+        <TimeTracker
+          logged={task.time_logged_minutes || 0}
+          estimate={task.time_estimate_minutes || 0}
+          onLog={(minutes) => save({ time_logged_minutes: (task.time_logged_minutes || 0) + minutes })}
+          onReset={() => save({ time_logged_minutes: 0 })}
+        />
+
         {/* Recurrence */}
         <RecurrencePicker
           isRecurring={task.is_recurring}
@@ -287,5 +295,119 @@ export function TaskDetail({ task: initialTask, members, onClose }: TaskDetailPr
       </div>
     </div>
     </>
+  );
+}
+
+function TimeTracker({
+  logged,
+  estimate,
+  onLog,
+  onReset,
+}: {
+  logged: number;
+  estimate: number;
+  onLog: (minutes: number) => void;
+  onReset: () => void;
+}) {
+  const [running, setRunning] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
+  const startRef = useRef<number>(0);
+  const intervalRef = useRef<ReturnType<typeof setInterval>>(undefined);
+
+  const start = () => {
+    startRef.current = Date.now();
+    setElapsed(0);
+    setRunning(true);
+    intervalRef.current = setInterval(() => {
+      setElapsed(Math.floor((Date.now() - startRef.current) / 1000));
+    }, 1000);
+  };
+
+  const stop = () => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    setRunning(false);
+    const mins = Math.max(1, Math.round(elapsed / 60));
+    onLog(mins);
+    setElapsed(0);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
+
+  const fmtDuration = (mins: number) => {
+    if (mins === 0) return '0m';
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return h > 0 ? `${h}h ${m}m` : `${m}m`;
+  };
+
+  const fmtElapsed = (secs: number) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
+  const pct = estimate > 0 ? Math.min(100, Math.round((logged / estimate) * 100)) : 0;
+
+  return (
+    <div>
+      <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>
+        <Timer size={12} className="inline mr-1" />
+        Time Tracked
+      </label>
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          {!running ? (
+            <button
+              onClick={start}
+              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg border"
+              style={{ borderColor: 'var(--color-border)', color: 'var(--color-primary)' }}
+            >
+              <Play size={12} />
+              Start Timer
+            </button>
+          ) : (
+            <button
+              onClick={stop}
+              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg bg-red-500 text-white"
+            >
+              <Square size={12} />
+              {fmtElapsed(elapsed)}
+            </button>
+          )}
+          <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+            {fmtDuration(logged)}
+          </span>
+          {estimate > 0 && (
+            <span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+              / {fmtDuration(estimate)} ({pct}%)
+            </span>
+          )}
+          {logged > 0 && (
+            <button
+              onClick={onReset}
+              className="text-xs ml-auto underline"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
+              Reset
+            </button>
+          )}
+        </div>
+        {estimate > 0 && (
+          <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-grey-2)' }}>
+            <div
+              className="h-full rounded-full transition-all"
+              style={{
+                width: `${pct}%`,
+                backgroundColor: pct > 100 ? 'var(--color-danger, #ef4444)' : 'var(--color-primary)',
+              }}
+            />
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

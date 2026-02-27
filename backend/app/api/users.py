@@ -68,7 +68,22 @@ async def update_member(
     if not user:
         raise HTTPException(status_code=404, detail="Member not found")
 
-    for field, value in data.model_dump(exclude_unset=True).items():
+    updates = data.model_dump(exclude_unset=True)
+
+    # Role changes require owner/admin privileges
+    if "role" in updates:
+        if current_user.role not in ("owner", "admin"):
+            raise HTTPException(status_code=403, detail="Only owners and admins can change roles")
+        if user_id == current_user.id:
+            raise HTTPException(status_code=400, detail="Cannot change your own role")
+        if updates["role"] == "owner" and current_user.role != "owner":
+            raise HTTPException(status_code=403, detail="Only the owner can transfer ownership")
+        if user.role == "owner":
+            raise HTTPException(status_code=400, detail="Cannot demote the workspace owner")
+        if updates["role"] not in ("member", "admin"):
+            raise HTTPException(status_code=400, detail="Invalid role")
+
+    for field, value in updates.items():
         setattr(user, field, value)
 
     await db.commit()

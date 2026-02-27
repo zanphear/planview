@@ -9,6 +9,7 @@ import { useAuthStore } from '../stores/authStore';
 import { statsApi, type WorkspaceStats } from '../api/stats';
 import { activityApi, type Activity as ActivityType } from '../api/activity';
 import { Avatar } from '../components/shared/Avatar';
+import { DashboardSkeleton } from '../components/shared/Skeleton';
 
 function StatCard({
   label,
@@ -80,13 +81,7 @@ export function DashboardPage() {
   }, [workspace]);
 
   if (loading || !stats) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="animate-pulse text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-          Loading dashboard...
-        </div>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   const todo = stats.by_status['todo'] || 0;

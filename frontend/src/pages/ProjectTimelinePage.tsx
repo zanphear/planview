@@ -15,6 +15,8 @@ import { addDays, format, startOfWeek } from '../utils/dates';
 import { ZOOM_CONFIGS } from '../utils/dates';
 import { useRealtimeTasks } from '../hooks/useRealtimeTasks';
 import { useTaskContextActions } from '../hooks/useTaskContextActions';
+import { ShareTimelineModal } from '../components/modals/ShareTimelineModal';
+import { Share2 } from 'lucide-react';
 
 interface Segment {
   id: string;
@@ -35,6 +37,7 @@ export function ProjectTimelinePage() {
   const [milestones, setMilestones] = useState<MilestoneData[]>([]);
   const [members, setMembers] = useState<User[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [showShare, setShowShare] = useState(false);
 
   const project = projects.find((p) => p.id === projectId);
   const startDate = useMemo(() => startOfWeek(addDays(new Date(), -7), { weekStartsOn: 1 }), []);
@@ -131,6 +134,14 @@ export function ProjectTimelinePage() {
           <div className="w-4 h-4 rounded" style={{ backgroundColor: project.colour }} />
           <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>{project.name}</h2>
           <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Timeline</span>
+          <button
+            onClick={() => setShowShare(true)}
+            className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg hover:bg-[var(--color-grey-2)] transition-colors"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            <Share2 size={14} />
+            Share
+          </button>
         </div>
       )}
 
@@ -153,6 +164,14 @@ export function ProjectTimelinePage() {
           task={selectedTask}
           members={members}
           onClose={() => setSelectedTask(null)}
+        />
+      )}
+
+      {showShare && project && (
+        <ShareTimelineModal
+          projectId={project.id}
+          entityName={project.name}
+          onClose={() => setShowShare(false)}
         />
       )}
     </div>

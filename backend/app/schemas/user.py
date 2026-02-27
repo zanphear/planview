@@ -35,6 +35,7 @@ class UserResponse(BaseModel):
     avatar_url: str | None
     role: str
     pin_on_top: bool
+    notification_prefs: dict | None = None
     workspace_id: uuid.UUID
     created_at: datetime
     updated_at: datetime
@@ -48,3 +49,5 @@ class UserUpdate(BaseModel):
     colour: str | None = None
     avatar_url: str | None = None
     pin_on_top: bool | None = None
+    notification_prefs: dict | None = None
+    role: str | None = None

@@ -13,6 +13,8 @@ import type { Task } from '../api/tasks';
 import { addDays, format, startOfWeek, ZOOM_CONFIGS } from '../utils/dates';
 import { useRealtimeTasks } from '../hooks/useRealtimeTasks';
 import { useTaskContextActions } from '../hooks/useTaskContextActions';
+import { ShareTimelineModal } from '../components/modals/ShareTimelineModal';
+import { Share2 } from 'lucide-react';
 
 export function TeamTimelinePage() {
   const { teamId } = useParams<{ teamId: string }>();
@@ -25,6 +27,7 @@ export function TeamTimelinePage() {
   const [milestones, setMilestones] = useState<MilestoneData[]>([]);
   const [members, setMembers] = useState<User[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [showShare, setShowShare] = useState(false);
 
   const team = teams.find((t) => t.id === teamId);
   const startDate = useMemo(() => startOfWeek(addDays(new Date(), -7), { weekStartsOn: 1 }), []);
@@ -106,8 +109,16 @@ export function TeamTimelinePage() {
   return (
     <div className="h-full flex flex-col">
       {team && (
-        <div className="px-6 py-3 bg-[var(--color-surface)] border-b border-[var(--color-border)] shrink-0">
+        <div className="px-6 py-3 bg-[var(--color-surface)] border-b border-[var(--color-border)] shrink-0 flex items-center justify-between">
           <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>{team.name}</h2>
+          <button
+            onClick={() => setShowShare(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg hover:bg-[var(--color-grey-2)] transition-colors"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            <Share2 size={14} />
+            Share
+          </button>
         </div>
       )}
 
@@ -130,6 +141,14 @@ export function TeamTimelinePage() {
           task={selectedTask}
           members={members}
           onClose={() => setSelectedTask(null)}
+        />
+      )}
+
+      {showShare && team && (
+        <ShareTimelineModal
+          teamId={team.id}
+          entityName={team.name}
+          onClose={() => setShowShare(false)}
         />
       )}
     </div>

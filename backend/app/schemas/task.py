@@ -18,6 +18,7 @@ class TaskCreate(BaseModel):
     end_time: time | None = None
     time_estimate_minutes: int | None = None
     time_estimate_mode: str = "total"
+    time_logged_minutes: int = 0
     project_id: uuid.UUID | None = None
     segment_id: uuid.UUID | None = None
     parent_id: uuid.UUID | None = None
@@ -39,6 +40,7 @@ class TaskUpdate(BaseModel):
     end_time: time | None = None
     time_estimate_minutes: int | None = None
     time_estimate_mode: str | None = None
+    time_logged_minutes: int | None = None
     project_id: uuid.UUID | None = None
     segment_id: uuid.UUID | None = None
     sort_order: int | None = None
@@ -108,6 +110,7 @@ class TaskResponse(BaseModel):
     end_time: time | None
     time_estimate_minutes: int | None
     time_estimate_mode: str
+    time_logged_minutes: int
     is_recurring: bool
     recurrence_rule: str | None
     sort_order: int

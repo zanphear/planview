@@ -31,8 +31,15 @@ function applyDarkMode(on: boolean) {
 const initialDark = getInitialDarkMode();
 applyDarkMode(initialDark);
 
+function getInitialSidebarCollapsed(): boolean {
+  if (typeof window !== 'undefined') {
+    return window.innerWidth < 768;
+  }
+  return false;
+}
+
 export const useUIStore = create<UIState>((set) => ({
-  sidebarCollapsed: false,
+  sidebarCollapsed: getInitialSidebarCollapsed(),
   zoomLevel: 'W',
   darkMode: initialDark,
   quickSearchOpen: false,

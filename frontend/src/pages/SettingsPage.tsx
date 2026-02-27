@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
-import { User, Palette, Bell, Shield, LogOut, Sun, Moon, Users, UserPlus, Trash2, Copy, Check, Download, Upload } from 'lucide-react';
+import { User, Palette, Bell, Shield, LogOut, Sun, Moon, Users, UserPlus, Trash2, Copy, Check, Download, Upload, AlertTriangle } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { useWorkspaceStore } from '../stores/workspaceStore';
 import { useUIStore } from '../stores/uiStore';
-import { membersApi, type User as UserType } from '../api/users';
+import { authApi, membersApi, type User as UserType } from '../api/users';
+import { workspacesApi } from '../api/workspaces';
 import { importsApi } from '../api/imports';
 import { ColourPicker } from '../components/task/ColourPicker';
 import { Avatar } from '../components/shared/Avatar';
+import { Toast } from '../components/shared/Toast';
 
 type Tab = 'profile' | 'workspace' | 'members' | 'appearance' | 'notifications' | 'data';
 
@@ -44,9 +46,10 @@ export function SettingsPage() {
       await membersApi.update(workspace.id, user.id, { name, colour });
       await fetchMe();
       setSaved(true);
+      Toast.show('Profile updated');
       setTimeout(() => setSaved(false), 2000);
-    } catch (err) {
-      console.error('Failed to save profile:', err);
+    } catch {
+      Toast.show('Failed to save profile');
     }
     setSaving(false);
   };
@@ -70,8 +73,9 @@ export function SettingsPage() {
       setInviteName('');
       setInviteEmail('');
       setInviting(false);
-    } catch (err) {
-      console.error('Invite failed:', err);
+      Toast.show('Member invited');
+    } catch {
+      Toast.show('Invite failed');
     }
   };
 
@@ -80,8 +84,9 @@ export function SettingsPage() {
     try {
       await membersApi.remove(workspace.id, memberId);
       setMembers((prev) => prev.filter((m) => m.id !== memberId));
-    } catch (err) {
-      console.error('Remove failed:', err);
+      Toast.show('Member removed');
+    } catch {
+      Toast.show('Failed to remove member');
     }
   };
 
@@ -180,32 +185,14 @@ export function SettingsPage() {
               >
                 {saving ? 'Saving...' : saved ? 'Saved!' : 'Save Changes'}
               </button>
+
+              {/* Change Password */}
+              <ChangePasswordForm />
             </div>
           )}
 
           {tab === 'workspace' && (
-            <div className="space-y-5">
-              <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>Workspace Settings</h3>
-              <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Workspace Name</label>
-                <input
-                  value={workspace?.name || ''}
-                  disabled
-                  className="w-full px-3 py-2 border rounded-lg text-sm opacity-60 bg-[var(--color-grey-1)] text-[var(--color-text)]"
-                  style={{ borderColor: 'var(--color-border)' }}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Workspace ID</label>
-                <code className="text-xs font-mono" style={{ color: 'var(--color-text-secondary)' }}>{workspace?.id}</code>
-              </div>
-              <div className="pt-4 border-t" style={{ borderColor: 'var(--color-border)' }}>
-                <h4 className="text-sm font-medium mb-2" style={{ color: 'var(--color-text)' }}>Danger Zone</h4>
-                <p className="text-sm mb-3" style={{ color: 'var(--color-text-secondary)' }}>
-                  Workspace management features coming in a future update.
-                </p>
-              </div>
-            </div>
+            <WorkspaceTab user={user} workspace={workspace} logout={logout} />
           )}
 
           {tab === 'members' && (
@@ -320,7 +307,7 @@ export function SettingsPage() {
                 {members.map((m) => (
                   <div
                     key={m.id}
-                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-[var(--color-grey-1)] transition-colors"
+                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-[var(--color-grey-1)] transition-colors group"
                   >
                     <Avatar name={m.name} initials={m.initials || undefined} colour={m.colour} size={36} />
                     <div className="flex-1 min-w-0">
@@ -332,20 +319,44 @@ export function SettingsPage() {
                       </p>
                       <p className="text-xs truncate" style={{ color: 'var(--color-text-secondary)' }}>{m.email}</p>
                     </div>
-                    <span
-                      className="text-xs px-2 py-0.5 rounded-full"
-                      style={{
-                        backgroundColor: m.role === 'owner' ? 'var(--color-primary-light)' : 'var(--color-grey-2)',
-                        color: m.role === 'owner' ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-                      }}
-                    >
-                      {m.role}
-                    </span>
-                    {(user?.role === 'owner' || user?.role === 'admin') && m.id !== user?.id && (
+                    {/* Role badge or dropdown */}
+                    {m.role === 'owner' || m.id === user?.id || !['owner', 'admin'].includes(user?.role || '') ? (
+                      <span
+                        className="text-xs px-2 py-0.5 rounded-full"
+                        style={{
+                          backgroundColor: m.role === 'owner' ? 'var(--color-primary-light)' : 'var(--color-grey-2)',
+                          color: m.role === 'owner' ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+                        }}
+                      >
+                        {m.role}
+                      </span>
+                    ) : (
+                      <select
+                        value={m.role}
+                        onChange={async (e) => {
+                          if (!workspace) return;
+                          try {
+                            const { data } = await membersApi.update(workspace.id, m.id, { role: e.target.value } as Partial<UserType>);
+                            setMembers((prev) => prev.map((p) => (p.id === m.id ? data : p)));
+                          } catch (err) {
+                            console.error('Failed to change role:', err);
+                          }
+                        }}
+                        className="text-xs px-2 py-0.5 rounded-full border-0 outline-none cursor-pointer"
+                        style={{
+                          backgroundColor: 'var(--color-grey-2)',
+                          color: 'var(--color-text-secondary)',
+                        }}
+                      >
+                        <option value="member">member</option>
+                        <option value="admin">admin</option>
+                      </select>
+                    )}
+                    {(user?.role === 'owner' || user?.role === 'admin') && m.id !== user?.id && m.role !== 'owner' && (
                       <button
                         onClick={() => handleRemoveMember(m.id)}
-                        className="p-1.5 rounded-lg hover:bg-[var(--color-grey-2)] opacity-0 group-hover:opacity-100"
-                        style={{ color: 'var(--color-danger)' }}
+                        className="p-1.5 rounded-lg hover:bg-[var(--color-grey-2)] opacity-0 group-hover:opacity-100 transition-opacity"
+                        style={{ color: 'var(--color-danger, #ef4444)' }}
                         title="Remove member"
                       >
                         <Trash2 size={14} />
@@ -393,33 +404,7 @@ export function SettingsPage() {
           )}
 
           {tab === 'notifications' && (
-            <div className="space-y-5">
-              <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>Notification Preferences</h3>
-              <div className="space-y-3">
-                {[
-                  { label: 'Task assigned to me', key: 'task_assigned', desc: 'Get notified when someone assigns you to a task' },
-                  { label: 'Comment on my tasks', key: 'comment_added', desc: 'Get notified when someone comments on a task you\'re assigned to' },
-                  { label: 'Task status changes', key: 'status_changed', desc: 'Get notified when a task you\'re assigned to changes status' },
-                  { label: 'Milestone reminders', key: 'milestone_approaching', desc: 'Get notified when a milestone deadline is approaching' },
-                ].map(({ label, key, desc }) => (
-                  <label key={key} className="flex items-start gap-3 cursor-pointer p-3 rounded-lg hover:bg-[var(--color-grey-1)] transition-colors">
-                    <input
-                      type="checkbox"
-                      defaultChecked
-                      className="w-4 h-4 rounded border-gray-300 mt-0.5"
-                      style={{ accentColor: 'var(--color-primary)' }}
-                    />
-                    <div>
-                      <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>{label}</span>
-                      <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-secondary)' }}>{desc}</p>
-                    </div>
-                  </label>
-                ))}
-              </div>
-              <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
-                Notification preferences are stored locally for now.
-              </p>
-            </div>
+            <NotificationPrefsTab user={user} workspace={workspace} fetchMe={fetchMe} />
           )}
 
           {tab === 'data' && (
@@ -427,6 +412,259 @@ export function SettingsPage() {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+function ChangePasswordForm() {
+  const [currentPw, setCurrentPw] = useState('');
+  const [newPw, setNewPw] = useState('');
+  const [confirmPw, setConfirmPw] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async () => {
+    setError(null);
+    if (newPw.length < 6) { setError('Password must be at least 6 characters'); return; }
+    if (newPw !== confirmPw) { setError('Passwords do not match'); return; }
+    setSaving(true);
+    try {
+      await authApi.changePassword({ current_password: currentPw, new_password: newPw });
+      Toast.show('Password changed');
+      setCurrentPw('');
+      setNewPw('');
+      setConfirmPw('');
+    } catch {
+      setError('Current password is incorrect');
+    }
+    setSaving(false);
+  };
+
+  return (
+    <div className="pt-5 border-t space-y-3" style={{ borderColor: 'var(--color-border)' }}>
+      <h4 className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>Change Password</h4>
+      <input
+        type="password"
+        value={currentPw}
+        onChange={(e) => setCurrentPw(e.target.value)}
+        placeholder="Current password"
+        className="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2"
+        style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
+      />
+      <div className="grid grid-cols-2 gap-3">
+        <input
+          type="password"
+          value={newPw}
+          onChange={(e) => setNewPw(e.target.value)}
+          placeholder="New password"
+          className="px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2"
+          style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
+        />
+        <input
+          type="password"
+          value={confirmPw}
+          onChange={(e) => setConfirmPw(e.target.value)}
+          placeholder="Confirm new password"
+          className="px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2"
+          style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
+        />
+      </div>
+      {error && <p className="text-xs text-red-500">{error}</p>}
+      <button
+        onClick={handleSubmit}
+        disabled={saving || !currentPw || !newPw || !confirmPw}
+        className="px-4 py-2 text-white rounded-lg text-sm font-medium disabled:opacity-50"
+        style={{ backgroundColor: 'var(--color-primary)' }}
+      >
+        {saving ? 'Changing...' : 'Change Password'}
+      </button>
+    </div>
+  );
+}
+
+const NOTIFICATION_OPTIONS = [
+  { key: 'task_assigned', label: 'Task assigned to me', desc: 'Get notified when someone assigns you to a task' },
+  { key: 'comment_added', label: 'Comment on my tasks', desc: 'Get notified when someone comments on a task you\'re assigned to' },
+  { key: 'status_changed', label: 'Task status changes', desc: 'Get notified when a task you\'re assigned to changes status' },
+  { key: 'milestone_approaching', label: 'Milestone reminders', desc: 'Get notified when a milestone deadline is approaching' },
+];
+
+function NotificationPrefsTab({ user, workspace, fetchMe }: { user: UserType | null; workspace: { id: string } | null; fetchMe: () => Promise<void> }) {
+  const prefs = user?.notification_prefs || {};
+  const getChecked = (key: string) => prefs[key] !== false; // default true
+
+  const handleToggle = async (key: string) => {
+    if (!workspace || !user) return;
+    const newPrefs = { ...prefs, [key]: !getChecked(key) };
+    try {
+      await membersApi.update(workspace.id, user.id, { notification_prefs: newPrefs } as Partial<UserType>);
+      await fetchMe();
+      Toast.show('Preferences saved');
+    } catch {
+      Toast.show('Failed to save preferences');
+    }
+  };
+
+  return (
+    <div className="space-y-5">
+      <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>Notification Preferences</h3>
+      <div className="space-y-3">
+        {NOTIFICATION_OPTIONS.map(({ key, label, desc }) => (
+          <label key={key} className="flex items-start gap-3 cursor-pointer p-3 rounded-lg hover:bg-[var(--color-grey-1)] transition-colors">
+            <input
+              type="checkbox"
+              checked={getChecked(key)}
+              onChange={() => handleToggle(key)}
+              className="w-4 h-4 rounded border-gray-300 mt-0.5"
+              style={{ accentColor: 'var(--color-primary)' }}
+            />
+            <div>
+              <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>{label}</span>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-secondary)' }}>{desc}</p>
+            </div>
+          </label>
+        ))}
+      </div>
+      <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+        Preferences are saved to your account and sync across devices.
+      </p>
+    </div>
+  );
+}
+
+interface WorkspaceTabProps {
+  user: UserType | null;
+  workspace: { id: string; name: string } | null;
+  logout: () => void;
+}
+
+function WorkspaceTab({ user, workspace, logout }: WorkspaceTabProps) {
+  const [wsName, setWsName] = useState(workspace?.name || '');
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteInput, setDeleteInput] = useState('');
+  const fetchWorkspaces = useWorkspaceStore((s) => s.fetchWorkspaces);
+
+  const isOwner = user?.role === 'owner';
+
+  const handleSaveName = async () => {
+    if (!workspace || !wsName.trim() || wsName === workspace.name) return;
+    setSaving(true);
+    try {
+      await workspacesApi.update(workspace.id, { name: wsName.trim() });
+      await fetchWorkspaces();
+      setSaved(true);
+      Toast.show('Workspace renamed');
+      setTimeout(() => setSaved(false), 2000);
+    } catch {
+      Toast.show('Failed to rename workspace');
+    }
+    setSaving(false);
+  };
+
+  const handleDeleteWorkspace = async () => {
+    if (!workspace || deleteInput !== workspace.name) return;
+    try {
+      await workspacesApi.delete(workspace.id);
+      logout();
+    } catch (err) {
+      console.error('Failed to delete workspace:', err);
+    }
+  };
+
+  return (
+    <div className="space-y-5">
+      <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>Workspace Settings</h3>
+
+      <div>
+        <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Workspace Name</label>
+        <div className="flex gap-2">
+          <input
+            value={wsName}
+            onChange={(e) => setWsName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
+            disabled={!isOwner}
+            className="flex-1 px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 disabled:opacity-60"
+            style={{
+              borderColor: 'var(--color-border)',
+              backgroundColor: isOwner ? 'var(--color-surface)' : 'var(--color-grey-1)',
+              color: 'var(--color-text)',
+              '--tw-ring-color': 'var(--color-primary)',
+            } as React.CSSProperties}
+          />
+          {isOwner && wsName !== workspace?.name && wsName.trim() && (
+            <button
+              onClick={handleSaveName}
+              disabled={saving}
+              className="px-4 py-2 text-white rounded-lg text-sm font-medium disabled:opacity-50"
+              style={{ backgroundColor: 'var(--color-primary)' }}
+            >
+              {saving ? 'Saving...' : saved ? 'Saved!' : 'Save'}
+            </button>
+          )}
+        </div>
+        {!isOwner && (
+          <p className="text-xs mt-1" style={{ color: 'var(--color-text-secondary)' }}>
+            Only the workspace owner can rename the workspace.
+          </p>
+        )}
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Workspace ID</label>
+        <code className="text-xs font-mono" style={{ color: 'var(--color-text-secondary)' }}>{workspace?.id}</code>
+      </div>
+
+      {isOwner && (
+        <div className="pt-4 border-t" style={{ borderColor: 'var(--color-border)' }}>
+          <div className="flex items-center gap-2 mb-2">
+            <AlertTriangle size={16} className="text-red-500" />
+            <h4 className="text-sm font-medium text-red-600">Danger Zone</h4>
+          </div>
+          {!confirmDelete ? (
+            <button
+              onClick={() => setConfirmDelete(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-red-600 border border-red-300 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30"
+            >
+              <Trash2 size={14} />
+              Delete workspace
+            </button>
+          ) : (
+            <div className="p-4 border border-red-300 rounded-lg space-y-3" style={{ backgroundColor: 'rgba(239, 68, 68, 0.05)' }}>
+              <p className="text-sm text-red-600">
+                This will permanently delete the workspace, all projects, teams, tasks, and members. This cannot be undone.
+              </p>
+              <p className="text-sm" style={{ color: 'var(--color-text)' }}>
+                Type <strong>{workspace?.name}</strong> to confirm:
+              </p>
+              <input
+                value={deleteInput}
+                onChange={(e) => setDeleteInput(e.target.value)}
+                placeholder={workspace?.name}
+                className="w-full px-3 py-2 border rounded-lg text-sm outline-none"
+                style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+              />
+              <div className="flex gap-2">
+                <button
+                  onClick={handleDeleteWorkspace}
+                  disabled={deleteInput !== workspace?.name}
+                  className="px-4 py-1.5 text-sm text-white bg-red-600 rounded-lg disabled:opacity-50 hover:bg-red-700"
+                >
+                  Delete permanently
+                </button>
+                <button
+                  onClick={() => { setConfirmDelete(false); setDeleteInput(''); }}
+                  className="px-3 py-1.5 text-sm rounded-lg"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -9,6 +9,7 @@ export interface User {
   avatar_url: string | null;
   role: string;
   pin_on_top: boolean;
+  notification_prefs: Record<string, boolean> | null;
   workspace_id: string;
   created_at: string;
   updated_at: string;
@@ -31,6 +32,9 @@ export const authApi = {
     api.post<TokenResponse>('/auth/refresh', { refresh_token }),
 
   me: () => api.get<User>('/auth/me'),
+
+  changePassword: (data: { current_password: string; new_password: string }) =>
+    api.post('/auth/change-password', data),
 };
 
 export const membersApi = {
