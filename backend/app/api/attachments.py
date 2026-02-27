@@ -36,6 +36,21 @@ async def list_attachments(
     return result.scalars().all()
 
 
+ALLOWED_EXTENSIONS = {
+    ".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".bmp",
+    ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
+    ".txt", ".csv", ".md", ".json", ".xml",
+    ".zip", ".tar", ".gz", ".7z",
+    ".mp4", ".webm", ".mov", ".mp3", ".wav", ".ogg",
+}
+
+BLOCKED_EXTENSIONS = {
+    ".exe", ".bat", ".cmd", ".com", ".msi", ".scr", ".pif",
+    ".vbs", ".vbe", ".js", ".jse", ".wsf", ".wsh", ".ps1",
+    ".sh", ".bash", ".csh", ".dll", ".so", ".dylib",
+}
+
+
 @router.post("", response_model=AttachmentResponse, status_code=201)
 async def upload_attachment(
     workspace_id: uuid.UUID,
@@ -44,6 +59,13 @@ async def upload_attachment(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
+    # Validate file extension
+    ext = os.path.splitext(file.filename or "")[1].lower()
+    if ext in BLOCKED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail=f"File type {ext} is not allowed")
+    if ext and ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail=f"File type {ext} is not supported")
+
     # Validate file size
     max_bytes = settings.max_upload_size_mb * 1024 * 1024
     content = await file.read()
@@ -54,7 +76,6 @@ async def upload_attachment(
     task_dir = os.path.join(settings.upload_dir, str(workspace_id), str(task_id))
     os.makedirs(task_dir, exist_ok=True)
     file_id = str(uuid.uuid4())
-    ext = os.path.splitext(file.filename or "")[1]
     stored_name = f"{file_id}{ext}"
     file_path = os.path.join(task_dir, stored_name)
 

@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -11,6 +12,8 @@ from app.models.task import Task
 from app.models.user import User
 from app.schemas.comment import CommentCreate, CommentResponse, CommentUpdate
 from app.services.notification_service import notify_comment_added
+from app.services.webhook_service import deliver_webhooks
+from app.services.email_service import send_comment_email
 from app.utils.auth import get_current_user
 from app.websocket.events import emit_event
 
@@ -63,6 +66,12 @@ async def create_comment(
         "comment": comment_data,
     })
 
+    # Deliver webhooks
+    await deliver_webhooks(db, workspace_id, "comment.created", {
+        "task_id": str(task_id),
+        "comment": comment_data,
+    })
+
     # Notify task assignees
     task_result = await db.execute(
         select(Task).where(Task.id == task_id).options(selectinload(Task.assignees))
@@ -80,6 +89,14 @@ async def create_comment(
             notify_user_ids=assignee_ids,
         )
         await db.commit()
+
+        # Email assignees about new comment
+        for assignee in task_obj.assignees:
+            if assignee.id != current_user.id and assignee.email:
+                await asyncio.to_thread(
+                    send_comment_email,
+                    assignee.email, task_obj.name, current_user.name, data.body,
+                )
 
     return comment
 

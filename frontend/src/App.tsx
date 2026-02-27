@@ -19,6 +19,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import { ActivityPage } from './pages/ActivityPage';
 import { CalendarPage } from './pages/CalendarPage';
 import { BurndownPage } from './pages/BurndownPage';
+import { RotaPage } from './pages/RotaPage';
 import { Sidebar } from './components/layout/Sidebar';
 import { TopBar } from './components/layout/TopBar';
 import { QuickSearch } from './components/layout/QuickSearch';
@@ -123,6 +124,7 @@ export default function App() {
           <Route path="activity" element={<ActivityPage />} />
           <Route path="calendar" element={<CalendarPage />} />
           <Route path="burndown" element={<BurndownPage />} />
+          <Route path="rotas" element={<RotaPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
       </Routes>

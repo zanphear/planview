@@ -3,6 +3,7 @@ import { TimelineHeader } from './TimelineHeader';
 import { TimelineSwimlane } from './TimelineSwimlane';
 import { TodayMarker } from './TodayMarker';
 import { MilestoneMarker } from './MilestoneMarker';
+import { DependencyArrows } from './DependencyArrows';
 import { ZoomControls } from './ZoomControls';
 import { generateDateRange, getDateOffset, ZOOM_CONFIGS } from '../../utils/dates';
 import { useTimelineDrag } from '../../hooks/useTimelineDrag';
@@ -67,6 +68,31 @@ export function Timeline({ swimlanes, milestones = [], startDate, zoom, onZoomCh
   const todayOffset = getDateOffset(new Date(), startDate);
   const todayLeft = todayOffset >= 0 ? 192 + todayOffset * config.columnWidth + config.columnWidth / 2 : -1;
 
+  // Collect all tasks for dependency arrows
+  const allTasks = useMemo(() => swimlanes.flatMap((lane) => lane.tasks), [swimlanes]);
+
+  const getTaskPosition = useCallback(
+    (taskId: string) => {
+      for (let i = 0; i < swimlanes.length; i++) {
+        const task = swimlanes[i].tasks.find((t) => t.id === taskId);
+        if (task && task.date_from) {
+          const offset = getDateOffset(new Date(task.date_from), startDate);
+          const endOffset = task.date_to
+            ? getDateOffset(new Date(task.date_to), startDate) + 1
+            : offset + 1;
+          return {
+            x: 192 + offset * config.columnWidth,
+            y: i * 60 + 30,
+            width: (endOffset - offset) * config.columnWidth,
+            height: 24,
+          };
+        }
+      }
+      return null;
+    },
+    [swimlanes, startDate, config.columnWidth],
+  );
+
   return (
     <div className="flex flex-col h-full">
       {/* Toolbar */}
@@ -127,6 +153,14 @@ export function Timeline({ swimlanes, milestones = [], startDate, zoom, onZoomCh
                 onContextAction={onContextAction}
               />
             ))}
+
+            {/* Dependency arrows */}
+            <DependencyArrows
+              tasks={allTasks}
+              getTaskPosition={getTaskPosition}
+              scrollLeft={0}
+              scrollTop={0}
+            />
 
             {swimlanes.length === 0 && (
               <div className="flex items-center justify-center h-40 text-sm" style={{ color: 'var(--color-text-secondary)' }}>

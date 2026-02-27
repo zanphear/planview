@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Users, FolderKanban, Star, Settings, User, ChevronDown, Plus, LayoutGrid, Calendar, MoreHorizontal, Activity, TrendingDown } from 'lucide-react';
+import { Users, FolderKanban, Star, Settings, User, ChevronDown, Plus, LayoutGrid, Calendar, MoreHorizontal, Activity, TrendingDown, Phone } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useUIStore } from '../../stores/uiStore';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
@@ -210,6 +210,19 @@ export function Sidebar() {
         >
           <TrendingDown size={16} />
           Burndown
+        </NavLink>
+        <NavLink
+          to="/rotas"
+          className={({ isActive }) =>
+            `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
+              isActive
+                ? 'bg-[var(--color-sidebar-active)] text-white'
+                : 'text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)]'
+            }`
+          }
+        >
+          <Phone size={16} />
+          Rotas
         </NavLink>
       </nav>
 

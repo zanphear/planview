@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 from datetime import date, timedelta
 
@@ -25,6 +26,8 @@ from app.websocket.events import emit_event
 from app.services.notification_service import notify_task_assigned
 from app.services.activity_service import record_activity
 from app.services.recurrence_service import expand_recurrence
+from app.services.webhook_service import deliver_webhooks
+from app.services.email_service import send_task_assigned_email
 
 router = APIRouter(prefix="/workspaces/{workspace_id}/tasks", tags=["tasks"])
 
@@ -60,6 +63,8 @@ async def list_tasks(
     tag_id: uuid.UUID | None = None,
     search: str | None = None,
     filter: str | None = Query(None, description="backlog|timeline"),
+    limit: int = Query(500, ge=1, le=2000, description="Max results"),
+    offset: int = Query(0, ge=0, description="Offset for pagination"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -86,7 +91,7 @@ async def list_tasks(
     elif filter == "timeline":
         query = query.where(Task.date_from.isnot(None))
 
-    query = query.order_by(Task.sort_order, Task.created_at)
+    query = query.order_by(Task.sort_order, Task.created_at).limit(limit).offset(offset)
     result = await db.execute(query)
     return result.scalars().unique().all()
 
@@ -150,6 +155,9 @@ async def create_task(
         "actor_id": str(current_user.id),
     })
 
+    # Deliver webhooks
+    await deliver_webhooks(db, workspace_id, "task.created", _task_to_dict(created_task))
+
     # Notify assignees
     for uid in (data.assignee_ids or []):
         if uid != current_user.id:
@@ -157,6 +165,14 @@ async def create_task(
                 db, workspace_id=workspace_id, task_id=created_task.id,
                 task_name=created_task.name, assignee_id=uid,
                 actor_id=current_user.id, actor_name=current_user.name,
+            )
+
+    # Email assignees
+    for assignee in created_task.assignees:
+        if assignee.id != current_user.id and assignee.email:
+            await asyncio.to_thread(
+                send_task_assigned_email,
+                assignee.email, created_task.name, current_user.name,
             )
 
     return created_task
@@ -278,6 +294,9 @@ async def update_task(
         "actor_id": str(current_user.id),
     })
 
+    # Deliver webhooks
+    await deliver_webhooks(db, workspace_id, "task.updated", _task_to_dict(updated_task))
+
     # Notify newly assigned users
     if assignee_ids is not None:
         new_ids = set(assignee_ids) - prev_assignee_ids
@@ -287,6 +306,13 @@ async def update_task(
                     db, workspace_id=workspace_id, task_id=updated_task.id,
                     task_name=updated_task.name, assignee_id=uid,
                     actor_id=current_user.id, actor_name=current_user.name,
+                )
+        # Email newly assigned
+        for assignee in updated_task.assignees:
+            if assignee.id in new_ids and assignee.id != current_user.id and assignee.email:
+                await asyncio.to_thread(
+                    send_task_assigned_email,
+                    assignee.email, updated_task.name, current_user.name,
                 )
 
     # Recurring task: create next occurrence when marked done
@@ -368,6 +394,9 @@ async def _create_next_recurrence(
         "actor_id": str(actor.id),
     })
 
+    # Deliver webhooks
+    await deliver_webhooks(db, workspace_id, "task.created", _task_to_dict(created_task))
+
 
 @router.delete("/{task_id}", status_code=204)
 async def delete_task(
@@ -396,6 +425,11 @@ async def delete_task(
     await emit_event(str(workspace_id), "task.deleted", {
         "task_id": str(task_id),
         "actor_id": str(current_user.id),
+    })
+
+    # Deliver webhooks
+    await deliver_webhooks(db, workspace_id, "task.deleted", {
+        "task_id": str(task_id), "task_name": task_name,
     })
 
 
@@ -458,6 +492,9 @@ async def duplicate_task(
         "actor_id": str(current_user.id),
     })
 
+    # Deliver webhooks
+    await deliver_webhooks(db, workspace_id, "task.created", _task_to_dict(created_task))
+
     return created_task
 
 
@@ -515,6 +552,7 @@ async def bulk_update_tasks(
             "task": _task_to_dict(t),
             "actor_id": str(current_user.id),
         })
+        await deliver_webhooks(db, workspace_id, "task.updated", _task_to_dict(t))
 
     return updated_tasks
 

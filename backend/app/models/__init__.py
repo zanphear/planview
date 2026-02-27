@@ -19,6 +19,7 @@ from app.models.task_dependency import TaskDependency
 from app.models.custom_field import CustomField, CustomFieldValue
 from app.models.task_template import TaskTemplate
 from app.models.webhook import Webhook, WebhookLog
+from app.models.rota import Rota, RotaEntry
 
 __all__ = [
     "Base",
@@ -47,4 +48,6 @@ __all__ = [
     "TaskTemplate",
     "Webhook",
     "WebhookLog",
+    "Rota",
+    "RotaEntry",
 ]
