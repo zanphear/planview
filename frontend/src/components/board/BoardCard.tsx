@@ -7,9 +7,11 @@ import type { Task } from '../../api/tasks';
 interface BoardCardProps {
   task: Task;
   onClick: () => void;
+  selected?: boolean;
+  onToggleSelect?: () => void;
 }
 
-export function BoardCard({ task, onClick }: BoardCardProps) {
+export function BoardCard({ task, onClick, selected, onToggleSelect }: BoardCardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
     data: { type: 'task', task },
@@ -30,9 +32,21 @@ export function BoardCard({ task, onClick }: BoardCardProps) {
       ref={setNodeRef}
       {...attributes}
       {...listeners}
-      onClick={onClick}
-      className="rounded-lg border p-3 cursor-pointer hover:shadow-md transition-shadow group"
-      style={{ ...style, backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+      onClick={(e) => {
+        if (e.shiftKey && onToggleSelect) {
+          e.stopPropagation();
+          onToggleSelect();
+        } else {
+          onClick();
+        }
+      }}
+      className="rounded-lg border p-3 cursor-pointer hover:shadow-md transition-shadow group relative"
+      style={{
+        ...style,
+        backgroundColor: 'var(--color-surface)',
+        borderColor: selected ? 'var(--color-primary)' : 'var(--color-border)',
+        boxShadow: selected ? '0 0 0 2px var(--color-primary)' : undefined,
+      }}
     >
       {/* Colour bar */}
       <div className="h-1 rounded-full mb-2" style={{ backgroundColor: colour }} />

@@ -75,6 +75,9 @@ class Task(Base, UUIDPrimaryKey, TimestampMixin):
     workspace_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False
     )
+    parent_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("tasks.id", ondelete="CASCADE"), nullable=True
+    )
 
     workspace: Mapped[Workspace] = relationship(back_populates="tasks")
     project: Mapped[Project | None] = relationship(back_populates="tasks")
@@ -84,6 +87,8 @@ class Task(Base, UUIDPrimaryKey, TimestampMixin):
     checklists: Mapped[list[Checklist]] = relationship(back_populates="task", cascade="all, delete-orphan")
     comments: Mapped[list[Comment]] = relationship(back_populates="task", cascade="all, delete-orphan")
     attachments: Mapped[list[Attachment]] = relationship(back_populates="task", cascade="all, delete-orphan")
+    subtasks: Mapped[list[Task]] = relationship(back_populates="parent", cascade="all, delete-orphan", lazy="selectin")
+    parent: Mapped[Task | None] = relationship(back_populates="subtasks", remote_side="Task.id")
 
     __table_args__ = (
         CheckConstraint(

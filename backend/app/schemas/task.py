@@ -20,6 +20,7 @@ class TaskCreate(BaseModel):
     time_estimate_mode: str = "total"
     project_id: uuid.UUID | None = None
     segment_id: uuid.UUID | None = None
+    parent_id: uuid.UUID | None = None
     assignee_ids: list[uuid.UUID] = []
     tag_ids: list[uuid.UUID] = []
 
@@ -39,6 +40,7 @@ class TaskUpdate(BaseModel):
     project_id: uuid.UUID | None = None
     segment_id: uuid.UUID | None = None
     sort_order: int | None = None
+    parent_id: uuid.UUID | None = None
     assignee_ids: list[uuid.UUID] | None = None
     tag_ids: list[uuid.UUID] | None = None
 
@@ -80,6 +82,15 @@ class ProjectBrief(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class SubtaskBrief(BaseModel):
+    id: uuid.UUID
+    name: str
+    status: str
+    sort_order: int
+
+    model_config = {"from_attributes": True}
+
+
 class TaskResponse(BaseModel):
     id: uuid.UUID
     name: str
@@ -98,10 +109,12 @@ class TaskResponse(BaseModel):
     sort_order: int
     project_id: uuid.UUID | None
     segment_id: uuid.UUID | None
+    parent_id: uuid.UUID | None = None
     workspace_id: uuid.UUID
     assignees: list[UserResponse] = []
     tags: list[TagBrief] = []
     checklists: list[ChecklistResponse] = []
+    subtasks: list[SubtaskBrief] = []
     project: ProjectBrief | None = None
     created_at: datetime
     updated_at: datetime

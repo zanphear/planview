@@ -19,9 +19,11 @@ import { useWorkspaceStore } from '../../stores/workspaceStore';
 interface BoardProps {
   tasks: Task[];
   onTaskClick: (task: Task) => void;
+  selectedIds?: Set<string>;
+  onToggleSelect?: (taskId: string) => void;
 }
 
-export function Board({ tasks, onTaskClick }: BoardProps) {
+export function Board({ tasks, onTaskClick, selectedIds, onToggleSelect }: BoardProps) {
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const workspace = useWorkspaceStore((s) => s.currentWorkspace);
   const updateTaskInStore = useTaskStore((s) => s.updateTask);
@@ -90,6 +92,8 @@ export function Board({ tasks, onTaskClick }: BoardProps) {
             status={status}
             tasks={tasksByStatus[status.id] || []}
             onTaskClick={onTaskClick}
+            selectedIds={selectedIds}
+            onToggleSelect={onToggleSelect}
           />
         ))}
       </div>

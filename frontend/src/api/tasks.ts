@@ -22,6 +22,13 @@ export interface ChecklistItem {
   created_at: string;
 }
 
+export interface SubtaskBrief {
+  id: string;
+  name: string;
+  status: string;
+  sort_order: number;
+}
+
 export interface Task {
   id: string;
   name: string;
@@ -40,10 +47,12 @@ export interface Task {
   sort_order: number;
   project_id: string | null;
   segment_id: string | null;
+  parent_id: string | null;
   workspace_id: string;
   assignees: User[];
   tags: TaskTag[];
   checklists: ChecklistItem[];
+  subtasks: SubtaskBrief[];
   project: TaskProject | null;
   created_at: string;
   updated_at: string;
@@ -61,4 +70,10 @@ export const tasksApi = {
 
   delete: (workspaceId: string, taskId: string) =>
     api.delete(`/workspaces/${workspaceId}/tasks/${taskId}`),
+
+  duplicate: (workspaceId: string, taskId: string) =>
+    api.post<Task>(`/workspaces/${workspaceId}/tasks/${taskId}/duplicate`),
+
+  bulkUpdate: (workspaceId: string, data: { task_ids: string[] } & Partial<Task> & { assignee_ids?: string[] }) =>
+    api.put<Task[]>(`/workspaces/${workspaceId}/tasks`, data),
 };

@@ -15,6 +15,7 @@ import { ProjectTimelinePage } from './pages/ProjectTimelinePage';
 import { MyWorkPage } from './pages/MyWorkPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { SharedTimelinePage } from './pages/SharedTimelinePage';
+import { DashboardPage } from './pages/DashboardPage';
 import { Sidebar } from './components/layout/Sidebar';
 import { TopBar } from './components/layout/TopBar';
 import { QuickSearch } from './components/layout/QuickSearch';
@@ -81,11 +82,11 @@ function ProtectedLayout() {
   }
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden">
+    <div className="flex h-full w-full overflow-hidden rounded-xl shadow-lg border border-[var(--color-border)]">
       <Sidebar />
       <div className="flex flex-col flex-1 overflow-hidden">
         <TopBar />
-        <main className="flex-1 overflow-auto p-6" style={{ backgroundColor: 'var(--color-bg)' }}>
+        <main className="flex-1 overflow-auto" style={{ backgroundColor: 'var(--color-bg)' }}>
           <ErrorBoundary>
             <Outlet />
           </ErrorBoundary>
@@ -94,18 +95,6 @@ function ProtectedLayout() {
       <QuickSearch />
       <Taskbox />
       {showShortcuts && <KeyboardShortcutsHelp onClose={() => setShowShortcuts(false)} />}
-    </div>
-  );
-}
-
-function DashboardPage() {
-  return (
-    <div className="flex flex-col items-center justify-center h-full text-center">
-      <img src="/logo-color.png" alt="Siemens Energy" className="h-12 mb-6 opacity-80" />
-      <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--color-text)' }}>Welcome to Planview</h2>
-      <p className="text-[var(--color-text-secondary)] max-w-md">
-        Select a team or project from the sidebar to get started with visual planning and scheduling.
-      </p>
     </div>
   );
 }

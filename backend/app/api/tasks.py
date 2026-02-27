@@ -22,6 +22,7 @@ from app.schemas.task import (
 from app.utils.auth import get_current_user
 from app.websocket.events import emit_event
 from app.services.notification_service import notify_task_assigned
+from app.services.activity_service import record_activity
 
 router = APIRouter(prefix="/workspaces/{workspace_id}/tasks", tags=["tasks"])
 
@@ -40,6 +41,7 @@ def _task_query(workspace_id: uuid.UUID):
             selectinload(Task.tags),
             selectinload(Task.checklists),
             selectinload(Task.project),
+            selectinload(Task.subtasks),
         )
     )
 
@@ -105,6 +107,7 @@ async def create_task(
         time_estimate_mode=data.time_estimate_mode,
         project_id=data.project_id,
         segment_id=data.segment_id,
+        parent_id=data.parent_id,
         workspace_id=workspace_id,
     )
     db.add(task)
@@ -125,6 +128,14 @@ async def create_task(
     # Re-fetch with relationships
     result = await db.execute(_task_query(workspace_id).where(Task.id == task.id))
     created_task = result.scalar_one()
+
+    # Record activity
+    await record_activity(
+        db, workspace_id=workspace_id, actor_id=current_user.id,
+        action="created", entity_type="task",
+        entity_id=created_task.id, entity_name=created_task.name,
+    )
+    await db.commit()
 
     # Broadcast task.created event
     await emit_event(str(workspace_id), "task.created", {
@@ -201,6 +212,21 @@ async def update_task(
     result = await db.execute(_task_query(workspace_id).where(Task.id == task_id))
     updated_task = result.scalar_one()
 
+    # Record activity
+    changes = list(update_data.keys())
+    if assignee_ids is not None:
+        changes.append("assignees")
+    if tag_ids is not None:
+        changes.append("tags")
+    if changes:
+        await record_activity(
+            db, workspace_id=workspace_id, actor_id=current_user.id,
+            action="updated", entity_type="task",
+            entity_id=updated_task.id, entity_name=updated_task.name,
+            details={"fields": changes},
+        )
+        await db.commit()
+
     # Broadcast task.updated event
     await emit_event(str(workspace_id), "task.updated", {
         "task": _task_to_dict(updated_task),
@@ -235,6 +261,12 @@ async def delete_task(
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
 
+    task_name = task.name
+    await record_activity(
+        db, workspace_id=workspace_id, actor_id=current_user.id,
+        action="deleted", entity_type="task",
+        entity_id=task_id, entity_name=task_name,
+    )
     await db.delete(task)
     await db.commit()
 
@@ -243,6 +275,68 @@ async def delete_task(
         "task_id": str(task_id),
         "actor_id": str(current_user.id),
     })
+
+
+# --- Duplicate ---
+
+@router.post("/{task_id}/duplicate", response_model=TaskResponse, status_code=201)
+async def duplicate_task(
+    workspace_id: uuid.UUID,
+    task_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        _task_query(workspace_id).where(Task.id == task_id)
+    )
+    original = result.scalar_one_or_none()
+    if not original:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    clone = Task(
+        name=f"{original.name} (copy)",
+        description=original.description,
+        colour=original.colour,
+        status=original.status,
+        status_emoji=original.status_emoji,
+        date_from=original.date_from,
+        date_to=original.date_to,
+        start_time=original.start_time,
+        end_time=original.end_time,
+        time_estimate_minutes=original.time_estimate_minutes,
+        time_estimate_mode=original.time_estimate_mode,
+        project_id=original.project_id,
+        segment_id=original.segment_id,
+        workspace_id=workspace_id,
+    )
+    db.add(clone)
+    await db.flush()
+
+    # Copy assignees
+    for assignee in original.assignees:
+        await db.execute(task_assignees.insert().values(task_id=clone.id, user_id=assignee.id))
+
+    # Copy tags
+    for tag in original.tags:
+        await db.execute(task_tags.insert().values(task_id=clone.id, tag_id=tag.id))
+
+    # Copy checklists
+    for item in original.checklists:
+        new_item = Checklist(title=item.title, task_id=clone.id, sort_order=item.sort_order)
+        db.add(new_item)
+
+    await db.commit()
+
+    # Re-fetch with relationships
+    result = await db.execute(_task_query(workspace_id).where(Task.id == clone.id))
+    created_task = result.scalar_one()
+
+    await emit_event(str(workspace_id), "task.created", {
+        "task": _task_to_dict(created_task),
+        "actor_id": str(current_user.id),
+    })
+
+    return created_task
 
 
 # --- Bulk update ---

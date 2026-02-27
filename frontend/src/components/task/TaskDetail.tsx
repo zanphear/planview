@@ -12,6 +12,7 @@ import { TaskComments } from './TaskComments';
 import { TaskAttachments } from './TaskAttachments';
 import { RichTextEditor } from './RichTextEditor';
 import { TagPicker } from './TagPicker';
+import { TaskSubtasks } from './TaskSubtasks';
 import type { User } from '../../api/users';
 
 interface TaskDetailProps {
@@ -232,6 +233,13 @@ export function TaskDetail({ task: initialTask, members, onClose }: TaskDetailPr
             }}
           />
         </div>
+
+        {/* Subtasks */}
+        <TaskSubtasks
+          taskId={task.id}
+          subtasks={task.subtasks || []}
+          onRefresh={refreshTask}
+        />
 
         {/* Checklist */}
         <TaskChecklist

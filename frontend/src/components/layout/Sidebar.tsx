@@ -53,7 +53,7 @@ export function Sidebar() {
 
   return (
     <aside
-      className="w-60 flex flex-col shrink-0 overflow-y-auto"
+      className="w-60 flex flex-col shrink-0 overflow-y-auto rounded-l-xl"
       style={{ background: 'linear-gradient(180deg, var(--color-sidebar-bg) 0%, #2D1B4E 100%)' }}
     >
       {/* Logo + Workspace */}

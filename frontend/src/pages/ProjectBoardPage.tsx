@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import { Board } from '../components/board/Board';
 import { TaskDetail } from '../components/task/TaskDetail';
+import { BulkActionBar } from '../components/board/BulkActionBar';
 import { FilterBar, type FilterState } from '../components/shared/FilterBar';
 import { useWorkspaceStore } from '../stores/workspaceStore';
 import { useTaskStore } from '../stores/taskStore';
@@ -23,6 +24,7 @@ export function ProjectBoardPage() {
   const [members, setMembers] = useState<User[]>([]);
   const [newTaskName, setNewTaskName] = useState('');
   const [filters, setFilters] = useState<FilterState>({ status: null, assignee: null });
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const userId = useAuthStore((s) => s.user?.id);
   const updateTaskInStore = useTaskStore((s) => s.updateTask);
@@ -79,15 +81,53 @@ export function ProjectBoardPage() {
 
   const handleTaskClick = useCallback(
     (task: Task) => {
-      // Refresh from store to get latest
       const latest = tasks.find((t) => t.id === task.id) || task;
       setSelectedTask(latest);
     },
     [tasks]
   );
 
+  const handleToggleSelect = useCallback((taskId: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(taskId)) next.delete(taskId);
+      else next.add(taskId);
+      return next;
+    });
+  }, []);
+
+  const handleBulkStatus = useCallback(async (status: string) => {
+    if (!workspace) return;
+    const ids = Array.from(selectedIds);
+    try {
+      const { data } = await tasksApi.bulkUpdate(workspace.id, { task_ids: ids, status });
+      data.forEach((t) => updateTaskInStore(t));
+      setSelectedIds(new Set());
+    } catch (err) { console.error('Bulk status failed:', err); }
+  }, [workspace, selectedIds, updateTaskInStore]);
+
+  const handleBulkAssign = useCallback(async (userId: string) => {
+    if (!workspace) return;
+    const ids = Array.from(selectedIds);
+    try {
+      const { data } = await tasksApi.bulkUpdate(workspace.id, { task_ids: ids, assignee_ids: [userId] });
+      data.forEach((t) => updateTaskInStore(t));
+      setSelectedIds(new Set());
+    } catch (err) { console.error('Bulk assign failed:', err); }
+  }, [workspace, selectedIds, updateTaskInStore]);
+
+  const handleBulkDelete = useCallback(async () => {
+    if (!workspace) return;
+    const ids = Array.from(selectedIds);
+    try {
+      await Promise.all(ids.map((id) => tasksApi.delete(workspace.id, id)));
+      ids.forEach((id) => removeTaskFromStore(id));
+      setSelectedIds(new Set());
+    } catch (err) { console.error('Bulk delete failed:', err); }
+  }, [workspace, selectedIds, removeTaskFromStore]);
+
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
@@ -125,8 +165,25 @@ export function ProjectBoardPage() {
 
       {/* Board */}
       <div className="flex-1 overflow-hidden">
-        <Board tasks={filteredTasks} onTaskClick={handleTaskClick} />
+        <Board
+          tasks={filteredTasks}
+          onTaskClick={handleTaskClick}
+          selectedIds={selectedIds}
+          onToggleSelect={handleToggleSelect}
+        />
       </div>
+
+      {/* Bulk action bar */}
+      {selectedIds.size > 0 && (
+        <BulkActionBar
+          count={selectedIds.size}
+          members={members}
+          onStatusChange={handleBulkStatus}
+          onAssign={handleBulkAssign}
+          onDelete={handleBulkDelete}
+          onClear={() => setSelectedIds(new Set())}
+        />
+      )}
 
       {/* Task detail panel */}
       {selectedTask && (

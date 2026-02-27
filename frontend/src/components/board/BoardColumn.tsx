@@ -7,9 +7,11 @@ interface BoardColumnProps {
   status: { id: string; label: string; emoji: string };
   tasks: Task[];
   onTaskClick: (task: Task) => void;
+  selectedIds?: Set<string>;
+  onToggleSelect?: (taskId: string) => void;
 }
 
-export function BoardColumn({ status, tasks, onTaskClick }: BoardColumnProps) {
+export function BoardColumn({ status, tasks, onTaskClick, selectedIds, onToggleSelect }: BoardColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: status.id });
 
   return (
@@ -31,7 +33,13 @@ export function BoardColumn({ status, tasks, onTaskClick }: BoardColumnProps) {
       <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
         <div className="flex-1 px-2 pb-2 space-y-2 overflow-y-auto min-h-[60px]">
           {tasks.map((task) => (
-            <BoardCard key={task.id} task={task} onClick={() => onTaskClick(task)} />
+            <BoardCard
+              key={task.id}
+              task={task}
+              onClick={() => onTaskClick(task)}
+              selected={selectedIds?.has(task.id)}
+              onToggleSelect={onToggleSelect ? () => onToggleSelect(task.id) : undefined}
+            />
           ))}
         </div>
       </SortableContext>

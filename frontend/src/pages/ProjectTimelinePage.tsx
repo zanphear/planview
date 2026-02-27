@@ -125,7 +125,7 @@ export function ProjectTimelinePage() {
   }, [workspace]);
 
   return (
-    <div className="h-full flex flex-col -m-6">
+    <div className="h-full flex flex-col">
       {project && (
         <div className="px-6 py-3 bg-[var(--color-surface)] border-b border-[var(--color-border)] flex items-center gap-3 shrink-0">
           <div className="w-4 h-4 rounded" style={{ backgroundColor: project.colour }} />

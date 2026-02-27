@@ -19,16 +19,7 @@ export function useTaskContextActions(
         const { data } = await tasksApi.update(workspace.id, task.id, { status });
         setTasks((prev) => prev.map((t) => (t.id === task.id ? data : t)));
       } else if (action === 'duplicate') {
-        const { data } = await tasksApi.create(workspace.id, {
-          name: `${task.name} (copy)`,
-          status: task.status,
-          date_from: task.date_from || undefined,
-          date_to: task.date_to || undefined,
-          colour: task.colour || undefined,
-          project_id: task.project_id || undefined,
-          segment_id: task.segment_id || undefined,
-          assignee_ids: task.assignees.map((a) => a.id),
-        });
+        const { data } = await tasksApi.duplicate(workspace.id, task.id);
         setTasks((prev) => [...prev, data]);
       } else if (action === 'delete') {
         await tasksApi.delete(workspace.id, task.id);

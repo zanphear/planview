@@ -42,4 +42,10 @@ export const membersApi = {
 
   update: (workspaceId: string, userId: string, data: Partial<User>) =>
     api.put<User>(`/workspaces/${workspaceId}/members/${userId}`, data),
+
+  invite: (workspaceId: string, data: { name: string; email: string; role?: string }) =>
+    api.post<{ user: User; temp_password: string }>(`/workspaces/${workspaceId}/members/invite`, data),
+
+  remove: (workspaceId: string, userId: string) =>
+    api.delete(`/workspaces/${workspaceId}/members/${userId}`),
 };

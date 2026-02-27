@@ -14,6 +14,7 @@ from app.models.milestone import Milestone
 from app.models.notification import Notification
 from app.models.sharing import SharedTimeline
 from app.models.time_off import TimeOff
+from app.models.activity import Activity
 
 __all__ = [
     "Base",
@@ -35,4 +36,5 @@ __all__ = [
     "Notification",
     "SharedTimeline",
     "TimeOff",
+    "Activity",
 ]

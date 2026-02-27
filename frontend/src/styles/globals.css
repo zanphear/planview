@@ -62,7 +62,8 @@ body {
 
 #root {
   height: 100vh;
-  display: flex;
+  padding: 8px;
+  background-color: var(--color-grey-2);
 }
 
 @keyframes slide-in {
