@@ -103,6 +103,8 @@ async def get_shared_timeline_tasks(
             selectinload(Task.assignees),
             selectinload(Task.tags),
             selectinload(Task.project),
+            selectinload(Task.checklists),
+            selectinload(Task.subtasks),
         )
     )
     if shared.project_id:

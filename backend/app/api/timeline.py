@@ -39,6 +39,7 @@ async def get_timeline(
             selectinload(Task.project),
             selectinload(Task.tags),
             selectinload(Task.checklists),
+            selectinload(Task.subtasks),
         )
     )
 
