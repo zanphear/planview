@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models.user import User
 from app.services.import_service import import_tasks_csv, import_tasks_json, import_asana_csv
-from app.utils.auth import get_current_user
+from app.utils.auth import get_workspace_user
 
 router = APIRouter(
     prefix="/workspaces/{workspace_id}/import",
@@ -18,7 +18,7 @@ router = APIRouter(
 async def import_tasks(
     workspace_id: uuid.UUID,
     file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     if not file.filename:

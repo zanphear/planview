@@ -23,7 +23,7 @@ A self-hosted visual planning & scheduling tool modelled on Toggl Plan (formerly
 | DnD | @dnd-kit/core 6 |
 | Rich Text | TipTap 2 |
 | CSS | Tailwind CSS 4 |
-| Auth | JWT (PyJWT + passlib[bcrypt]) |
+| Auth | JWT (PyJWT + passlib[bcrypt]) + optional OIDC |
 | File Storage | Local fs (MinIO optional later) |
 | Reverse Proxy | Nginx |
 | Container | Docker Compose |
@@ -47,14 +47,30 @@ A self-hosted visual planning & scheduling tool modelled on Toggl Plan (formerly
 1. **COMPLETE** — Foundation: API skeleton, DB schema, auth, frontend shell, Docker
 2. **COMPLETE** — Projects & Tasks CRUD: Board view with DnD, TaskDetail panel
 3. **COMPLETE** — Timeline Views: Team/Project/MyWork timelines with zoom + task bars
-4. Real-time & Collaboration — WebSocket, comments, notifications
-5. Polish & Extended Features — Attachments, recurring, import/export, sharing
-6. Hardening & Release — Error handling, perf, CI, Docker Hub push
+4. **COMPLETE** — Real-time & Collaboration — WebSocket (authenticated), comments, notifications
+5. **COMPLETE** — Polish & Extended Features — Attachments, recurring, import/export, sharing
+6. **COMPLETE** — Hardening & Release — Security hardening, container hardening, Docker Hub push
 
 ## Current Status
-Phases 1-3 code complete. Docker Desktop not running on Windows host — `docker compose up`
-not yet tested. All Python imports verified, TypeScript builds clean. 27 unique API paths,
-50+ route handlers. Next: Phase 4 (WebSocket + comments).
+Full-featured people management platform with 250+ API routes. Security hardened for
+external exposure (IDOR guard, JWT secret validation, WebSocket auth, path traversal
+fixes, CSP/security headers, Redis auth, refresh token rotation with JTI, OIDC nonce
+validation, login rate limiting, MIME validation, non-root containers, resource limits).
+20 Alembic migrations. TypeScript builds clean.
+
+## Security Model
+- **Workspace IDOR guard**: `get_workspace_user` dependency validates user belongs to workspace
+- **JWT secret**: Backend refuses to start with default secret
+- **WebSocket auth**: Requires `?token=xxx` query param, validated before accept
+- **Refresh token rotation**: JTI claim stored in Redis, one-time use, revocable via logout
+- **Login rate limiting**: 5 attempts per email per 15 minutes (Redis-backed)
+- **OIDC nonce**: Prevents ID token replay attacks
+- **Path traversal**: `os.path.basename()` + `os.path.realpath()` bounds checks on file serving
+- **CSP headers**: `default-src 'self'`, `frame-ancestors 'none'` via nginx
+- **File uploads**: Magic byte validation (python-magic), forced `Content-Disposition: attachment`
+- **Swagger**: Disabled by default (`ENABLE_DOCS=false`), blocked in nginx
+- **Containers**: Non-root (appuser / nginx-unprivileged), pinned image versions, resource limits
+- **Redis**: Password-protected (`--requirepass`)
 
 ## Anti-Patterns to Avoid
 - Don't let this file exceed 100 lines — detail goes in docs/

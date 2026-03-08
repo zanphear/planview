@@ -60,6 +60,8 @@ export function TeamTimelinePage() {
       setTasks(tasksRes.data);
       setMilestones(milestonesRes.data);
       setMembers(membersRes.data);
+    }).catch((err) => {
+      console.error('Failed to load team timeline:', err);
     });
   }, [workspace, teamId, teams, zoom, startDate]);
 

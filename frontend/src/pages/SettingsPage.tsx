@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { User, Palette, Bell, Shield, LogOut, Sun, Moon, Users, UserPlus, Trash2, Copy, Check, Download, Upload, AlertTriangle, Webhook, Lock, Sliders, Plus } from 'lucide-react';
+import { User, Palette, Bell, Shield, LogOut, Sun, Moon, Users, UserPlus, Trash2, Copy, Check, Download, Upload, AlertTriangle, Webhook, Lock, Sliders, Plus, ToggleLeft, Database, ChevronDown, ChevronRight, X, MessageSquare, Bug, Lightbulb } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { useWorkspaceStore } from '../stores/workspaceStore';
 import { useUIStore } from '../stores/uiStore';
@@ -10,11 +10,14 @@ import { webhooksApi, type Webhook as WebhookType } from '../api/webhooks';
 import { customFieldsApi, type CustomField } from '../api/customFields';
 import { templatesApi, type TaskTemplate } from '../api/templates';
 import { api } from '../api/client';
+import { lookupsApi, type LookupValue } from '../api/lookups';
+import { useLookupStore } from '../stores/lookupStore';
 import { ColourPicker } from '../components/task/ColourPicker';
 import { Avatar } from '../components/shared/Avatar';
 import { Toast } from '../components/shared/Toast';
+import { feedbackApi, type FeedbackItem } from '../api/feedback';
 
-type Tab = 'profile' | 'workspace' | 'members' | 'appearance' | 'notifications' | 'data' | 'security' | 'webhooks' | 'fields' | 'templates';
+type Tab = 'profile' | 'workspace' | 'members' | 'appearance' | 'notifications' | 'data' | 'security' | 'webhooks' | 'fields' | 'templates' | 'modules' | 'reference_data' | 'feedback';
 
 export function SettingsPage() {
   const user = useAuthStore((s) => s.user);
@@ -36,6 +39,8 @@ export function SettingsPage() {
   const [inviteRole, setInviteRole] = useState('member');
   const [tempPassword, setTempPassword] = useState<string | null>(null);
   const [copiedPw, setCopiedPw] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [addName, setAddName] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -96,6 +101,43 @@ export function SettingsPage() {
     }
   };
 
+  const handleAddMember = async () => {
+    if (!workspace || !addName.trim()) return;
+    try {
+      const { data } = await membersApi.add(workspace.id, { name: addName.trim() });
+      setMembers((prev) => [...prev, data]);
+      setAddName('');
+      setAdding(false);
+      Toast.show('Member added');
+    } catch {
+      Toast.show('Failed to add member');
+    }
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !workspace || !user) return;
+    try {
+      await membersApi.uploadAvatar(workspace.id, user.id, file);
+      await fetchMe();
+      Toast.show('Avatar updated');
+    } catch {
+      Toast.show('Failed to upload avatar');
+    }
+    e.target.value = '';
+  };
+
+  const handleAvatarDelete = async () => {
+    if (!workspace || !user) return;
+    try {
+      await membersApi.deleteAvatar(workspace.id, user.id);
+      await fetchMe();
+      Toast.show('Avatar removed');
+    } catch {
+      Toast.show('Failed to remove avatar');
+    }
+  };
+
   const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: 'profile', label: 'Profile', icon: <User size={16} /> },
     { id: 'members', label: 'Members', icon: <Users size={16} /> },
@@ -107,6 +149,9 @@ export function SettingsPage() {
     { id: 'webhooks', label: 'Webhooks', icon: <Webhook size={16} /> },
     { id: 'fields', label: 'Custom Fields', icon: <Sliders size={16} /> },
     { id: 'templates', label: 'Templates', icon: <Copy size={16} /> },
+    { id: 'modules', label: 'Modules', icon: <ToggleLeft size={16} /> },
+    { id: 'reference_data', label: 'Reference Data', icon: <Database size={16} /> },
+    { id: 'feedback', label: 'Feedback', icon: <MessageSquare size={16} /> },
   ];
 
   return (
@@ -151,17 +196,37 @@ export function SettingsPage() {
 
               {/* Avatar preview */}
               <div className="flex items-center gap-4">
-                <Avatar
-                  name={name || user?.name || '?'}
-                  colour={colour}
-                  size={56}
-                />
+                <div className="relative group">
+                  <Avatar
+                    name={name || user?.name || '?'}
+                    colour={colour}
+                    avatarUrl={user?.avatar_url}
+                    size={56}
+                  />
+                  <label className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                    <span className="text-white text-xs font-medium">Edit</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleAvatarUpload}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
                 <div>
                   <p className="font-medium" style={{ color: 'var(--color-text)' }}>{name || user?.name}</p>
                   <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>{user?.email}</p>
                   <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-secondary)' }}>
                     Role: {user?.role || 'member'}
                   </p>
+                  {user?.avatar_url && (
+                    <button
+                      onClick={handleAvatarDelete}
+                      className="text-xs mt-1 text-red-500 hover:text-red-600"
+                    >
+                      Remove photo
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -222,16 +287,64 @@ export function SettingsPage() {
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>Members</h3>
                 {(user?.role === 'owner' || user?.role === 'admin') && (
-                  <button
-                    onClick={() => setInviting(true)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-white rounded-lg text-sm font-medium hover:opacity-90"
-                    style={{ backgroundColor: 'var(--color-primary)' }}
-                  >
-                    <UserPlus size={14} />
-                    Invite
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => { setAdding(true); setInviting(false); }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-[var(--color-grey-2)] transition-colors"
+                      style={{ color: 'var(--color-text-secondary)', border: '1px solid var(--color-border)' }}
+                    >
+                      <UserPlus size={14} />
+                      Add
+                    </button>
+                    <button
+                      onClick={() => { setInviting(true); setAdding(false); }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-white rounded-lg text-sm font-medium hover:opacity-90"
+                      style={{ backgroundColor: 'var(--color-primary)' }}
+                    >
+                      <UserPlus size={14} />
+                      Invite
+                    </button>
+                  </div>
                 )}
               </div>
+
+              {/* Add member (no login) form */}
+              {adding && (
+                <div
+                  className="p-4 rounded-lg border space-y-3"
+                  style={{ backgroundColor: 'var(--color-grey-1)', borderColor: 'var(--color-border)' }}
+                >
+                  <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                    Add a member who won't need to log in. They'll appear in timelines and can be assigned tasks.
+                  </p>
+                  <div className="flex items-center gap-3">
+                    <input
+                      autoFocus
+                      value={addName}
+                      onChange={(e) => setAddName(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleAddMember()}
+                      placeholder="Full name"
+                      className="flex-1 px-3 py-2 text-sm border rounded-lg outline-none focus:ring-2"
+                      style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
+                    />
+                    <button
+                      onClick={handleAddMember}
+                      disabled={!addName.trim()}
+                      className="px-3 py-2 text-white rounded-lg text-sm font-medium disabled:opacity-50"
+                      style={{ backgroundColor: 'var(--color-primary)' }}
+                    >
+                      Add Member
+                    </button>
+                    <button
+                      onClick={() => { setAdding(false); setAddName(''); }}
+                      className="px-3 py-2 text-sm rounded-lg"
+                      style={{ color: 'var(--color-text-secondary)' }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Invite form */}
               {inviting && (
@@ -447,6 +560,18 @@ export function SettingsPage() {
 
           {tab === 'templates' && (
             <TemplatesTab workspaceId={workspace?.id} />
+          )}
+
+          {tab === 'modules' && (
+            <ModulesTab workspaceId={workspace?.id} enabledModules={workspace?.enabled_modules ?? null} />
+          )}
+
+          {tab === 'reference_data' && (
+            <ReferenceDataTab workspaceId={workspace?.id} />
+          )}
+
+          {tab === 'feedback' && (
+            <FeedbackTab workspaceId={workspace?.id} />
           )}
         </div>
       </div>
@@ -1355,6 +1480,480 @@ function TemplatesTab({ workspaceId }: { workspaceId?: string }) {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+const DEFAULT_MODULES: Record<string, { label: string; description: string; defaultOn: boolean }> = {
+  people: { label: 'People Profiles', description: 'Team directory, org chart, and personal profiles', defaultOn: true },
+  one_to_ones: { label: '1:1 Meetings', description: 'Track regular check-ins and action items', defaultOn: true },
+  objectives: { label: 'Objectives & KRs', description: 'Set and track goals with key results', defaultOn: true },
+  compliance: { label: 'Compliance Tracking', description: 'Monitor certificates, visas, and expiry dates', defaultOn: true },
+  competencies: { label: 'Competencies', description: 'Skills matrix and competency assessments', defaultOn: true },
+  leave: { label: 'Leave Management', description: 'Leave allowances, requests, and approvals', defaultOn: true },
+  recruitment: { label: 'Recruitment', description: 'Candidate pipeline and hiring tracker', defaultOn: false },
+  development: { label: 'Development Plans', description: 'Career development goals and learning plans', defaultOn: true },
+  reviews: { label: 'Performance Reviews', description: 'Structured review cycles and assessments', defaultOn: false },
+  wellbeing: { label: 'Team Wellbeing', description: 'Pulse surveys and kudos wall', defaultOn: false },
+  onboarding: { label: 'Onboarding', description: 'Onboarding and offboarding checklists', defaultOn: false },
+  early_talent: { label: 'Early Talent', description: 'Graduate and apprentice programme management', defaultOn: false },
+  ai_assistant: { label: 'AI Assistant', description: 'AI-powered chat and quick reports', defaultOn: true },
+  reporting: { label: 'People Reports', description: 'Aggregated people management dashboard', defaultOn: true },
+  guide: { label: 'Guide', description: 'In-app help and feature documentation', defaultOn: true },
+  burndown: { label: 'Burndown Charts', description: 'Sprint burndown and progress charts', defaultOn: true },
+  rotas: { label: 'Rotas', description: 'Team rota and shift scheduling', defaultOn: true },
+};
+
+function ModulesTab({ workspaceId, enabledModules }: { workspaceId?: string; enabledModules: Record<string, boolean> | null }) {
+  const [modules, setModules] = useState<Record<string, boolean>>(() => {
+    const defaults: Record<string, boolean> = {};
+    Object.entries(DEFAULT_MODULES).forEach(([key, v]) => { defaults[key] = v.defaultOn; });
+    return { ...defaults, ...(enabledModules || {}) };
+  });
+  const [saving, setSaving] = useState(false);
+  const fetchWorkspaces = useWorkspaceStore((s) => s.fetchWorkspaces);
+  const pendingRef = useRef<Record<string, boolean> | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const flushModules = async (updated: Record<string, boolean>) => {
+    if (!workspaceId) return;
+    setSaving(true);
+    try {
+      await workspacesApi.update(workspaceId, { enabled_modules: updated });
+      await fetchWorkspaces();
+      Toast.show('Modules updated');
+    } catch {
+      Toast.show('Failed to update modules');
+    }
+    pendingRef.current = null;
+    setSaving(false);
+  };
+
+  useEffect(() => {
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, []);
+
+  const handleToggle = (key: string) => {
+    if (!workspaceId) return;
+    const updated = { ...modules, [key]: !modules[key] };
+    setModules(updated);
+    pendingRef.current = updated;
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => flushModules(updated), 800);
+  };
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>Modules</h3>
+        <p className="text-sm mt-1" style={{ color: 'var(--color-text-secondary)' }}>
+          Enable or disable modules to customise the sidebar for your workspace. Disabled modules are hidden but data is preserved.
+        </p>
+      </div>
+      <div className="space-y-1">
+        {Object.entries(DEFAULT_MODULES).map(([key, meta]) => (
+          <div
+            key={key}
+            className="flex items-center justify-between p-3 rounded-lg hover:bg-[var(--color-grey-2)] transition-colors"
+          >
+            <div className="flex-1 mr-4">
+              <div className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>{meta.label}</div>
+              <div className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>{meta.description}</div>
+            </div>
+            <button
+              onClick={() => handleToggle(key)}
+              disabled={saving}
+              className={`relative w-11 h-6 rounded-full transition-colors ${
+                modules[key] ? 'bg-[var(--color-primary)]' : 'bg-gray-300 dark:bg-gray-600'
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                  modules[key] ? 'translate-x-5' : ''
+                }`}
+              />
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const LOOKUP_CATEGORIES: { key: string; label: string }[] = [
+  { key: 'department', label: 'Departments' },
+  { key: 'job_title', label: 'Job Titles' },
+  { key: 'location', label: 'Locations' },
+  { key: 'competency_category', label: 'Competency Categories' },
+  { key: 'leave_type', label: 'Leave Types' },
+  { key: 'compliance_item_type', label: 'Compliance Item Types' },
+  { key: 'candidate_source', label: 'Candidate Sources' },
+  { key: 'event_outcome', label: 'Event Outcomes' },
+  { key: 'onboarding_assignee_role', label: 'Onboarding Roles' },
+  { key: 'kudos_category', label: 'Kudos Categories' },
+];
+
+function ReferenceDataTab({ workspaceId }: { workspaceId?: string }) {
+  const [data, setData] = useState<Record<string, LookupValue[]>>({});
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [loading, setLoading] = useState(true);
+  const invalidateLookups = useLookupStore((s) => s.invalidate);
+
+  const fetchAll = async () => {
+    if (!workspaceId) return;
+    try {
+      const res = await lookupsApi.listAll(workspaceId);
+      setData(res.data);
+    } catch {
+      Toast.show('Failed to load reference data');
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchAll();
+  }, [workspaceId]);
+
+  const toggleSection = (key: string) => {
+    setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handleAdd = async (category: string, value: string, label: string, colour: string) => {
+    if (!workspaceId || !value.trim()) return;
+    try {
+      const payload: { value: string; label?: string; colour?: string } = { value: value.trim() };
+      if (label.trim()) payload.label = label.trim();
+      if (colour.trim()) payload.colour = colour.trim();
+      const { data: created } = await lookupsApi.create(workspaceId, category, payload);
+      setData((prev) => ({ ...prev, [category]: [...(prev[category] || []), created] }));
+      invalidateLookups(category);
+    } catch {
+      Toast.show('Failed to add value');
+    }
+  };
+
+  const handleToggleActive = async (category: string, item: LookupValue) => {
+    if (!workspaceId) return;
+    try {
+      const { data: updated } = await lookupsApi.update(workspaceId, category, item.id, { is_active: !item.is_active });
+      setData((prev) => ({
+        ...prev,
+        [category]: (prev[category] || []).map((v) => (v.id === updated.id ? updated : v)),
+      }));
+      invalidateLookups(category);
+    } catch {
+      Toast.show('Failed to update value');
+    }
+  };
+
+  const handleDelete = async (category: string, id: string) => {
+    if (!workspaceId) return;
+    try {
+      await lookupsApi.delete(workspaceId, category, id);
+      setData((prev) => ({
+        ...prev,
+        [category]: (prev[category] || []).filter((v) => v.id !== id),
+      }));
+      invalidateLookups(category);
+      Toast.show('Value deleted');
+    } catch {
+      Toast.show('Failed to delete value');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-5">
+        <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>Reference Data</h3>
+        <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Loading...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>Reference Data</h3>
+        <p className="text-sm mt-1" style={{ color: 'var(--color-text-secondary)' }}>
+          Manage lookup values used across people management modules. These populate dropdowns and filters throughout the app.
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        {LOOKUP_CATEGORIES.map(({ key, label }) => {
+          const items = data[key] || [];
+          const isOpen = expanded[key] || false;
+          return (
+            <div
+              key={key}
+              className="border rounded-lg overflow-hidden"
+              style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)' }}
+            >
+              <button
+                onClick={() => toggleSection(key)}
+                className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-[var(--color-grey-1)] transition-colors"
+              >
+                {isOpen ? (
+                  <ChevronDown size={16} style={{ color: 'var(--color-text-secondary)' }} />
+                ) : (
+                  <ChevronRight size={16} style={{ color: 'var(--color-text-secondary)' }} />
+                )}
+                <span className="text-sm font-medium flex-1" style={{ color: 'var(--color-text)' }}>
+                  {label}
+                </span>
+                <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: 'var(--color-grey-2)', color: 'var(--color-text-secondary)' }}>
+                  {items.length}
+                </span>
+              </button>
+
+              {isOpen && (
+                <div className="border-t" style={{ borderColor: 'var(--color-border)' }}>
+                  {items.length === 0 && (
+                    <p className="px-4 py-3 text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                      No values yet. Add one below.
+                    </p>
+                  )}
+                  {items.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center gap-3 px-4 py-2 border-b last:border-b-0 hover:bg-[var(--color-grey-1)] transition-colors group"
+                      style={{ borderColor: 'var(--color-border)' }}
+                    >
+                      {item.colour && (
+                        <div
+                          className="w-4 h-4 rounded-full shrink-0 border"
+                          style={{ backgroundColor: item.colour, borderColor: 'var(--color-border)' }}
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm" style={{ color: 'var(--color-text)' }}>
+                          {item.label || item.value}
+                        </span>
+                        {item.label && (
+                          <span className="text-xs ml-2" style={{ color: 'var(--color-text-secondary)' }}>
+                            {item.value}
+                          </span>
+                        )}
+                      </div>
+                      <label className="flex items-center gap-1 cursor-pointer shrink-0" title={item.is_active ? 'Active' : 'Inactive'}>
+                        <input
+                          type="checkbox"
+                          checked={item.is_active}
+                          onChange={() => handleToggleActive(key, item)}
+                          className="w-4 h-4 rounded"
+                          style={{ accentColor: 'var(--color-primary)' }}
+                        />
+                        <span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                          {item.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                      </label>
+                      <button
+                        onClick={() => handleDelete(key, item.id)}
+                        className="p-1 rounded hover:bg-[var(--color-grey-2)] opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                        style={{ color: 'var(--color-danger, #ef4444)' }}
+                        title="Delete"
+                        aria-label="Delete value"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                  <AddLookupRow category={key} onAdd={handleAdd} />
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function AddLookupRow({ category, onAdd }: { category: string; onAdd: (category: string, value: string, label: string, colour: string) => Promise<void> }) {
+  const [value, setValue] = useState('');
+  const [label, setLabel] = useState('');
+  const [colour, setColour] = useState('');
+  const [adding, setAdding] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!value.trim()) return;
+    setAdding(true);
+    await onAdd(category, value, label, colour);
+    setValue('');
+    setLabel('');
+    setColour('');
+    setAdding(false);
+  };
+
+  return (
+    <div
+      className="flex items-center gap-2 px-4 py-2 border-t"
+      style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-grey-1)' }}
+    >
+      <input
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        placeholder="Value"
+        className="flex-1 px-2 py-1.5 text-xs border rounded outline-none focus:ring-1"
+        style={{
+          borderColor: 'var(--color-border)',
+          backgroundColor: 'var(--color-surface)',
+          color: 'var(--color-text)',
+          '--tw-ring-color': 'var(--color-primary)',
+        } as React.CSSProperties}
+        onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+      />
+      <input
+        value={label}
+        onChange={(e) => setLabel(e.target.value)}
+        placeholder="Label (optional)"
+        className="flex-1 px-2 py-1.5 text-xs border rounded outline-none focus:ring-1"
+        style={{
+          borderColor: 'var(--color-border)',
+          backgroundColor: 'var(--color-surface)',
+          color: 'var(--color-text)',
+          '--tw-ring-color': 'var(--color-primary)',
+        } as React.CSSProperties}
+        onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+      />
+      <input
+        value={colour}
+        onChange={(e) => setColour(e.target.value)}
+        placeholder="#hex"
+        className="w-16 px-2 py-1.5 text-xs border rounded outline-none focus:ring-1"
+        style={{
+          borderColor: 'var(--color-border)',
+          backgroundColor: 'var(--color-surface)',
+          color: 'var(--color-text)',
+          '--tw-ring-color': 'var(--color-primary)',
+        } as React.CSSProperties}
+        onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+      />
+      {colour && (
+        <div
+          className="w-5 h-5 rounded-full border shrink-0"
+          style={{ backgroundColor: colour, borderColor: 'var(--color-border)' }}
+        />
+      )}
+      <button
+        onClick={handleSubmit}
+        disabled={!value.trim() || adding}
+        className="flex items-center gap-1 px-2 py-1.5 text-xs text-white rounded font-medium disabled:opacity-50 shrink-0"
+        style={{ backgroundColor: 'var(--color-primary)' }}
+        aria-label="Add new value"
+      >
+        <Plus size={12} />
+        Add
+      </button>
+    </div>
+  );
+}
+
+const STATUS_STYLES: Record<string, { bg: string; text: string; label: string }> = {
+  open: { bg: '#dbeafe', text: '#1d4ed8', label: 'Open' },
+  in_progress: { bg: '#fef3c7', text: '#b45309', label: 'In Progress' },
+  resolved: { bg: '#dcfce7', text: '#15803d', label: 'Resolved' },
+  closed: { bg: '#f3f4f6', text: '#6b7280', label: 'Closed' },
+};
+
+function FeedbackTab({ workspaceId }: { workspaceId?: string }) {
+  const [items, setItems] = useState<FeedbackItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<'all' | 'bug' | 'feature'>('all');
+
+  useEffect(() => {
+    if (!workspaceId) return;
+    setLoading(true);
+    feedbackApi.list(workspaceId).then((res) => {
+      setItems(res.data);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  }, [workspaceId]);
+
+  const filtered = filter === 'all' ? items : items.filter((i) => i.type === filter);
+
+  const counts = {
+    all: items.length,
+    bug: items.filter((i) => i.type === 'bug').length,
+    feature: items.filter((i) => i.type === 'feature').length,
+  };
+
+  return (
+    <div className="space-y-5">
+      <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>Feedback History</h3>
+      <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+        Bug reports and feature requests submitted via the toolbar buttons.
+      </p>
+
+      <div className="flex gap-2">
+        {([['all', 'All'], ['bug', 'Bugs'], ['feature', 'Features']] as const).map(([key, label]) => (
+          <button
+            key={key}
+            onClick={() => setFilter(key)}
+            className={`px-3 py-1.5 text-xs font-medium rounded-lg flex items-center gap-1.5 transition-colors ${
+              filter === key
+                ? 'text-white'
+                : 'hover:bg-[var(--color-grey-2)]'
+            }`}
+            style={
+              filter === key
+                ? { backgroundColor: 'var(--color-primary)' }
+                : { color: 'var(--color-text-secondary)' }
+            }
+          >
+            {key === 'bug' && <Bug size={12} />}
+            {key === 'feature' && <Lightbulb size={12} />}
+            {label} ({counts[key]})
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div className="py-8 text-center text-sm" style={{ color: 'var(--color-text-secondary)' }}>Loading...</div>
+      ) : filtered.length === 0 ? (
+        <div className="py-8 text-center text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+          No {filter === 'all' ? 'feedback' : filter === 'bug' ? 'bug reports' : 'feature requests'} yet.
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {filtered.map((item) => {
+            const status = STATUS_STYLES[item.status] || STATUS_STYLES.open;
+            return (
+              <div
+                key={item.id}
+                className="p-3 rounded-lg border"
+                style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-grey-1)' }}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-2 min-w-0">
+                    {item.type === 'bug' ? (
+                      <Bug size={14} className="text-red-500 shrink-0" />
+                    ) : (
+                      <Lightbulb size={14} className="text-amber-500 shrink-0" />
+                    )}
+                    <span className="text-sm font-medium truncate" style={{ color: 'var(--color-text)' }}>
+                      {item.title}
+                    </span>
+                  </div>
+                  <span
+                    className="text-xs px-2 py-0.5 rounded-full font-medium shrink-0"
+                    style={{ backgroundColor: status.bg, color: status.text }}
+                  >
+                    {status.label}
+                  </span>
+                </div>
+                <p className="text-xs mt-1.5 line-clamp-2" style={{ color: 'var(--color-text-secondary)' }}>
+                  {item.description}
+                </p>
+                <div className="flex items-center gap-3 mt-2 text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                  <span>{item.user_name}</span>
+                  <span>{new Date(item.created_at).toLocaleDateString()}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

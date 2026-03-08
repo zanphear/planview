@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 :root {
   /* Siemens Energy brand colours */
@@ -108,4 +109,64 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-text-secondary);
+}
+
+/* Print styles — Export to PDF */
+@media print {
+  @page { margin: 15mm 20mm; }
+
+  body {
+    background: #fff !important;
+    color: #1a1a1a !important;
+  }
+
+  /* Hide everything except the printable area */
+  nav, aside, header, [data-no-print], button, .no-print {
+    display: none !important;
+  }
+
+  .print-header {
+    display: block !important;
+  }
+
+  /* Force light prose colours */
+  .prose {
+    --tw-prose-body: #1a1a1a;
+    --tw-prose-headings: #111;
+    --tw-prose-links: #1a1a1a;
+    --tw-prose-bold: #111;
+    --tw-prose-counters: #555;
+    --tw-prose-bullets: #555;
+    --tw-prose-quotes: #333;
+    --tw-prose-quote-borders: #ccc;
+    --tw-prose-th-borders: #ccc;
+    --tw-prose-td-borders: #ddd;
+    color: #1a1a1a !important;
+    background: #fff !important;
+    border: none !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+
+  /* Clean table borders */
+  .prose table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  .prose th,
+  .prose td {
+    border: 1px solid #ccc;
+    padding: 6px 10px;
+  }
+
+  .prose thead th {
+    background: #f3f3f3;
+    font-weight: 600;
+  }
+
+  /* Kill scrollbar artefacts */
+  ::-webkit-scrollbar {
+    display: none;
+  }
 }

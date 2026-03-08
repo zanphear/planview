@@ -109,6 +109,7 @@ export function BulkActionBar({ count, members, onStatusChange, onAssign, onDele
         onClick={onClear}
         className="p-1.5 rounded-lg hover:bg-[var(--color-grey-1)] transition-colors"
         style={{ color: 'var(--color-text-secondary)' }}
+        aria-label="Clear selection"
       >
         <X size={16} />
       </button>

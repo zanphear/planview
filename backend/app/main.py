@@ -3,7 +3,7 @@ import logging
 import time
 import uuid as _uuid
 
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Query, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -11,6 +11,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from app.api.router import api_router
 from app.config import settings
 from app.middleware.rate_limit import RateLimitMiddleware
+from app.utils.auth import decode_token
 from app.websocket.manager import manager
 
 # Structured logging setup
@@ -21,7 +22,13 @@ logging.basicConfig(
 )
 logger = logging.getLogger("planview")
 
-app = FastAPI(title=settings.app_name, version=settings.app_version)
+app = FastAPI(
+    title=settings.app_name,
+    version=settings.app_version,
+    docs_url="/docs" if settings.enable_docs else None,
+    redoc_url="/redoc" if settings.enable_docs else None,
+    openapi_url="/openapi.json" if settings.enable_docs else None,
+)
 
 
 # Request ID + access logging middleware
@@ -49,7 +56,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
 )
 
@@ -72,17 +79,36 @@ async def health():
 
 
 @app.websocket("/ws/{workspace_id}")
-async def websocket_endpoint(websocket: WebSocket, workspace_id: str):
+async def websocket_endpoint(
+    websocket: WebSocket,
+    workspace_id: str,
+    token: str = Query(default=""),
+):
+    # Validate JWT before accepting the connection
+    if not token:
+        await websocket.close(code=4001, reason="Missing token")
+        return
+    try:
+        payload = decode_token(token)
+        if payload.get("type") != "access":
+            await websocket.close(code=4001, reason="Invalid token type")
+            return
+        user_id = payload.get("sub")
+        if not user_id:
+            await websocket.close(code=4001, reason="Invalid token")
+            return
+    except Exception:
+        await websocket.close(code=4001, reason="Invalid or expired token")
+        return
+
     await manager.connect(websocket, workspace_id)
     try:
         while True:
             try:
                 data = await asyncio.wait_for(websocket.receive_text(), timeout=60.0)
-                # Client sent a ping, respond with pong
                 if data == "ping":
                     await websocket.send_text("pong")
             except asyncio.TimeoutError:
-                # No message in 60s, send a ping to check the connection is alive
                 try:
                     await websocket.send_text("ping")
                 except Exception:

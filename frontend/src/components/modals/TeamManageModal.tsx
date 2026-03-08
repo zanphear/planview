@@ -77,7 +77,7 @@ export function TeamManageModal({ team, onSave, onDelete, onClose, onTeamUpdated
       >
         <div className="flex items-center justify-between px-5 py-4 border-b shrink-0" style={{ borderColor: 'var(--color-border)' }}>
           <h3 className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>Manage Team</h3>
-          <button onClick={onClose} className="p-1 rounded hover:opacity-70" style={{ color: 'var(--color-text-secondary)' }}>
+          <button onClick={onClose} className="p-1 rounded hover:opacity-70" style={{ color: 'var(--color-text-secondary)' }} aria-label="Close">
             <X size={18} />
           </button>
         </div>

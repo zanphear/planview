@@ -11,6 +11,7 @@ interface SharedTimeline {
   is_active: boolean;
   team_id: string | null;
   project_id: string | null;
+  expires_at: string | null;
   created_at: string;
 }
 
@@ -87,7 +88,7 @@ export function ShareTimelineModal({ teamId, projectId, entityName, onClose }: S
             <Globe size={18} />
             Share Timeline
           </h3>
-          <button onClick={onClose} className="p-1 rounded hover:opacity-70" style={{ color: 'var(--color-text-secondary)' }}>
+          <button onClick={onClose} className="p-1 rounded hover:opacity-70" style={{ color: 'var(--color-text-secondary)' }} aria-label="Close">
             <X size={18} />
           </button>
         </div>

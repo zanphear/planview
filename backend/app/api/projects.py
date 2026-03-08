@@ -13,7 +13,7 @@ from app.models.user import User
 from app.schemas.project import ProjectCreate, ProjectResponse, ProjectUpdate
 from app.schemas.segment import SegmentCreate, SegmentResponse, SegmentUpdate
 from app.schemas.tag import TagCreate, TagResponse, TagUpdate
-from app.utils.auth import get_current_user
+from app.utils.auth import get_workspace_user
 
 router = APIRouter(prefix="/workspaces/{workspace_id}/projects", tags=["projects"])
 
@@ -21,7 +21,7 @@ router = APIRouter(prefix="/workspaces/{workspace_id}/projects", tags=["projects
 @router.get("", response_model=list[ProjectResponse])
 async def list_projects(
     workspace_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -36,7 +36,7 @@ async def list_projects(
 async def create_project(
     workspace_id: uuid.UUID,
     data: ProjectCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     project = Project(
@@ -55,7 +55,7 @@ async def create_project(
 async def get_project(
     workspace_id: uuid.UUID,
     project_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -72,7 +72,7 @@ async def update_project(
     workspace_id: uuid.UUID,
     project_id: uuid.UUID,
     data: ProjectUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -94,7 +94,7 @@ async def update_project(
 async def delete_project(
     workspace_id: uuid.UUID,
     project_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -114,7 +114,7 @@ async def delete_project(
 async def list_segments(
     workspace_id: uuid.UUID,
     project_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -128,7 +128,7 @@ async def create_segment(
     workspace_id: uuid.UUID,
     project_id: uuid.UUID,
     data: SegmentCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     segment = Segment(name=data.name, sort_order=data.sort_order, project_id=project_id)
@@ -144,7 +144,7 @@ async def update_segment(
     project_id: uuid.UUID,
     segment_id: uuid.UUID,
     data: SegmentUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -167,7 +167,7 @@ async def delete_segment(
     workspace_id: uuid.UUID,
     project_id: uuid.UUID,
     segment_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -187,7 +187,7 @@ async def delete_segment(
 async def list_tags(
     workspace_id: uuid.UUID,
     project_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -201,7 +201,7 @@ async def create_tag(
     workspace_id: uuid.UUID,
     project_id: uuid.UUID,
     data: TagCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     tag = Tag(name=data.name, colour=data.colour, project_id=project_id)
@@ -217,7 +217,7 @@ async def update_tag(
     project_id: uuid.UUID,
     tag_id: uuid.UUID,
     data: TagUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -240,7 +240,7 @@ async def delete_tag(
     workspace_id: uuid.UUID,
     project_id: uuid.UUID,
     tag_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(

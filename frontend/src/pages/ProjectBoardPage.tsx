@@ -59,7 +59,7 @@ export function ProjectBoardPage() {
   useEffect(() => {
     if (workspace && projectId) {
       fetchTasks(workspace.id, { project_id: projectId });
-      membersApi.list(workspace.id).then((res) => setMembers(res.data));
+      membersApi.list(workspace.id).then((res) => setMembers(res.data)).catch((err) => console.error('Failed to load members:', err));
     }
   }, [workspace, projectId, fetchTasks]);
 

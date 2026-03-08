@@ -8,7 +8,7 @@ from app.database import get_db
 from app.models.user import User
 from app.models.workspace import Workspace
 from app.schemas.workspace import WorkspaceCreate, WorkspaceResponse, WorkspaceUpdate
-from app.utils.auth import get_current_user
+from app.utils.auth import get_current_user, get_workspace_user
 
 router = APIRouter(prefix="/workspaces", tags=["workspaces"])
 
@@ -39,8 +39,8 @@ async def create_workspace(
 
 @router.get("/{workspace_id}", response_model=WorkspaceResponse)
 async def get_workspace(
-    workspace_id: str,
-    current_user: User = Depends(get_current_user),
+    workspace_id: uuid.UUID,
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(select(Workspace).where(Workspace.id == workspace_id))
@@ -52,9 +52,9 @@ async def get_workspace(
 
 @router.put("/{workspace_id}", response_model=WorkspaceResponse)
 async def update_workspace(
-    workspace_id: str,
+    workspace_id: uuid.UUID,
     data: WorkspaceUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(select(Workspace).where(Workspace.id == workspace_id))
@@ -73,7 +73,7 @@ async def update_workspace(
 @router.delete("/{workspace_id}", status_code=204)
 async def delete_workspace(
     workspace_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     if current_user.role != "owner":

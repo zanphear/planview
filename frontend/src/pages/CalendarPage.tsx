@@ -58,6 +58,7 @@ export function CalendarPage() {
             onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
             className="p-2 rounded-lg hover:bg-[var(--color-grey-1)] transition-colors"
             style={{ color: 'var(--color-text-secondary)' }}
+            aria-label="Previous month"
           >
             <ChevronLeft size={18} />
           </button>
@@ -72,6 +73,7 @@ export function CalendarPage() {
             onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
             className="p-2 rounded-lg hover:bg-[var(--color-grey-1)] transition-colors"
             style={{ color: 'var(--color-text-secondary)' }}
+            aria-label="Next month"
           >
             <ChevronRight size={18} />
           </button>

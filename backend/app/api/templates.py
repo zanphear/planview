@@ -12,7 +12,7 @@ from app.schemas.task_template import (
     TaskTemplateResponse,
     TaskTemplateUpdate,
 )
-from app.utils.auth import get_current_user
+from app.utils.auth import get_workspace_user
 
 router = APIRouter(
     prefix="/workspaces/{workspace_id}/templates",
@@ -23,7 +23,7 @@ router = APIRouter(
 @router.get("", response_model=list[TaskTemplateResponse])
 async def list_templates(
     workspace_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -38,7 +38,7 @@ async def list_templates(
 async def create_template(
     workspace_id: uuid.UUID,
     data: TaskTemplateCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     template = TaskTemplate(
@@ -62,7 +62,7 @@ async def update_template(
     workspace_id: uuid.UUID,
     template_id: uuid.UUID,
     data: TaskTemplateUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -85,7 +85,7 @@ async def update_template(
 async def delete_template(
     workspace_id: uuid.UUID,
     template_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(

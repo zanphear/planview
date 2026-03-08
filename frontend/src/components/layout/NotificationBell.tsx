@@ -90,6 +90,7 @@ export function NotificationBell() {
       <button
         onClick={toggle}
         className="p-2 hover:bg-[var(--color-grey-2)] rounded-lg relative transition-colors"
+        aria-label="Notifications"
       >
         <Bell size={20} style={{ color: 'var(--color-text)' }} />
         {unreadCount > 0 && (
@@ -133,6 +134,7 @@ export function NotificationBell() {
                   onClick={() => setOpen(false)}
                   className="p-1.5 rounded-lg hover:opacity-80"
                   style={{ color: 'var(--color-text-secondary)' }}
+                  aria-label="Close notifications"
                 >
                   <X size={16} />
                 </button>

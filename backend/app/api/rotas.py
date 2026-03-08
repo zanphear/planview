@@ -16,7 +16,7 @@ from app.schemas.rota import (
     RotaResponse,
     RotaUpdate,
 )
-from app.utils.auth import get_current_user
+from app.utils.auth import get_workspace_user
 
 router = APIRouter(
     prefix="/workspaces/{workspace_id}/rotas",
@@ -38,7 +38,7 @@ def _rota_query(workspace_id: uuid.UUID):
 async def list_rotas(
     workspace_id: uuid.UUID,
     rota_type: str | None = Query(None, description="callout|weekday|24hour"),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     q = _rota_query(workspace_id)
@@ -53,7 +53,7 @@ async def list_rotas(
 async def create_rota(
     workspace_id: uuid.UUID,
     data: RotaCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     if data.rota_type not in VALID_TYPES:
@@ -79,7 +79,7 @@ async def create_rota(
 async def get_rota(
     workspace_id: uuid.UUID,
     rota_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(_rota_query(workspace_id).where(Rota.id == rota_id))
@@ -94,7 +94,7 @@ async def update_rota(
     workspace_id: uuid.UUID,
     rota_id: uuid.UUID,
     data: RotaUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -121,7 +121,7 @@ async def update_rota(
 async def delete_rota(
     workspace_id: uuid.UUID,
     rota_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -143,7 +143,7 @@ async def list_rota_entries(
     user_id: uuid.UUID | None = Query(None),
     since: str | None = Query(None),
     until: str | None = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     q = (
@@ -167,7 +167,7 @@ async def create_rota_entry(
     workspace_id: uuid.UUID,
     rota_id: uuid.UUID,
     data: RotaEntryCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     # Verify rota exists
@@ -205,7 +205,7 @@ async def update_rota_entry(
     rota_id: uuid.UUID,
     entry_id: uuid.UUID,
     data: RotaEntryUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -237,7 +237,7 @@ async def delete_rota_entry(
     workspace_id: uuid.UUID,
     rota_id: uuid.UUID,
     entry_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(

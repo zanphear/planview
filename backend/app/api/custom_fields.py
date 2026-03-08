@@ -14,7 +14,7 @@ from app.schemas.custom_field import (
     CustomFieldValueResponse,
     CustomFieldValueSet,
 )
-from app.utils.auth import get_current_user
+from app.utils.auth import get_workspace_user
 
 router = APIRouter(
     prefix="/workspaces/{workspace_id}/custom-fields",
@@ -25,7 +25,7 @@ router = APIRouter(
 @router.get("", response_model=list[CustomFieldResponse])
 async def list_custom_fields(
     workspace_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -40,7 +40,7 @@ async def list_custom_fields(
 async def create_custom_field(
     workspace_id: uuid.UUID,
     data: CustomFieldCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     field = CustomField(
@@ -61,7 +61,7 @@ async def update_custom_field(
     workspace_id: uuid.UUID,
     field_id: uuid.UUID,
     data: CustomFieldUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -84,7 +84,7 @@ async def update_custom_field(
 async def delete_custom_field(
     workspace_id: uuid.UUID,
     field_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -107,7 +107,7 @@ async def delete_custom_field(
 async def get_task_field_values(
     workspace_id: uuid.UUID,
     task_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -121,7 +121,7 @@ async def set_task_field_values(
     workspace_id: uuid.UUID,
     task_id: uuid.UUID,
     data: list[CustomFieldValueSet],
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     for item in data:

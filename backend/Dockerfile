@@ -3,7 +3,7 @@ FROM python:3.12-slim
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc libpq-dev && \
+    gcc libpq-dev libmagic1 && \
     rm -rf /var/lib/apt/lists/*
 
 COPY pyproject.toml .
@@ -11,6 +11,11 @@ COPY pyproject.toml .
 RUN mkdir -p app && touch app/__init__.py && pip install --no-cache-dir . && rm -rf app
 
 COPY . .
+
+# Non-root user
+RUN groupadd -r appuser && useradd -r -g appuser -d /app appuser && \
+    mkdir -p /app/uploads && chown -R appuser:appuser /app
+USER appuser
 
 EXPOSE 8000
 

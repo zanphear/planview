@@ -8,7 +8,7 @@ from app.database import get_db
 from app.models.milestone import Milestone
 from app.models.user import User
 from app.schemas.milestone import MilestoneCreate, MilestoneResponse, MilestoneUpdate
-from app.utils.auth import get_current_user
+from app.utils.auth import get_workspace_user
 
 router = APIRouter(prefix="/workspaces/{workspace_id}/milestones", tags=["milestones"])
 
@@ -16,7 +16,7 @@ router = APIRouter(prefix="/workspaces/{workspace_id}/milestones", tags=["milest
 @router.get("", response_model=list[MilestoneResponse])
 async def list_milestones(
     workspace_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -31,7 +31,7 @@ async def list_milestones(
 async def create_milestone(
     workspace_id: uuid.UUID,
     data: MilestoneCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     milestone = Milestone(
@@ -52,7 +52,7 @@ async def update_milestone(
     workspace_id: uuid.UUID,
     milestone_id: uuid.UUID,
     data: MilestoneUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -76,7 +76,7 @@ async def update_milestone(
 async def delete_milestone(
     workspace_id: uuid.UUID,
     milestone_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(

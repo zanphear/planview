@@ -38,7 +38,7 @@ export function KeyboardShortcutsHelp({ onClose }: KeyboardShortcutsHelpProps) {
       >
         <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: 'var(--color-border)' }}>
           <h2 className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>Keyboard Shortcuts</h2>
-          <button onClick={onClose} className="p-1 rounded-lg hover:opacity-80" style={{ color: 'var(--color-text-secondary)' }}>
+          <button onClick={onClose} className="p-1 rounded-lg hover:opacity-80" style={{ color: 'var(--color-text-secondary)' }} aria-label="Close">
             <X size={18} />
           </button>
         </div>

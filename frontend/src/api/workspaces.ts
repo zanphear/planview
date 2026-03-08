@@ -3,6 +3,7 @@ import { api } from './client';
 export interface Workspace {
   id: string;
   name: string;
+  enabled_modules: Record<string, boolean> | null;
   created_at: string;
   updated_at: string;
 }
@@ -14,7 +15,7 @@ export const workspacesApi = {
 
   create: (data: { name: string }) => api.post<Workspace>('/workspaces', data),
 
-  update: (workspaceId: string, data: { name?: string }) =>
+  update: (workspaceId: string, data: { name?: string; enabled_modules?: Record<string, boolean> }) =>
     api.put<Workspace>(`/workspaces/${workspaceId}`, data),
 
   delete: (workspaceId: string) => api.delete(`/workspaces/${workspaceId}`),

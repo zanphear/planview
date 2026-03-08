@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { useAuthStore } from './stores/authStore';
 import { useWorkspaceStore } from './stores/workspaceStore';
 import { useTeamStore } from './stores/teamStore';
@@ -27,6 +27,28 @@ import { Taskbox } from './components/taskbox/Taskbox';
 import { KeyboardShortcutsHelp } from './components/shared/KeyboardShortcutsHelp';
 import { Toast } from './components/shared/Toast';
 import { ErrorBoundary } from './components/shared/ErrorBoundary';
+import { LoadingSpinner } from './components/shared/LoadingSpinner';
+
+// Lazy-loaded people management pages
+const PeoplePage = lazy(() => import('./pages/PeoplePage').then(m => ({ default: m.PeoplePage })));
+const OneToOnesPage = lazy(() => import('./pages/OneToOnesPage').then(m => ({ default: m.OneToOnesPage })));
+const ObjectivesPage = lazy(() => import('./pages/ObjectivesPage').then(m => ({ default: m.ObjectivesPage })));
+const CompliancePage = lazy(() => import('./pages/CompliancePage').then(m => ({ default: m.CompliancePage })));
+const CompetenciesPage = lazy(() => import('./pages/CompetenciesPage').then(m => ({ default: m.CompetenciesPage })));
+const LeavePage = lazy(() => import('./pages/LeavePage').then(m => ({ default: m.LeavePage })));
+const RecruitmentPage = lazy(() => import('./pages/RecruitmentPage').then(m => ({ default: m.RecruitmentPage })));
+const DevelopmentPage = lazy(() => import('./pages/DevelopmentPage').then(m => ({ default: m.DevelopmentPage })));
+const ReviewsPage = lazy(() => import('./pages/ReviewsPage').then(m => ({ default: m.ReviewsPage })));
+const WellbeingPage = lazy(() => import('./pages/WellbeingPage').then(m => ({ default: m.WellbeingPage })));
+const OnboardingPage = lazy(() => import('./pages/OnboardingPage').then(m => ({ default: m.OnboardingPage })));
+const ReportingPage = lazy(() => import('./pages/ReportingPage').then(m => ({ default: m.ReportingPage })));
+const GuidePage = lazy(() => import('./pages/GuidePage').then(m => ({ default: m.GuidePage })));
+const AIAssistantPage = lazy(() => import('./pages/AIAssistantPage').then(m => ({ default: m.AIAssistantPage })));
+const AnalysisReportsPage = lazy(() => import('./pages/AnalysisReportsPage').then(m => ({ default: m.AnalysisReportsPage })));
+const EarlyTalentPage = lazy(() => import('./pages/EarlyTalentPage').then(m => ({ default: m.EarlyTalentPage })));
+const OIDCCallbackPage = lazy(() => import('./pages/OIDCCallbackPage').then(m => ({ default: m.OIDCCallbackPage })));
+const AbsenceCalendarPage = lazy(() => import('./pages/AbsenceCalendarPage').then(m => ({ default: m.AbsenceCalendarPage })));
+const ResourcePage = lazy(() => import('./pages/ResourcePage').then(m => ({ default: m.ResourcePage })));
 
 function ProtectedLayout() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
@@ -92,7 +114,9 @@ function ProtectedLayout() {
         <TopBar />
         <main className="flex-1 overflow-auto" style={{ backgroundColor: 'var(--color-bg)' }}>
           <ErrorBoundary>
-            <Outlet />
+            <Suspense fallback={<LoadingSpinner fullPage />}>
+              <Outlet />
+            </Suspense>
           </ErrorBoundary>
         </main>
       </div>
@@ -110,6 +134,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/auth/oidc/callback" element={<Suspense fallback={<LoadingSpinner fullPage />}><OIDCCallbackPage /></Suspense>} />
         <Route path="/shared/:token" element={<SharedTimelinePage />} />
         <Route path="/" element={
           <WebSocketProvider workspaceId={currentWorkspace?.id}>
@@ -125,6 +150,25 @@ export default function App() {
           <Route path="calendar" element={<CalendarPage />} />
           <Route path="burndown" element={<BurndownPage />} />
           <Route path="rotas" element={<RotaPage />} />
+          <Route path="people" element={<PeoplePage />} />
+          <Route path="people/:userId" element={<PeoplePage />} />
+          <Route path="one-to-ones" element={<OneToOnesPage />} />
+          <Route path="objectives" element={<ObjectivesPage />} />
+          <Route path="compliance" element={<CompliancePage />} />
+          <Route path="competencies" element={<CompetenciesPage />} />
+          <Route path="leave" element={<LeavePage />} />
+          <Route path="recruitment" element={<RecruitmentPage />} />
+          <Route path="development" element={<DevelopmentPage />} />
+          <Route path="reviews" element={<ReviewsPage />} />
+          <Route path="wellbeing" element={<WellbeingPage />} />
+          <Route path="onboarding" element={<OnboardingPage />} />
+          <Route path="reporting" element={<ReportingPage />} />
+          <Route path="guide" element={<GuidePage />} />
+          <Route path="ai" element={<AIAssistantPage />} />
+          <Route path="analysis" element={<AnalysisReportsPage />} />
+          <Route path="early-talent" element={<EarlyTalentPage />} />
+          <Route path="absences" element={<AbsenceCalendarPage />} />
+          <Route path="resources" element={<ResourcePage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
       </Routes>

@@ -1,5 +1,6 @@
 import secrets
 import uuid
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
@@ -11,7 +12,7 @@ from app.models.sharing import SharedTimeline
 from app.models.task import Task
 from app.models.user import User
 from app.schemas.sharing import SharedTimelineCreate, SharedTimelineResponse
-from app.utils.auth import get_current_user
+from app.utils.auth import get_workspace_user
 
 router = APIRouter(tags=["sharing"])
 
@@ -24,16 +25,18 @@ router = APIRouter(tags=["sharing"])
 async def create_shared_timeline(
     workspace_id: uuid.UUID,
     data: SharedTimelineCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     token = secrets.token_urlsafe(32)
+    expires_at = datetime.now(timezone.utc) + timedelta(days=max(1, min(data.expires_in_days, 365)))
     shared = SharedTimeline(
         workspace_id=workspace_id,
         token=token,
         name=data.name,
         team_id=data.team_id,
         project_id=data.project_id,
+        expires_at=expires_at,
     )
     db.add(shared)
     await db.commit()
@@ -47,7 +50,7 @@ async def create_shared_timeline(
 )
 async def list_shared_timelines(
     workspace_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -65,7 +68,7 @@ async def list_shared_timelines(
 async def delete_shared_timeline(
     workspace_id: uuid.UUID,
     timeline_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -96,6 +99,10 @@ async def get_shared_timeline_tasks(
     if not shared:
         raise HTTPException(status_code=404, detail="Shared timeline not found or inactive")
 
+    # Check expiry
+    if shared.expires_at and shared.expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=410, detail="This shared timeline has expired")
+
     q = (
         select(Task)
         .where(Task.workspace_id == shared.workspace_id)
@@ -114,5 +121,5 @@ async def get_shared_timeline_tasks(
     if until:
         q = q.where(Task.date_from <= until)
 
-    tasks = await db.execute(q.order_by(Task.date_from))
+    tasks = await db.execute(q.order_by(Task.date_from).limit(500))
     return tasks.scalars().all()

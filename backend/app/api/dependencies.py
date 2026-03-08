@@ -8,7 +8,7 @@ from app.database import get_db
 from app.models.task_dependency import TaskDependency
 from app.models.user import User
 from app.schemas.task_dependency import DependencyCreate, DependencyResponse
-from app.utils.auth import get_current_user
+from app.utils.auth import get_workspace_user
 
 router = APIRouter(
     prefix="/workspaces/{workspace_id}/dependencies",
@@ -20,7 +20,7 @@ router = APIRouter(
 async def list_dependencies(
     workspace_id: uuid.UUID,
     task_id: uuid.UUID | None = None,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     q = select(TaskDependency).join(
@@ -41,7 +41,7 @@ async def list_dependencies(
 async def create_dependency(
     workspace_id: uuid.UUID,
     data: DependencyCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     if data.blocker_id == data.blocked_id:
@@ -71,7 +71,7 @@ async def create_dependency(
 async def delete_dependency(
     workspace_id: uuid.UUID,
     dependency_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(

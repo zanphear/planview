@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String
+from sqlalchemy import String, text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, UUIDPrimaryKey
@@ -19,6 +20,7 @@ class Workspace(Base, UUIDPrimaryKey, TimestampMixin):
     __tablename__ = "workspaces"
 
     name: Mapped[str] = mapped_column(String(255), nullable=False)
+    enabled_modules: Mapped[dict | None] = mapped_column(JSONB, server_default=text("'{}'::jsonb"), nullable=True)
 
     users: Mapped[list[User]] = relationship(back_populates="workspace", cascade="all, delete-orphan")
     teams: Mapped[list[Team]] = relationship(back_populates="workspace", cascade="all, delete-orphan")

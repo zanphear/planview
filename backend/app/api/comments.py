@@ -14,7 +14,7 @@ from app.schemas.comment import CommentCreate, CommentResponse, CommentUpdate
 from app.services.notification_service import notify_comment_added
 from app.services.webhook_service import deliver_webhooks
 from app.services.email_service import send_comment_email
-from app.utils.auth import get_current_user
+from app.utils.auth import get_workspace_user
 from app.websocket.events import emit_event
 
 router = APIRouter(
@@ -27,7 +27,7 @@ router = APIRouter(
 async def list_comments(
     workspace_id: uuid.UUID,
     task_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -44,7 +44,7 @@ async def create_comment(
     workspace_id: uuid.UUID,
     task_id: uuid.UUID,
     data: CommentCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     comment = Comment(body=data.body, task_id=task_id, user_id=current_user.id)
@@ -107,7 +107,7 @@ async def update_comment(
     task_id: uuid.UUID,
     comment_id: uuid.UUID,
     data: CommentUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -140,7 +140,7 @@ async def delete_comment(
     workspace_id: uuid.UUID,
     task_id: uuid.UUID,
     comment_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(

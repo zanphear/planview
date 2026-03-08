@@ -21,6 +21,13 @@ export interface TokenResponse {
   token_type: string;
 }
 
+export interface OIDCConfig {
+  enabled: boolean;
+  auth_mode: string;
+  authorization_url: string | null;
+  client_id: string;
+}
+
 export const authApi = {
   register: (data: { name: string; email: string; password: string; workspace_name?: string }) =>
     api.post<TokenResponse>('/auth/register', data),
@@ -35,6 +42,14 @@ export const authApi = {
 
   changePassword: (data: { current_password: string; new_password: string }) =>
     api.post('/auth/change-password', data),
+
+  oidcConfig: () => api.get<OIDCConfig>('/auth/oidc/config'),
+
+  oidcAuthorize: (redirectUri: string) =>
+    api.get<{ redirect_url: string; state: string }>('/auth/oidc/authorize', { params: { redirect_uri: redirectUri } }),
+
+  oidcCallback: (code: string, state: string) =>
+    api.post<TokenResponse>('/auth/oidc/callback', { code, state }),
 };
 
 export const membersApi = {
@@ -52,4 +67,18 @@ export const membersApi = {
 
   remove: (workspaceId: string, userId: string) =>
     api.delete(`/workspaces/${workspaceId}/members/${userId}`),
+
+  add: (workspaceId: string, data: { name: string; colour?: string }) =>
+    api.post<User>(`/workspaces/${workspaceId}/members/add`, data),
+
+  uploadAvatar: (workspaceId: string, userId: string, file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post<User>(`/workspaces/${workspaceId}/members/${userId}/avatar`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
+  deleteAvatar: (workspaceId: string, userId: string) =>
+    api.delete<User>(`/workspaces/${workspaceId}/members/${userId}/avatar`),
 };

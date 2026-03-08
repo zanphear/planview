@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Users, FolderKanban, Star, Settings, User, ChevronDown, Plus, LayoutGrid, Calendar, MoreHorizontal, Activity, TrendingDown, Phone } from 'lucide-react';
+import { Users, FolderKanban, Star, Settings, User, ChevronDown, Plus, LayoutGrid, Calendar, MoreHorizontal, Activity, TrendingDown, Phone, Contact, MessageSquare, Target, Shield, Award, CalendarDays, UserPlus, GraduationCap, ClipboardCheck, Heart, ClipboardList, BarChart3, BookOpen, Bot, FileBarChart, School, CalendarOff, Gauge } from 'lucide-react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useUIStore } from '../../stores/uiStore';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
@@ -39,6 +39,35 @@ export function Sidebar() {
 
   const favouriteTeams = teams.filter((t) => t.is_favourite);
   const favouriteProjects = projects.filter((p) => p.is_favourite);
+
+  const enabledModules = workspace?.enabled_modules;
+  const defaultModules: Record<string, boolean> = {
+    people: true, one_to_ones: true, objectives: true, compliance: true, competencies: true,
+    leave: true, recruitment: false, development: true, reviews: false,
+    ai_assistant: true, wellbeing: false, onboarding: false, early_talent: false,
+    reporting: true, guide: true, burndown: true, rotas: true,
+  };
+  const isModuleEnabled = (key: string) => {
+    if (enabledModules && key in enabledModules) return enabledModules[key];
+    return defaultModules[key] ?? true;
+  };
+  const moduleLinks = [
+    { key: 'one_to_ones', to: '/one-to-ones', label: '1:1 Meetings', icon: MessageSquare },
+    { key: 'objectives', to: '/objectives', label: 'Objectives', icon: Target },
+    { key: 'compliance', to: '/compliance', label: 'Compliance', icon: Shield },
+    { key: 'competencies', to: '/competencies', label: 'Competencies', icon: Award },
+    { key: 'leave', to: '/leave', label: 'Leave', icon: CalendarDays },
+    { key: 'recruitment', to: '/recruitment', label: 'Recruitment', icon: UserPlus },
+    { key: 'development', to: '/development', label: 'Development', icon: GraduationCap },
+    { key: 'reviews', to: '/reviews', label: 'Reviews', icon: ClipboardCheck },
+    { key: 'wellbeing', to: '/wellbeing', label: 'Wellbeing', icon: Heart },
+    { key: 'onboarding', to: '/onboarding', label: 'Onboarding', icon: ClipboardList },
+    { key: 'early_talent', to: '/early-talent', label: 'Early Talent', icon: School },
+    { key: 'ai_assistant', to: '/ai', label: 'AI Assistant', icon: Bot },
+    { key: 'ai_assistant', to: '/analysis', label: 'AI Reports', icon: FileBarChart },
+    { key: 'reporting', to: '/reporting', label: 'Reporting', icon: BarChart3 },
+    { key: 'guide', to: '/guide', label: 'Guide', icon: BookOpen },
+  ];
 
   const handleCreateTeam = async () => {
     if (!workspace || !newTeamName.trim()) return;
@@ -157,8 +186,22 @@ export function Sidebar() {
         </button>
       </div>
 
-      {/* My Work */}
+      {/* Navigation */}
       <nav className="px-3 py-2">
+        <NavLink
+          to="/"
+          end
+          className={({ isActive }) =>
+            `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
+              isActive
+                ? 'bg-[var(--color-sidebar-active)] text-white'
+                : 'text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)]'
+            }`
+          }
+        >
+          <LayoutGrid size={16} />
+          Dashboard
+        </NavLink>
         <NavLink
           to="/my-work"
           className={({ isActive }) =>
@@ -198,6 +241,7 @@ export function Sidebar() {
           <Calendar size={16} />
           Calendar
         </NavLink>
+        {isModuleEnabled('burndown') && (
         <NavLink
           to="/burndown"
           className={({ isActive }) =>
@@ -211,6 +255,8 @@ export function Sidebar() {
           <TrendingDown size={16} />
           Burndown
         </NavLink>
+        )}
+        {isModuleEnabled('rotas') && (
         <NavLink
           to="/rotas"
           className={({ isActive }) =>
@@ -224,6 +270,69 @@ export function Sidebar() {
           <Phone size={16} />
           Rotas
         </NavLink>
+        )}
+
+        <NavLink
+          to="/absences"
+          className={({ isActive }) =>
+            `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
+              isActive
+                ? 'bg-[var(--color-sidebar-active)] text-white'
+                : 'text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)]'
+            }`
+          }
+        >
+          <CalendarOff size={16} />
+          Absences
+        </NavLink>
+        <NavLink
+          to="/resources"
+          className={({ isActive }) =>
+            `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
+              isActive
+                ? 'bg-[var(--color-sidebar-active)] text-white'
+                : 'text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)]'
+            }`
+          }
+        >
+          <Gauge size={16} />
+          Resources
+        </NavLink>
+
+        {/* People Management section */}
+        <div className="px-3 pt-3 pb-1 text-[10px] uppercase tracking-wider text-white/30">People</div>
+
+        {isModuleEnabled('people') && (
+          <NavLink
+            to="/people"
+            className={({ isActive }) =>
+              `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
+                isActive
+                  ? 'bg-[var(--color-sidebar-active)] text-white'
+                  : 'text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)]'
+              }`
+            }
+          >
+            <Contact size={16} />
+            People
+          </NavLink>
+        )}
+        {moduleLinks.filter(m => isModuleEnabled(m.key)).map(m => (
+          <NavLink
+            key={m.to}
+            to={m.to}
+            className={({ isActive }) =>
+              `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
+                isActive
+                  ? 'bg-[var(--color-sidebar-active)] text-white'
+                  : 'text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)]'
+              }`
+            }
+          >
+            <m.icon size={16} />
+            {m.label}
+          </NavLink>
+        ))}
       </nav>
 
       {/* Favourites */}

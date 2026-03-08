@@ -21,7 +21,7 @@ from app.schemas.task import (
     TaskResponse,
     TaskUpdate,
 )
-from app.utils.auth import get_current_user
+from app.utils.auth import get_workspace_user
 from app.websocket.events import emit_event
 from app.services.notification_service import notify_task_assigned
 from app.services.activity_service import record_activity
@@ -65,7 +65,7 @@ async def list_tasks(
     filter: str | None = Query(None, description="backlog|timeline"),
     limit: int = Query(500, ge=1, le=2000, description="Max results"),
     offset: int = Query(0, ge=0, description="Offset for pagination"),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     query = _task_query(workspace_id)
@@ -100,7 +100,7 @@ async def list_tasks(
 async def create_task(
     workspace_id: uuid.UUID,
     data: TaskCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     task = Task(
@@ -193,7 +193,7 @@ class ReorderRequest(BaseModel):
 async def reorder_tasks(
     workspace_id: uuid.UUID,
     data: ReorderRequest,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     task_ids = [item.id for item in data.items]
@@ -220,7 +220,7 @@ async def reorder_tasks(
 async def get_task(
     workspace_id: uuid.UUID,
     task_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -237,7 +237,7 @@ async def update_task(
     workspace_id: uuid.UUID,
     task_id: uuid.UUID,
     data: TaskUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -402,7 +402,7 @@ async def _create_next_recurrence(
 async def delete_task(
     workspace_id: uuid.UUID,
     task_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -439,7 +439,7 @@ async def delete_task(
 async def duplicate_task(
     workspace_id: uuid.UUID,
     task_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -508,7 +508,7 @@ class BulkTaskUpdate(TaskUpdate):
 async def bulk_update_tasks(
     workspace_id: uuid.UUID,
     data: BulkTaskUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -563,7 +563,7 @@ async def bulk_update_tasks(
 async def list_checklists(
     workspace_id: uuid.UUID,
     task_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -577,7 +577,7 @@ async def create_checklist(
     workspace_id: uuid.UUID,
     task_id: uuid.UUID,
     data: ChecklistCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     # Get max sort_order for this task
@@ -600,7 +600,7 @@ async def update_checklist(
     task_id: uuid.UUID,
     checklist_id: uuid.UUID,
     data: ChecklistUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -623,7 +623,7 @@ async def delete_checklist(
     workspace_id: uuid.UUID,
     task_id: uuid.UUID,
     checklist_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(

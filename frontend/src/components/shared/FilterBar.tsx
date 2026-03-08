@@ -84,6 +84,7 @@ export function FilterBar({ filters, onChange, members = [] }: FilterBarProps) {
           onClick={() => setShowFilters(false)}
           className="p-1 rounded hover:opacity-80"
           style={{ color: 'var(--color-text-secondary)' }}
+          aria-label="Close filters"
         >
           <X size={12} />
         </button>

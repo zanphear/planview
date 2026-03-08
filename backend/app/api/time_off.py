@@ -9,7 +9,7 @@ from app.database import get_db
 from app.models.time_off import TimeOff
 from app.models.user import User
 from app.schemas.time_off import TimeOffCreate, TimeOffResponse, TimeOffUpdate
-from app.utils.auth import get_current_user
+from app.utils.auth import get_workspace_user
 
 router = APIRouter(
     prefix="/workspaces/{workspace_id}/time-off",
@@ -23,7 +23,7 @@ async def list_time_off(
     user_id: uuid.UUID | None = Query(None),
     since: str | None = Query(None),
     until: str | None = Query(None),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     q = (
@@ -46,7 +46,7 @@ async def list_time_off(
 async def create_time_off(
     workspace_id: uuid.UUID,
     data: TimeOffCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     time_off = TimeOff(
@@ -73,7 +73,7 @@ async def update_time_off(
     workspace_id: uuid.UUID,
     time_off_id: uuid.UUID,
     data: TimeOffUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -94,7 +94,7 @@ async def update_time_off(
 async def delete_time_off(
     workspace_id: uuid.UUID,
     time_off_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(

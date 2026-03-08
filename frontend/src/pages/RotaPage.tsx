@@ -493,6 +493,7 @@ function AddEntryForm({
         onClick={onCancel}
         className="p-1.5 rounded-lg hover:bg-[var(--color-grey-1)]"
         style={{ color: 'var(--color-text-secondary)' }}
+        aria-label="Cancel"
       >
         <X size={16} />
       </button>
@@ -548,7 +549,7 @@ function CreateRotaModal({
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-bold" style={{ color: 'var(--color-text)' }}>New Rota</h3>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-grey-1)]" style={{ color: 'var(--color-text-secondary)' }}>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-grey-1)]" style={{ color: 'var(--color-text-secondary)' }} aria-label="Close">
             <X size={18} />
           </button>
         </div>
@@ -724,7 +725,7 @@ function EditRotaModal({
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-bold" style={{ color: 'var(--color-text)' }}>Edit Rota</h3>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-grey-1)]" style={{ color: 'var(--color-text-secondary)' }}>
+          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-grey-1)]" style={{ color: 'var(--color-text-secondary)' }} aria-label="Close">
             <X size={18} />
           </button>
         </div>

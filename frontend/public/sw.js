@@ -1,4 +1,4 @@
-const CACHE_NAME = 'planview-v1';
+const CACHE_NAME = 'planview-v15';
 const PRECACHE_URLS = [
   '/',
   '/favicon.png',

@@ -1,15 +1,21 @@
 import io
+import logging
+import secrets
+import time
 import uuid
 
+import redis.asyncio as aioredis
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.database import get_db
 from app.models.user import User
 from app.models.workspace import Workspace
 from app.schemas.user import TokenRefresh, TokenResponse, UserLogin, UserRegister, UserResponse
+from app.services import oidc_service
 from app.utils.auth import (
     create_access_token,
     create_refresh_token,
@@ -18,6 +24,8 @@ from app.utils.auth import (
     hash_password,
     verify_password,
 )
+
+logger = logging.getLogger(__name__)
 
 try:
     import pyotp
@@ -29,21 +37,90 @@ except ImportError:
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+# --- Redis helpers for rate limiting and token revocation ---
+
+_redis: aioredis.Redis | None = None
+
+
+async def _get_redis() -> aioredis.Redis:
+    global _redis
+    if _redis is None:
+        _redis = aioredis.from_url(settings.redis_url, decode_responses=True)
+    return _redis
+
+
+LOGIN_RATE_LIMIT = 5
+LOGIN_RATE_WINDOW = 900  # 15 minutes
+REFRESH_TOKEN_PREFIX = "rt:jti:"
+
+
+async def _check_login_rate(email: str) -> None:
+    r = await _get_redis()
+    key = f"login_attempts:{email.lower()}"
+    attempts = await r.get(key)
+    if attempts and int(attempts) >= LOGIN_RATE_LIMIT:
+        raise HTTPException(
+            status_code=429,
+            detail="Too many login attempts. Try again in 15 minutes.",
+        )
+
+
+async def _record_login_attempt(email: str) -> None:
+    r = await _get_redis()
+    key = f"login_attempts:{email.lower()}"
+    pipe = r.pipeline()
+    pipe.incr(key)
+    pipe.expire(key, LOGIN_RATE_WINDOW)
+    await pipe.execute()
+
+
+async def _clear_login_attempts(email: str) -> None:
+    r = await _get_redis()
+    await r.delete(f"login_attempts:{email.lower()}")
+
+
+async def _store_refresh_jti(jti: str, user_id: str) -> None:
+    r = await _get_redis()
+    ttl = settings.jwt_refresh_token_expire_days * 86400
+    await r.set(f"{REFRESH_TOKEN_PREFIX}{jti}", user_id, ex=ttl)
+
+
+async def _consume_refresh_jti(jti: str) -> str | None:
+    r = await _get_redis()
+    key = f"{REFRESH_TOKEN_PREFIX}{jti}"
+    user_id = await r.get(key)
+    if user_id:
+        await r.delete(key)
+    return user_id
+
+
+async def _revoke_refresh_jti(jti: str) -> None:
+    r = await _get_redis()
+    await r.delete(f"{REFRESH_TOKEN_PREFIX}{jti}")
+
+
+def _issue_tokens(user_id: uuid.UUID) -> tuple[TokenResponse, str]:
+    jti = secrets.token_urlsafe(16)
+    return TokenResponse(
+        access_token=create_access_token(user_id),
+        refresh_token=create_refresh_token(user_id, jti=jti),
+    ), jti
+
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
 async def register(data: UserRegister, db: AsyncSession = Depends(get_db)):
-    # Check if email already exists
+    if settings.auth_mode == "oidc_only":
+        raise HTTPException(status_code=400, detail="Registration disabled in OIDC-only mode")
+
     existing = await db.execute(select(User).where(User.email == data.email))
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    # Create workspace
     workspace_name = data.workspace_name or f"{data.name}'s Workspace"
     workspace = Workspace(name=workspace_name)
     db.add(workspace)
     await db.flush()
 
-    # Create user
     initials = "".join(word[0].upper() for word in data.name.split()[:2]) or data.name[:2].upper()
     user = User(
         name=data.name,
@@ -57,10 +134,9 @@ async def register(data: UserRegister, db: AsyncSession = Depends(get_db)):
     await db.commit()
     await db.refresh(user)
 
-    return TokenResponse(
-        access_token=create_access_token(user.id),
-        refresh_token=create_refresh_token(user.id),
-    )
+    resp, jti = _issue_tokens(user.id)
+    await _store_refresh_jti(jti, str(user.id))
+    return resp
 
 
 class LoginRequest(BaseModel):
@@ -71,9 +147,15 @@ class LoginRequest(BaseModel):
 
 @router.post("/login", response_model=TokenResponse)
 async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
+    if settings.auth_mode == "oidc_only":
+        raise HTTPException(status_code=400, detail="Password login disabled")
+
+    await _check_login_rate(data.email)
+
     result = await db.execute(select(User).where(User.email == data.email))
     user = result.scalar_one_or_none()
     if not user or not user.password_hash or not verify_password(data.password, user.password_hash):
+        await _record_login_attempt(data.email)
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
     if user.totp_enabled and user.totp_secret:
@@ -83,12 +165,13 @@ async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
             raise HTTPException(status_code=403, detail="2FA code required")
         totp = pyotp.TOTP(user.totp_secret)
         if not totp.verify(data.totp_code):
+            await _record_login_attempt(data.email)
             raise HTTPException(status_code=401, detail="Invalid 2FA code")
 
-    return TokenResponse(
-        access_token=create_access_token(user.id),
-        refresh_token=create_refresh_token(user.id),
-    )
+    await _clear_login_attempts(data.email)
+    resp, jti = _issue_tokens(user.id)
+    await _store_refresh_jti(jti, str(user.id))
+    return resp
 
 
 @router.post("/refresh", response_model=TokenResponse)
@@ -97,16 +180,36 @@ async def refresh(data: TokenRefresh, db: AsyncSession = Depends(get_db)):
     if payload.get("type") != "refresh":
         raise HTTPException(status_code=401, detail="Invalid token type")
 
+    jti = payload.get("jti")
     user_id = payload.get("sub")
+
+    # If token has JTI, validate and consume it (rotation)
+    if jti:
+        stored_user = await _consume_refresh_jti(jti)
+        if stored_user is None:
+            raise HTTPException(status_code=401, detail="Refresh token has been revoked or already used")
+        if stored_user != user_id:
+            raise HTTPException(status_code=401, detail="Token mismatch")
+
     result = await db.execute(select(User).where(User.id == uuid.UUID(user_id)))
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
 
-    return TokenResponse(
-        access_token=create_access_token(user.id),
-        refresh_token=create_refresh_token(user.id),
-    )
+    resp, new_jti = _issue_tokens(user.id)
+    await _store_refresh_jti(new_jti, str(user.id))
+    return resp
+
+
+@router.post("/logout", status_code=204)
+async def logout(data: TokenRefresh):
+    try:
+        payload = decode_token(data.refresh_token)
+        jti = payload.get("jti")
+        if jti:
+            await _revoke_refresh_jti(jti)
+    except Exception:
+        pass  # Best-effort revocation
 
 
 @router.get("/me", response_model=UserResponse)
@@ -209,3 +312,145 @@ async def disable_2fa(
     current_user.totp_enabled = False
     current_user.totp_secret = None
     await db.commit()
+
+
+# --- OIDC ---
+
+# In-memory state+nonce store with TTL (per-process, good enough for auth flows)
+_oidc_states: dict[str, dict] = {}
+_STATE_TTL = 600  # 10 minutes
+
+
+def _is_oidc_configured() -> bool:
+    return bool(settings.oidc_issuer_url and settings.oidc_client_id)
+
+
+def _cleanup_expired_states() -> None:
+    now = time.monotonic()
+    expired = [k for k, v in _oidc_states.items() if now - v["ts"] > _STATE_TTL]
+    for k in expired:
+        del _oidc_states[k]
+
+
+class OIDCConfigResponse(BaseModel):
+    oidc_enabled: bool
+    auth_mode: str
+    authorization_url: str | None = None
+
+
+class OIDCAuthorizeResponse(BaseModel):
+    redirect_url: str
+    state: str
+
+
+class OIDCCallbackRequest(BaseModel):
+    code: str
+    state: str
+    redirect_uri: str
+
+
+@router.get("/oidc/config", response_model=OIDCConfigResponse)
+async def oidc_config():
+    enabled = _is_oidc_configured()
+    return OIDCConfigResponse(
+        oidc_enabled=enabled,
+        auth_mode=settings.auth_mode,
+    )
+
+
+@router.get("/oidc/authorize")
+async def oidc_authorize(redirect_uri: str):
+    if not _is_oidc_configured():
+        raise HTTPException(status_code=400, detail="OIDC is not configured")
+
+    _cleanup_expired_states()
+
+    state = secrets.token_urlsafe(32)
+    nonce = secrets.token_urlsafe(32)
+    _oidc_states[state] = {"ts": time.monotonic(), "nonce": nonce}
+
+    try:
+        url = await oidc_service.get_authorization_url(redirect_uri, state, nonce=nonce)
+    except Exception as e:
+        logger.error("Failed to build OIDC authorization URL: %s", e)
+        raise HTTPException(status_code=502, detail="Failed to contact OIDC provider")
+
+    return OIDCAuthorizeResponse(redirect_url=url, state=state)
+
+
+@router.post("/oidc/callback", response_model=TokenResponse)
+async def oidc_callback(data: OIDCCallbackRequest, db: AsyncSession = Depends(get_db)):
+    if not _is_oidc_configured():
+        raise HTTPException(status_code=400, detail="OIDC is not configured")
+
+    _cleanup_expired_states()
+    state_data = _oidc_states.pop(data.state, None)
+    if state_data is None:
+        raise HTTPException(status_code=400, detail="Invalid or expired state parameter")
+
+    expected_nonce = state_data.get("nonce")
+
+    try:
+        claims = await oidc_service.exchange_code(data.code, data.redirect_uri, expected_nonce=expected_nonce)
+    except Exception as e:
+        logger.error("OIDC token exchange failed: %s", e)
+        raise HTTPException(status_code=502, detail="OIDC token exchange failed")
+
+    sub = claims.get("sub")
+    email = claims.get("email")
+    name = claims.get("name") or claims.get("preferred_username") or email or "OIDC User"
+
+    if not sub:
+        raise HTTPException(status_code=400, detail="OIDC provider did not return a subject claim")
+
+    # Look up existing user by oidc_sub
+    result = await db.execute(select(User).where(User.oidc_sub == sub))
+    user = result.scalar_one_or_none()
+
+    if user:
+        resp, jti = _issue_tokens(user.id)
+        await _store_refresh_jti(jti, str(user.id))
+        return resp
+
+    # No existing OIDC user — check if there's a password user with same email we can link
+    if email:
+        result = await db.execute(select(User).where(User.email == email))
+        existing = result.scalar_one_or_none()
+        if existing and existing.auth_provider == "password":
+            existing.oidc_sub = sub
+            existing.oidc_issuer = settings.oidc_issuer_url
+            existing.auth_provider = "hybrid"
+            await db.commit()
+            resp, jti = _issue_tokens(existing.id)
+            await _store_refresh_jti(jti, str(existing.id))
+            return resp
+
+    # Auto-provision new user
+    if not settings.oidc_auto_provision:
+        raise HTTPException(status_code=403, detail="User not found and auto-provisioning is disabled")
+
+    ws_result = await db.execute(select(Workspace).limit(1))
+    workspace = ws_result.scalar_one_or_none()
+    if not workspace:
+        workspace = Workspace(name=f"{name}'s Workspace")
+        db.add(workspace)
+        await db.flush()
+
+    initials = "".join(word[0].upper() for word in name.split()[:2]) or name[:2].upper()
+    user = User(
+        name=name,
+        email=email,
+        oidc_sub=sub,
+        oidc_issuer=settings.oidc_issuer_url,
+        auth_provider="oidc",
+        initials=initials,
+        role=settings.oidc_default_role,
+        workspace_id=workspace.id,
+    )
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
+
+    resp, jti = _issue_tokens(user.id)
+    await _store_refresh_jti(jti, str(user.id))
+    return resp

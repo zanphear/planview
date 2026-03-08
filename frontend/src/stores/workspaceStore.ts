@@ -4,6 +4,7 @@ import { api } from '../api/client';
 interface Workspace {
   id: string;
   name: string;
+  enabled_modules: Record<string, boolean> | null;
   created_at: string;
   updated_at: string;
 }

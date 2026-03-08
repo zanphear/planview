@@ -8,7 +8,7 @@ from app.database import get_db
 from app.models.client import Client
 from app.models.user import User
 from app.schemas.client import ClientCreate, ClientResponse, ClientUpdate
-from app.utils.auth import get_current_user
+from app.utils.auth import get_workspace_user
 
 router = APIRouter(prefix="/workspaces/{workspace_id}/clients", tags=["clients"])
 
@@ -16,7 +16,7 @@ router = APIRouter(prefix="/workspaces/{workspace_id}/clients", tags=["clients"]
 @router.get("", response_model=list[ClientResponse])
 async def list_clients(
     workspace_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -29,7 +29,7 @@ async def list_clients(
 async def create_client(
     workspace_id: uuid.UUID,
     data: ClientCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     client = Client(name=data.name, workspace_id=workspace_id)
@@ -44,7 +44,7 @@ async def update_client(
     workspace_id: uuid.UUID,
     client_id: uuid.UUID,
     data: ClientUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -66,7 +66,7 @@ async def update_client(
 async def delete_client(
     workspace_id: uuid.UUID,
     client_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(

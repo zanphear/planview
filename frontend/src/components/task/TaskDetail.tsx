@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { X, Users as UsersIcon, Clock, Play, Square, Timer } from 'lucide-react';
+import { X, Users as UsersIcon, Clock, Play, Square, Timer, Plus, Trash2 } from 'lucide-react';
 import { tasksApi, type Task } from '../../api/tasks';
+import { timeEntriesApi, type TimeEntry as TimeEntryType } from '../../api/timeEntries';
 import { checklistsApi } from '../../api/checklists';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
 import { useTaskStore } from '../../stores/taskStore';
@@ -143,6 +144,7 @@ export function TaskDetail({ task: initialTask, members, onClose }: TaskDetailPr
           onClick={onClose}
           className="p-1.5 rounded-lg hover:opacity-80"
           style={{ color: 'var(--color-text-secondary)' }}
+          aria-label="Close task detail"
         >
           <X size={18} />
         </button>
@@ -210,10 +212,15 @@ export function TaskDetail({ task: initialTask, members, onClose }: TaskDetailPr
 
         {/* Time Tracking */}
         <TimeTracker
+          workspaceId={workspace?.id || ''}
+          taskId={task.id}
           logged={task.time_logged_minutes || 0}
           estimate={task.time_estimate_minutes || 0}
-          onLog={(minutes) => save({ time_logged_minutes: (task.time_logged_minutes || 0) + minutes })}
-          onReset={() => save({ time_logged_minutes: 0 })}
+          onTimeUpdated={(newTotal) => {
+            const updated = { ...task, time_logged_minutes: newTotal };
+            setTask(updated);
+            updateTaskInStore(updated);
+          }}
         />
 
         {/* Recurrence */}
@@ -307,20 +314,37 @@ export function TaskDetail({ task: initialTask, members, onClose }: TaskDetailPr
 }
 
 function TimeTracker({
+  workspaceId,
+  taskId,
   logged,
   estimate,
-  onLog,
-  onReset,
+  onTimeUpdated,
 }: {
+  workspaceId: string;
+  taskId: string;
   logged: number;
   estimate: number;
-  onLog: (minutes: number) => void;
-  onReset: () => void;
+  onTimeUpdated: (newTotal: number) => void;
 }) {
   const [running, setRunning] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+  const [entries, setEntries] = useState<TimeEntryType[]>([]);
+  const [showEntries, setShowEntries] = useState(false);
+  const [manualMinutes, setManualMinutes] = useState('');
   const startRef = useRef<number>(0);
   const intervalRef = useRef<ReturnType<typeof setInterval>>(undefined);
+
+  const loadEntries = useCallback(async () => {
+    if (!workspaceId) return;
+    try {
+      const { data } = await timeEntriesApi.listForTask(workspaceId, taskId);
+      setEntries(data);
+    } catch { /* ignore */ }
+  }, [workspaceId, taskId]);
+
+  useEffect(() => {
+    if (showEntries) loadEntries();
+  }, [showEntries, loadEntries]);
 
   const start = () => {
     startRef.current = Date.now();
@@ -331,12 +355,37 @@ function TimeTracker({
     }, 1000);
   };
 
-  const stop = () => {
+  const stop = async () => {
     if (intervalRef.current) clearInterval(intervalRef.current);
     setRunning(false);
     const mins = Math.max(1, Math.round(elapsed / 60));
-    onLog(mins);
     setElapsed(0);
+    if (!workspaceId) return;
+    try {
+      await timeEntriesApi.create(workspaceId, taskId, { minutes: mins });
+      onTimeUpdated(logged + mins);
+      if (showEntries) loadEntries();
+    } catch { /* ignore */ }
+  };
+
+  const handleManualLog = async () => {
+    const mins = parseInt(manualMinutes);
+    if (!mins || mins <= 0 || !workspaceId) return;
+    try {
+      await timeEntriesApi.create(workspaceId, taskId, { minutes: mins });
+      onTimeUpdated(logged + mins);
+      setManualMinutes('');
+      if (showEntries) loadEntries();
+    } catch { /* ignore */ }
+  };
+
+  const handleDelete = async (entryId: string, entryMinutes: number) => {
+    if (!workspaceId) return;
+    try {
+      await timeEntriesApi.delete(workspaceId, taskId, entryId);
+      onTimeUpdated(Math.max(0, logged - entryMinutes));
+      setEntries((prev) => prev.filter((e) => e.id !== entryId));
+    } catch { /* ignore */ }
   };
 
   useEffect(() => {
@@ -396,14 +445,37 @@ function TimeTracker({
           )}
           {logged > 0 && (
             <button
-              onClick={onReset}
+              onClick={() => setShowEntries((s) => !s)}
               className="text-xs ml-auto underline"
               style={{ color: 'var(--color-text-secondary)' }}
             >
-              Reset
+              {showEntries ? 'Hide' : 'History'}
             </button>
           )}
         </div>
+
+        {/* Manual time entry */}
+        <div className="flex items-center gap-1.5">
+          <input
+            type="number"
+            min={1}
+            value={manualMinutes}
+            onChange={(e) => setManualMinutes(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleManualLog()}
+            placeholder="Log mins"
+            className="w-20 px-2 py-1 text-xs border rounded-lg outline-none"
+            style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+          />
+          <button
+            onClick={handleManualLog}
+            disabled={!manualMinutes || parseInt(manualMinutes) <= 0}
+            className="flex items-center gap-1 px-2 py-1 text-xs rounded-lg border disabled:opacity-40"
+            style={{ borderColor: 'var(--color-border)', color: 'var(--color-primary)' }}
+          >
+            <Plus size={10} /> Log
+          </button>
+        </div>
+
         {estimate > 0 && (
           <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-grey-2)' }}>
             <div
@@ -413,6 +485,31 @@ function TimeTracker({
                 backgroundColor: pct > 100 ? 'var(--color-danger, #ef4444)' : 'var(--color-primary)',
               }}
             />
+          </div>
+        )}
+
+        {/* Time entry history */}
+        {showEntries && entries.length > 0 && (
+          <div className="space-y-1 pt-1">
+            {entries.map((entry) => (
+              <div key={entry.id} className="flex items-center justify-between text-xs py-1 px-2 rounded" style={{ backgroundColor: 'var(--color-grey-1)' }}>
+                <div style={{ color: 'var(--color-text)' }}>
+                  <span className="font-medium">{fmtDuration(entry.minutes)}</span>
+                  {entry.user_name && <span className="ml-1.5" style={{ color: 'var(--color-text-secondary)' }}>by {entry.user_name}</span>}
+                  <span className="ml-1.5" style={{ color: 'var(--color-text-secondary)' }}>
+                    {new Date(entry.logged_at).toLocaleDateString()}
+                  </span>
+                </div>
+                <button
+                  onClick={() => handleDelete(entry.id, entry.minutes)}
+                  className="p-0.5 rounded hover:opacity-80"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                  aria-label="Delete time entry"
+                >
+                  <Trash2 size={12} />
+                </button>
+              </div>
+            ))}
           </div>
         )}
       </div>

@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, CheckConstraint, ForeignKey, String, text
+from sqlalchemy import Boolean, CheckConstraint, ForeignKey, Index, String, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -27,6 +27,9 @@ class User(Base, UUIDPrimaryKey, TimestampMixin):
     notification_prefs: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     totp_secret: Mapped[str | None] = mapped_column(String(255), nullable=True)
     totp_enabled: Mapped[bool] = mapped_column(Boolean, server_default="false", nullable=False)
+    oidc_sub: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    oidc_issuer: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    auth_provider: Mapped[str] = mapped_column(String(20), server_default=text("'password'"), nullable=False)
 
     workspace_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False
@@ -36,4 +39,10 @@ class User(Base, UUIDPrimaryKey, TimestampMixin):
 
     __table_args__ = (
         CheckConstraint("role IN ('owner', 'admin', 'regular')", name="ck_user_role"),
+        Index(
+            "ix_users_oidc_sub",
+            "oidc_sub",
+            unique=True,
+            postgresql_where=text("oidc_sub IS NOT NULL"),
+        ),
     )

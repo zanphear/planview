@@ -67,6 +67,8 @@ export function ProjectTimelinePage() {
       setSegments(segmentsRes.data);
       setMilestones(milestonesRes.data.filter((m) => !m.project_id || m.project_id === projectId));
       setMembers(membersRes.data);
+    }).catch((err) => {
+      console.error('Failed to load project timeline:', err);
     });
   }, [workspace, projectId, zoom, startDate]);
 

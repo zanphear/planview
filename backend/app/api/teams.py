@@ -9,7 +9,7 @@ from app.models.team import Team, team_members
 from app.models.user import User
 from app.schemas.team import TeamCreate, TeamMemberAdd, TeamResponse, TeamUpdate
 from app.schemas.user import UserResponse
-from app.utils.auth import get_current_user
+from app.utils.auth import get_workspace_user
 
 router = APIRouter(prefix="/workspaces/{workspace_id}/teams", tags=["teams"])
 
@@ -17,7 +17,7 @@ router = APIRouter(prefix="/workspaces/{workspace_id}/teams", tags=["teams"])
 @router.get("", response_model=list[TeamResponse])
 async def list_teams(
     workspace_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -30,7 +30,7 @@ async def list_teams(
 async def create_team(
     workspace_id: uuid.UUID,
     data: TeamCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     team = Team(name=data.name, workspace_id=workspace_id)
@@ -44,7 +44,7 @@ async def create_team(
 async def get_team(
     workspace_id: uuid.UUID,
     team_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -61,7 +61,7 @@ async def update_team(
     workspace_id: uuid.UUID,
     team_id: uuid.UUID,
     data: TeamUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -83,7 +83,7 @@ async def update_team(
 async def delete_team(
     workspace_id: uuid.UUID,
     team_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -102,7 +102,7 @@ async def add_member(
     workspace_id: uuid.UUID,
     team_id: uuid.UUID,
     data: TeamMemberAdd,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -130,7 +130,7 @@ async def remove_member(
     workspace_id: uuid.UUID,
     team_id: uuid.UUID,
     user_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(

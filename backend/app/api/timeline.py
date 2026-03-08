@@ -10,7 +10,7 @@ from app.database import get_db
 from app.models.task import Task
 from app.models.user import User
 from app.schemas.task import TaskResponse
-from app.utils.auth import get_current_user
+from app.utils.auth import get_workspace_user
 
 router = APIRouter(prefix="/workspaces/{workspace_id}/timeline", tags=["timeline"])
 
@@ -22,7 +22,7 @@ async def get_timeline(
     until: date = Query(..., description="Tasks starting before this date"),
     users: str | None = Query(None, description="Comma-separated user UUIDs"),
     project: uuid.UUID | None = None,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     query = (

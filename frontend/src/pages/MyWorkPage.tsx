@@ -26,6 +26,7 @@ export function MyWorkPage() {
   const [milestones, setMilestones] = useState<MilestoneData[]>([]);
   const [members, setMembers] = useState<User[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const startDate = useMemo(() => startOfWeek(addDays(new Date(), -7), { weekStartsOn: 1 }), []);
 
@@ -44,6 +45,7 @@ export function MyWorkPage() {
     const since = format(startDate, 'yyyy-MM-dd');
     const until = format(addDays(startDate, config.daysVisible), 'yyyy-MM-dd');
 
+    setLoading(true);
     Promise.all([
       timelineApi.get(workspace.id, { since, until, users: user.id }),
       milestonesApi.list(workspace.id),
@@ -52,7 +54,9 @@ export function MyWorkPage() {
       setTasks(tasksRes.data);
       setMilestones(milestonesRes.data);
       setMembers(membersRes.data);
-    });
+    }).catch((err) => {
+      console.error('Failed to load my work:', err);
+    }).finally(() => setLoading(false));
   }, [workspace, user, zoom, startDate]);
 
   const swimlanes: Swimlane[] = useMemo(() => {
@@ -101,7 +105,11 @@ export function MyWorkPage() {
       </div>
 
       <div className="flex-1 overflow-hidden">
-        {tasks.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: 'var(--color-primary)' }} />
+          </div>
+        ) : tasks.length === 0 ? (
           <EmptyState
             icon={<CalendarDays size={48} />}
             title="No tasks assigned to you"

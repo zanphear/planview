@@ -9,7 +9,7 @@ from app.database import get_db
 from app.models.task import Task, task_assignees
 from app.models.project import Project
 from app.models.user import User
-from app.utils.auth import get_current_user
+from app.utils.auth import get_workspace_user
 
 router = APIRouter(
     prefix="/workspaces/{workspace_id}/stats",
@@ -20,7 +20,7 @@ router = APIRouter(
 @router.get("")
 async def get_workspace_stats(
     workspace_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     today = date.today()
@@ -171,7 +171,7 @@ async def get_burndown(
     workspace_id: uuid.UUID,
     days: int = 30,
     project_id: uuid.UUID | None = None,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Return daily created vs completed counts for burndown chart."""

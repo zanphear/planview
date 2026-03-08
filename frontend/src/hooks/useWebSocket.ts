@@ -9,6 +9,10 @@ type EventHandler = (data: Record<string, unknown>) => void;
 
 const WS_BASE = import.meta.env.VITE_WS_URL || `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`;
 
+function getAccessToken(): string {
+  return localStorage.getItem('access_token') || '';
+}
+
 export function useWebSocket(workspaceId: string | undefined) {
   const wsRef = useRef<WebSocket | null>(null);
   const handlersRef = useRef<Map<string, Set<EventHandler>>>(new Map());
@@ -18,7 +22,10 @@ export function useWebSocket(workspaceId: string | undefined) {
   const connect = useCallback(() => {
     if (!workspaceId) return;
 
-    const ws = new WebSocket(`${WS_BASE}/ws/${workspaceId}`);
+    const token = getAccessToken();
+    if (!token) return;
+
+    const ws = new WebSocket(`${WS_BASE}/ws/${workspaceId}?token=${encodeURIComponent(token)}`);
 
     ws.onopen = () => {
       reconnectDelay.current = 1000;

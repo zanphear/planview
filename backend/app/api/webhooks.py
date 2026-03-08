@@ -13,7 +13,7 @@ from app.schemas.webhook import (
     WebhookResponse,
     WebhookUpdate,
 )
-from app.utils.auth import get_current_user
+from app.utils.auth import get_workspace_user
 
 router = APIRouter(
     prefix="/workspaces/{workspace_id}/webhooks",
@@ -24,7 +24,7 @@ router = APIRouter(
 @router.get("", response_model=list[WebhookResponse])
 async def list_webhooks(
     workspace_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -39,7 +39,7 @@ async def list_webhooks(
 async def create_webhook(
     workspace_id: uuid.UUID,
     data: WebhookCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     webhook = Webhook(
@@ -61,7 +61,7 @@ async def update_webhook(
     workspace_id: uuid.UUID,
     webhook_id: uuid.UUID,
     data: WebhookUpdate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -84,7 +84,7 @@ async def update_webhook(
 async def delete_webhook(
     workspace_id: uuid.UUID,
     webhook_id: uuid.UUID,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
@@ -105,7 +105,7 @@ async def list_webhook_logs(
     workspace_id: uuid.UUID,
     webhook_id: uuid.UUID,
     limit: int = Query(50, le=200),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(

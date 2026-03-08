@@ -27,16 +27,15 @@ export function SharedTimelinePage() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--color-bg)' }}>
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">Not Found</h1>
-          <p className="text-gray-500">{error}</p>
+          <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--color-text)' }}>Not Found</h1>
+          <p style={{ color: 'var(--color-text-secondary)' }}>{error}</p>
         </div>
       </div>
     );
   }
 
-  // Group tasks by assignee for swimlanes
   const swimlanes: Swimlane[] = useMemo(() => {
     const userMap = new Map<string, Swimlane>();
     const unassigned: Task[] = [];
@@ -62,11 +61,11 @@ export function SharedTimelinePage() {
   }, [tasks]);
 
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
-      <header className="px-6 py-3 bg-white border-b border-gray-200 flex items-center justify-between shrink-0">
+    <div className="h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg)' }}>
+      <header className="px-6 py-3 border-b flex items-center justify-between shrink-0" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
         <div className="flex items-center gap-3">
-          <h1 className="text-lg font-semibold text-gray-800">Planview</h1>
-          <span className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-medium">
+          <h1 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>Planview</h1>
+          <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: '#dbeafe', color: '#2563eb' }}>
             Shared View
           </span>
         </div>
