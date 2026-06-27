@@ -86,8 +86,35 @@ jobs:
       - name: Bundle budget (forbidden-27)
         run: node scripts/check-bundle-budget.mjs
 
+  openapi-types:
+    runs-on: ubuntu-latest
+    env:
+      JWT_SECRET_KEY: ci-throwaway-secret-not-used-in-production-0123456789
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: System libs (python-magic)
+        run: sudo apt-get update && sudo apt-get install -y libmagic1
+      - name: Install backend
+        working-directory: backend
+        run: pip install -e ".[dev]"
+      - name: Dump OpenAPI schema
+        working-directory: backend
+        run: python scripts/dump_openapi.py
+      - name: Generate TS types from the schema (ADR 0006)
+        working-directory: frontend
+        run: npx --yes openapi-typescript ../backend/openapi.json -o src/api/schema.ts
+      - name: Schema is non-trivial
+        working-directory: frontend
+        run: test "$(wc -l < src/api/schema.ts)" -gt 50
+
   docker-build:
-    needs: [repo-hygiene, backend-lint, backend-test, frontend-checks]
+    needs: [repo-hygiene, backend-lint, backend-test, frontend-checks, openapi-types]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
