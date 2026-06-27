@@ -23,6 +23,13 @@
   --color-warning: #F0C239;
   --color-grey-1: #F8F8F8;
   --color-grey-2: #F0F0F0;
+  /* Foreground partners + focus ring (new tokens authored in OKLCH per fleet std).
+     Existing brand hex above is preserved pending a verified OKLCH migration (see
+     docs/adr/0004-design-tokens-and-styling.md). */
+  --color-primary-foreground: oklch(1 0 0);
+  --color-on-accent: oklch(1 0 0);
+  --color-warning-foreground: oklch(0.21 0.05 295);
+  --color-ring: #8A00E5;
 }
 
 .dark {
@@ -46,9 +53,42 @@
   --color-warning: #FBBF24;
   --color-grey-1: #1A1826;
   --color-grey-2: #252336;
+  --color-primary-foreground: oklch(1 0 0);
+  --color-on-accent: oklch(1 0 0);
+  --color-warning-foreground: oklch(0.21 0.05 295);
+  --color-ring: #A855F7;
+}
+
+/* Semantic token layer (forbidden-8 migration target). `@theme inline` exposes
+   Tailwind utilities (bg-background, text-foreground, bg-card, text-muted-foreground,
+   bg-primary, text-primary-foreground, bg-destructive, border-border, ring-ring, ...)
+   that resolve to the runtime CSS vars above, so dark mode stays a token swap. New
+   code should use these instead of bg-[var(--color-...)] arbitrary literals. */
+@theme inline {
+  --color-background: var(--color-bg);
+  --color-foreground: var(--color-text);
+  --color-card: var(--color-surface);
+  --color-card-foreground: var(--color-text);
+  --color-muted: var(--color-grey-2);
+  --color-muted-foreground: var(--color-text-secondary);
+  --color-accent: var(--color-primary);
+  --color-accent-foreground: var(--color-primary-foreground);
+  --color-destructive: var(--color-danger);
+  --color-destructive-foreground: var(--color-on-accent);
+  --color-positive: var(--color-success);
+  --color-positive-foreground: var(--color-on-accent);
+  --color-caution: var(--color-warning);
+  --color-caution-foreground: var(--color-warning-foreground);
+  --color-outline: var(--color-border);
 }
 
 @layer base {
+  /* Visible keyboard focus everywhere (forbidden-26): never a bare outline:none. */
+  :focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+  }
+
   html, body {
     height: 100%;
     margin: 0;
@@ -111,7 +151,7 @@
   background: var(--color-text-secondary);
 }
 
-/* Print styles — Export to PDF */
+/* Print styles, Export to PDF */
 @media print {
   @page { margin: 15mm 20mm; }
 
