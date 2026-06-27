@@ -390,7 +390,7 @@ export function DashboardPage() {
               <NavLink
                 key={proj.id}
                 to={`/projects/${proj.id}/board`}
-                className="flex items-center gap-3 p-2 -mx-2 rounded-lg hover:bg-[var(--color-grey-1)] transition-colors"
+                className="flex items-center gap-3 p-2 -mx-2 rounded-lg hover:bg-subtle transition-colors"
               >
                 <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: proj.colour }} />
                 <span className="text-sm font-medium flex-1 truncate" style={{ color: 'var(--color-text)' }}>

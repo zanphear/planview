@@ -69,7 +69,7 @@ export function TaskSubtasks({ taskId, subtasks, onRefresh }: TaskSubtasksProps)
         {subtasks.map((st) => (
           <div
             key={st.id}
-            className="flex items-center gap-2 group py-1 px-1 rounded hover:bg-[var(--color-grey-1)] transition-colors"
+            className="flex items-center gap-2 group py-1 px-1 rounded hover:bg-subtle transition-colors"
           >
             <button
               onClick={() => handleToggle(st)}

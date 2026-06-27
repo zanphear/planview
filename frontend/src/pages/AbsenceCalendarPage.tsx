@@ -139,7 +139,7 @@ export function AbsenceCalendarPage() {
                   opacity: inMonth ? 1 : 0.4,
                 }}
               >
-                <div className={`text-xs font-medium mb-1 ${isToday(day) ? 'text-[var(--color-primary)] font-bold' : ''}`} style={{ color: isToday(day) ? undefined : 'var(--color-text-secondary)' }}>
+                <div className={`text-xs font-medium mb-1 ${isToday(day) ? 'text-accent font-bold' : ''}`} style={{ color: isToday(day) ? undefined : 'var(--color-text-secondary)' }}>
                   {format(day, 'd')}
                 </div>
                 <div className="space-y-0.5">

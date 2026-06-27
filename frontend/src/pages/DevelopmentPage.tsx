@@ -478,7 +478,7 @@ export function DevelopmentPage() {
                         setExpandedPlanId(isExpanded ? null : plan.id);
                         setPlanTab('goals');
                       }}
-                      className="w-full flex items-center gap-3 p-4 text-left hover:bg-[var(--color-grey-2)] transition-colors"
+                      className="w-full flex items-center gap-3 p-4 text-left hover:bg-muted transition-colors"
                     >
                       <UserAvatar
                         name={member?.name || 'Unknown'}
@@ -576,7 +576,7 @@ export function DevelopmentPage() {
                                     setAddingGoalToPlanId(plan.id);
                                     setAddGoalForm({ title: '', description: '', goal_type: 'skill', target_date: '', cost_estimate: '', priority: 'medium', year: '' });
                                   }}
-                                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium hover:bg-[var(--color-grey-2)]"
+                                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium hover:bg-muted"
                                   style={{ color: 'var(--color-text-secondary)' }}
                                 >
                                   <Plus size={12} /> Add Goal
@@ -646,7 +646,7 @@ export function DevelopmentPage() {
                                                 setEditGoalProgress(goal.progress);
                                               }
                                             }}
-                                            className="p-1 rounded hover:bg-[var(--color-grey-2)]"
+                                            className="p-1 rounded hover:bg-muted"
                                             title="Edit goal"
                                           >
                                             <Edit2 size={13} style={{ color: 'var(--color-text-secondary)' }} />
@@ -677,7 +677,7 @@ export function DevelopmentPage() {
                                               <button onClick={() => handleUpdateGoal(plan.id, goal.id)} className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium text-white" style={{ backgroundColor: 'var(--color-primary)' }}>
                                                 <Check size={12} /> Save
                                               </button>
-                                              <button onClick={() => setEditingGoalId(null)} className="px-2.5 py-1 rounded-lg text-xs font-medium hover:bg-[var(--color-grey-2)]" style={{ color: 'var(--color-text-secondary)' }}>Cancel</button>
+                                              <button onClick={() => setEditingGoalId(null)} className="px-2.5 py-1 rounded-lg text-xs font-medium hover:bg-muted" style={{ color: 'var(--color-text-secondary)' }}>Cancel</button>
                                             </div>
                                           </div>
                                         )}
@@ -720,7 +720,7 @@ export function DevelopmentPage() {
                                     <button onClick={() => handleAddGoal(plan.id)} disabled={!addGoalForm.title.trim()} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-white disabled:opacity-50" style={{ backgroundColor: 'var(--color-primary)' }}>
                                       <Plus size={12} /> Add
                                     </button>
-                                    <button onClick={() => setAddingGoalToPlanId(null)} className="px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-[var(--color-grey-2)]" style={{ color: 'var(--color-text-secondary)' }}>Cancel</button>
+                                    <button onClick={() => setAddingGoalToPlanId(null)} className="px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-muted" style={{ color: 'var(--color-text-secondary)' }}>Cancel</button>
                                   </div>
                                 </div>
                               )}
@@ -748,7 +748,7 @@ export function DevelopmentPage() {
                               <div className="flex justify-end mb-2">
                                 <button
                                   onClick={() => setAddingMilestone(true)}
-                                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium hover:bg-[var(--color-grey-2)]"
+                                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium hover:bg-muted"
                                   style={{ color: 'var(--color-text-secondary)' }}
                                 >
                                   <Plus size={12} /> Add Milestone
@@ -789,7 +789,7 @@ export function DevelopmentPage() {
                                           {ms.status !== 'completed' && (
                                             <button
                                               onClick={() => handleUpdateMilestoneStatus(plan.id, ms.id, 'completed')}
-                                              className="p-1 rounded hover:bg-[var(--color-grey-2)]"
+                                              className="p-1 rounded hover:bg-muted"
                                               title="Mark completed"
                                             >
                                               <Check size={14} style={{ color: '#16a34a' }} />
@@ -797,7 +797,7 @@ export function DevelopmentPage() {
                                           )}
                                           <button
                                             onClick={() => handleDeleteMilestone(plan.id, ms.id)}
-                                            className="p-1 rounded hover:bg-[var(--color-grey-2)]"
+                                            className="p-1 rounded hover:bg-muted"
                                             title="Delete"
                                           >
                                             <Trash2 size={13} style={{ color: '#dc2626' }} />
@@ -822,7 +822,7 @@ export function DevelopmentPage() {
                                     <button onClick={() => handleAddMilestone(plan.id)} disabled={!milestoneForm.title.trim() || !milestoneForm.target_date} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-white disabled:opacity-50" style={{ backgroundColor: 'var(--color-primary)' }}>
                                       <Plus size={12} /> Add
                                     </button>
-                                    <button onClick={() => setAddingMilestone(false)} className="px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-[var(--color-grey-2)]" style={{ color: 'var(--color-text-secondary)' }}>Cancel</button>
+                                    <button onClick={() => setAddingMilestone(false)} className="px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-muted" style={{ color: 'var(--color-text-secondary)' }}>Cancel</button>
                                   </div>
                                 </div>
                               )}
@@ -835,7 +835,7 @@ export function DevelopmentPage() {
                               <div className="flex justify-end mb-2">
                                 <button
                                   onClick={() => setAddingCheckpoint(true)}
-                                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium hover:bg-[var(--color-grey-2)]"
+                                  className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium hover:bg-muted"
                                   style={{ color: 'var(--color-text-secondary)' }}
                                 >
                                   <Plus size={12} /> Add Review
@@ -884,7 +884,7 @@ export function DevelopmentPage() {
                                     <button onClick={() => handleAddCheckpoint(plan.id)} disabled={!checkpointForm.checkpoint_date} className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium text-white disabled:opacity-50" style={{ backgroundColor: 'var(--color-primary)' }}>
                                       <Plus size={12} /> Add
                                     </button>
-                                    <button onClick={() => setAddingCheckpoint(false)} className="px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-[var(--color-grey-2)]" style={{ color: 'var(--color-text-secondary)' }}>Cancel</button>
+                                    <button onClick={() => setAddingCheckpoint(false)} className="px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-muted" style={{ color: 'var(--color-text-secondary)' }}>Cancel</button>
                                   </div>
                                 </div>
                               )}
@@ -929,7 +929,7 @@ export function DevelopmentPage() {
                       </div>
                       <button
                         onClick={() => handleDeletePathway(pw.id)}
-                        className="p-1 rounded hover:bg-[var(--color-grey-2)]"
+                        className="p-1 rounded hover:bg-muted"
                         title="Delete pathway"
                       >
                         <Trash2 size={13} style={{ color: '#dc2626' }} />
@@ -977,7 +977,7 @@ export function DevelopmentPage() {
             <div className="p-5">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>New Development Plan</h3>
-                <button onClick={() => setShowCreateModal(false)} className="p-1 rounded hover:bg-[var(--color-grey-2)]" style={{ color: 'var(--color-text-secondary)' }}>
+                <button onClick={() => setShowCreateModal(false)} className="p-1 rounded hover:bg-muted" style={{ color: 'var(--color-text-secondary)' }}>
                   <X size={18} />
                 </button>
               </div>
@@ -1029,7 +1029,7 @@ export function DevelopmentPage() {
                 </div>
 
                 <div className="flex justify-end gap-2 pt-2">
-                  <button onClick={() => setShowCreateModal(false)} className="px-4 py-2 rounded-lg text-sm font-medium hover:bg-[var(--color-grey-2)]" style={{ color: 'var(--color-text-secondary)' }}>Cancel</button>
+                  <button onClick={() => setShowCreateModal(false)} className="px-4 py-2 rounded-lg text-sm font-medium hover:bg-muted" style={{ color: 'var(--color-text-secondary)' }}>Cancel</button>
                   <button onClick={handleCreatePlan} disabled={!createForm.user_id} className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-50" style={{ backgroundColor: 'var(--color-primary)' }}>Create Plan</button>
                 </div>
               </div>
@@ -1045,7 +1045,7 @@ export function DevelopmentPage() {
             <div className="p-5">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>New Career Pathway</h3>
-                <button onClick={() => setShowPathwayModal(false)} className="p-1 rounded hover:bg-[var(--color-grey-2)]" style={{ color: 'var(--color-text-secondary)' }}>
+                <button onClick={() => setShowPathwayModal(false)} className="p-1 rounded hover:bg-muted" style={{ color: 'var(--color-text-secondary)' }}>
                   <X size={18} />
                 </button>
               </div>
@@ -1059,7 +1059,7 @@ export function DevelopmentPage() {
                   <textarea value={pathwayForm.description} onChange={(e) => setPathwayForm(f => ({ ...f, description: e.target.value }))} rows={3} placeholder="Optional description..." className="w-full px-3 py-2 rounded-lg border text-sm resize-none" style={inputStyle} />
                 </div>
                 <div className="flex justify-end gap-2 pt-2">
-                  <button onClick={() => setShowPathwayModal(false)} className="px-4 py-2 rounded-lg text-sm font-medium hover:bg-[var(--color-grey-2)]" style={{ color: 'var(--color-text-secondary)' }}>Cancel</button>
+                  <button onClick={() => setShowPathwayModal(false)} className="px-4 py-2 rounded-lg text-sm font-medium hover:bg-muted" style={{ color: 'var(--color-text-secondary)' }}>Cancel</button>
                   <button onClick={handleCreatePathway} disabled={!pathwayForm.name.trim()} className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-50" style={{ backgroundColor: 'var(--color-primary)' }}>Create</button>
                 </div>
               </div>

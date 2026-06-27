@@ -132,13 +132,13 @@ export function ProjectTimelinePage() {
   return (
     <div className="h-full flex flex-col">
       {project && (
-        <div className="px-6 py-3 bg-[var(--color-surface)] border-b border-[var(--color-border)] flex items-center gap-3 shrink-0">
+        <div className="px-6 py-3 bg-card border-b border-outline flex items-center gap-3 shrink-0">
           <div className="w-4 h-4 rounded" style={{ backgroundColor: project.colour }} />
           <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>{project.name}</h2>
           <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Timeline</span>
           <button
             onClick={() => setShowShare(true)}
-            className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg hover:bg-[var(--color-grey-2)] transition-colors"
+            className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg hover:bg-muted transition-colors"
             style={{ color: 'var(--color-text-secondary)' }}
           >
             <Share2 size={14} />

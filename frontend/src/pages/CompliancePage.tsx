@@ -287,7 +287,7 @@ export function CompliancePage() {
                         <div className="flex items-center justify-end gap-1">
                           <button
                             onClick={() => { setEditingItem(item); setShowModal(true); }}
-                            className="p-1.5 rounded-lg hover:bg-[var(--color-grey-1)] transition-colors"
+                            className="p-1.5 rounded-lg hover:bg-subtle transition-colors"
                             style={{ color: 'var(--color-text-secondary)' }}
                             title="Edit"
                           >
@@ -351,7 +351,7 @@ export function CompliancePage() {
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => { setEditingItem(item); setShowModal(true); }}
-                        className="p-1 rounded hover:bg-[var(--color-grey-1)]"
+                        className="p-1 rounded hover:bg-subtle"
                         style={{ color: 'var(--color-text-secondary)' }}
                       >
                         <Edit2 size={14} />
@@ -488,7 +488,7 @@ function ComplianceModal({
           <h3 className="text-lg font-bold" style={{ color: 'var(--color-text)' }}>
             {isEdit ? 'Edit Compliance Item' : 'Add Compliance Item'}
           </h3>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-grey-1)]" style={{ color: 'var(--color-text-secondary)' }}>
+          <button onClick={onClose} className="p-1 rounded hover:bg-subtle" style={{ color: 'var(--color-text-secondary)' }}>
             <X size={18} />
           </button>
         </div>

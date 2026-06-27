@@ -316,7 +316,7 @@ export function OnboardingPage() {
                       </button>
                       <button
                         onClick={() => handleDeleteTemplate(tmpl.id)}
-                        className="p-1.5 transition-colors rounded hover:bg-[var(--color-grey-2)]"
+                        className="p-1.5 transition-colors rounded hover:bg-muted"
                         style={{ color: 'var(--color-text-secondary)' }}
                         title="Delete template"
                       >
@@ -467,7 +467,7 @@ export function OnboardingPage() {
           <div className="rounded-xl shadow-xl w-full max-w-lg max-h-[85vh] overflow-y-auto p-6" style={{ backgroundColor: 'var(--color-surface)' }}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>New Template</h2>
-              <button onClick={resetTemplateModal} className="p-1 rounded hover:bg-[var(--color-grey-2)]" style={{ color: 'var(--color-text-secondary)' }}>
+              <button onClick={resetTemplateModal} className="p-1 rounded hover:bg-muted" style={{ color: 'var(--color-text-secondary)' }}>
                 <X size={18} />
               </button>
             </div>
@@ -536,7 +536,7 @@ export function OnboardingPage() {
           <div className="rounded-xl shadow-xl w-full max-w-md p-6" style={{ backgroundColor: 'var(--color-surface)' }}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>Start Checklist</h2>
-              <button onClick={resetChecklistModal} className="p-1 rounded hover:bg-[var(--color-grey-2)]" style={{ color: 'var(--color-text-secondary)' }}>
+              <button onClick={resetChecklistModal} className="p-1 rounded hover:bg-muted" style={{ color: 'var(--color-text-secondary)' }}>
                 <X size={18} />
               </button>
             </div>

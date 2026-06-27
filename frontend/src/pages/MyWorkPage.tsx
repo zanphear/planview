@@ -100,7 +100,7 @@ export function MyWorkPage() {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="px-6 py-3 bg-[var(--color-surface)] border-b border-[var(--color-border)] shrink-0">
+      <div className="px-6 py-3 bg-card border-b border-outline shrink-0">
         <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>My Work</h2>
       </div>
 

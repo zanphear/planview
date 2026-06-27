@@ -89,7 +89,7 @@ export function NotificationBell() {
       {/* Bell button */}
       <button
         onClick={toggle}
-        className="p-2 hover:bg-[var(--color-grey-2)] rounded-lg relative transition-colors"
+        className="p-2 hover:bg-muted rounded-lg relative transition-colors"
         aria-label="Notifications"
       >
         <Bell size={20} style={{ color: 'var(--color-text)' }} />
@@ -163,7 +163,7 @@ export function NotificationBell() {
                             markRead(workspace.id, [notif.id]);
                           }
                         }}
-                        className="w-full text-left px-5 py-3 flex gap-3 transition-colors hover:bg-[var(--color-grey-1)]"
+                        className="w-full text-left px-5 py-3 flex gap-3 transition-colors hover:bg-subtle"
                         style={{
                           backgroundColor: !notif.is_read ? 'var(--color-primary-light)' : undefined,
                         }}

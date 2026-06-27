@@ -120,13 +120,13 @@ export function TeamManageModal({ team, onSave, onDelete, onClose, onTeamUpdated
               {currentMembers.map((m) => (
                 <div
                   key={m.id}
-                  className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-[var(--color-grey-1)] group"
+                  className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-subtle group"
                 >
                   <Avatar name={m.name} initials={m.initials || undefined} colour={m.colour} size={28} />
                   <span className="text-sm flex-1 truncate" style={{ color: 'var(--color-text)' }}>{m.name}</span>
                   <button
                     onClick={() => handleRemoveMember(m.id)}
-                    className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-[var(--color-grey-2)] transition-opacity"
+                    className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-muted transition-opacity"
                     style={{ color: 'var(--color-danger, #ef4444)' }}
                     title="Remove from team"
                   >
@@ -147,13 +147,13 @@ export function TeamManageModal({ team, onSave, onDelete, onClose, onTeamUpdated
                 {availableMembers.map((m) => (
                   <div
                     key={m.id}
-                    className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-[var(--color-grey-1)] group"
+                    className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-subtle group"
                   >
                     <Avatar name={m.name} initials={m.initials || undefined} colour={m.colour} size={28} />
                     <span className="text-sm flex-1 truncate" style={{ color: 'var(--color-text-secondary)' }}>{m.name}</span>
                     <button
                       onClick={() => handleAddMember(m.id)}
-                      className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-[var(--color-grey-2)] transition-opacity"
+                      className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-muted transition-opacity"
                       style={{ color: 'var(--color-primary)' }}
                       title="Add to team"
                     >

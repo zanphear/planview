@@ -72,21 +72,21 @@ export function RotaPage() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setWeekStart(subWeeks(weekStart, 1))}
-            className="p-2 rounded-lg hover:bg-[var(--color-grey-1)] transition-colors"
+            className="p-2 rounded-lg hover:bg-subtle transition-colors"
             style={{ color: 'var(--color-text-secondary)' }}
           >
             <ChevronLeft size={18} />
           </button>
           <button
             onClick={() => setWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }))}
-            className="px-3 py-1.5 text-sm font-medium rounded-lg hover:bg-[var(--color-grey-1)] transition-colors"
+            className="px-3 py-1.5 text-sm font-medium rounded-lg hover:bg-subtle transition-colors"
             style={{ color: 'var(--color-text)' }}
           >
             This Week
           </button>
           <button
             onClick={() => setWeekStart(addWeeks(weekStart, 1))}
-            className="p-2 rounded-lg hover:bg-[var(--color-grey-1)] transition-colors"
+            className="p-2 rounded-lg hover:bg-subtle transition-colors"
             style={{ color: 'var(--color-text-secondary)' }}
           >
             <ChevronRight size={18} />
@@ -221,7 +221,7 @@ function RotaSection({
         <div className="flex items-center gap-1">
           <button
             onClick={onToggleAddEntry}
-            className="p-1.5 rounded-lg hover:bg-[var(--color-grey-1)] transition-colors"
+            className="p-1.5 rounded-lg hover:bg-subtle transition-colors"
             style={{ color: 'var(--color-primary)' }}
             title="Add entry"
           >
@@ -229,7 +229,7 @@ function RotaSection({
           </button>
           <button
             onClick={onEdit}
-            className="p-1.5 rounded-lg hover:bg-[var(--color-grey-1)] transition-colors"
+            className="p-1.5 rounded-lg hover:bg-subtle transition-colors"
             style={{ color: 'var(--color-text-secondary)' }}
             title="Edit rota"
           >
@@ -274,7 +274,7 @@ function RotaSection({
                     {format(day, 'EEE')}
                   </div>
                   <div
-                    className={`text-xs font-medium ${today ? 'w-6 h-6 rounded-full flex items-center justify-center mx-auto bg-[var(--color-primary)] text-white' : ''}`}
+                    className={`text-xs font-medium ${today ? 'w-6 h-6 rounded-full flex items-center justify-center mx-auto bg-accent text-white' : ''}`}
                     style={{ color: today ? undefined : 'var(--color-text)' }}
                   >
                     {format(day, 'd')}
@@ -491,7 +491,7 @@ function AddEntryForm({
       <button
         type="button"
         onClick={onCancel}
-        className="p-1.5 rounded-lg hover:bg-[var(--color-grey-1)]"
+        className="p-1.5 rounded-lg hover:bg-subtle"
         style={{ color: 'var(--color-text-secondary)' }}
         aria-label="Cancel"
       >
@@ -549,7 +549,7 @@ function CreateRotaModal({
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-bold" style={{ color: 'var(--color-text)' }}>New Rota</h3>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-grey-1)]" style={{ color: 'var(--color-text-secondary)' }} aria-label="Close">
+          <button onClick={onClose} className="p-1 rounded hover:bg-subtle" style={{ color: 'var(--color-text-secondary)' }} aria-label="Close">
             <X size={18} />
           </button>
         </div>
@@ -579,7 +579,7 @@ function CreateRotaModal({
                     type="button"
                     onClick={() => setRotaType(key)}
                     className={`p-3 rounded-lg border text-center transition-colors ${
-                      rotaType === key ? 'ring-2 ring-[var(--color-primary)]' : ''
+                      rotaType === key ? 'ring-2 ring-accent' : ''
                     }`}
                     style={{
                       borderColor: rotaType === key ? 'var(--color-primary)' : 'var(--color-border)',
@@ -725,7 +725,7 @@ function EditRotaModal({
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-bold" style={{ color: 'var(--color-text)' }}>Edit Rota</h3>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-grey-1)]" style={{ color: 'var(--color-text-secondary)' }} aria-label="Close">
+          <button onClick={onClose} className="p-1 rounded hover:bg-subtle" style={{ color: 'var(--color-text-secondary)' }} aria-label="Close">
             <X size={18} />
           </button>
         </div>
@@ -754,7 +754,7 @@ function EditRotaModal({
                     type="button"
                     onClick={() => setRotaType(key)}
                     className={`p-3 rounded-lg border text-center transition-colors ${
-                      rotaType === key ? 'ring-2 ring-[var(--color-primary)]' : ''
+                      rotaType === key ? 'ring-2 ring-accent' : ''
                     }`}
                     style={{
                       borderColor: rotaType === key ? 'var(--color-primary)' : 'var(--color-border)',

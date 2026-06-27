@@ -452,7 +452,7 @@ function ReviewCard({
     >
       {/* Summary row */}
       <div
-        className="flex items-center gap-3 p-4 cursor-pointer hover:bg-[var(--color-grey-1)] transition-colors"
+        className="flex items-center gap-3 p-4 cursor-pointer hover:bg-subtle transition-colors"
         onClick={onToggle}
       >
         {/* Reviewee avatar */}
@@ -593,7 +593,7 @@ function CreateCycleModal({
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-bold" style={{ color: 'var(--color-text)' }}>New Review Cycle</h3>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-grey-1)]" style={{ color: 'var(--color-text-secondary)' }}>
+          <button onClick={onClose} className="p-1 rounded hover:bg-subtle" style={{ color: 'var(--color-text-secondary)' }}>
             <X size={18} />
           </button>
         </div>
@@ -713,7 +713,7 @@ function CreateReviewModal({
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-bold" style={{ color: 'var(--color-text)' }}>New Review</h3>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-grey-1)]" style={{ color: 'var(--color-text-secondary)' }}>
+          <button onClick={onClose} className="p-1 rounded hover:bg-subtle" style={{ color: 'var(--color-text-secondary)' }}>
             <X size={18} />
           </button>
         </div>

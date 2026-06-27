@@ -289,7 +289,7 @@ export function RecruitmentPage() {
           {/* Filter toggle */}
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="p-1.5 rounded-lg hover:bg-[var(--color-grey-2)] transition-colors"
+            className="p-1.5 rounded-lg hover:bg-muted transition-colors"
             style={{ color: filterSource ? 'var(--color-primary)' : 'var(--color-text-secondary)' }}
             title="Filter by source"
           >
@@ -461,7 +461,7 @@ export function RecruitmentPage() {
               </h2>
               <button
                 onClick={() => setSelectedCandidate(null)}
-                className="p-1 rounded-lg hover:bg-[var(--color-grey-2)] transition-colors"
+                className="p-1 rounded-lg hover:bg-muted transition-colors"
                 style={{ color: 'var(--color-text-secondary)' }}
               >
                 <X size={18} />
@@ -532,7 +532,7 @@ export function RecruitmentPage() {
               <div className="flex gap-2">
                 <button
                   onClick={() => { setEventForm({ ...emptyEvent, interviewer_id: user?.id ?? '' }); setShowEventModal(true); }}
-                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-colors hover:bg-[var(--color-grey-1)]"
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-colors hover:bg-subtle"
                   style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
                 >
                   <Plus size={14} />
@@ -625,7 +625,7 @@ export function RecruitmentPage() {
                   <div className="flex gap-2 mt-4 justify-end">
                     <button
                       onClick={() => setShowDeleteConfirm(false)}
-                      className="px-3 py-1.5 text-sm rounded-lg border hover:bg-[var(--color-grey-1)] transition-colors"
+                      className="px-3 py-1.5 text-sm rounded-lg border hover:bg-subtle transition-colors"
                       style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
                     >
                       Cancel
@@ -657,7 +657,7 @@ export function RecruitmentPage() {
               </h3>
               <button
                 onClick={() => { setShowCreateModal(false); setCreateForm(emptyCandidate); }}
-                className="p-1 rounded-lg hover:bg-[var(--color-grey-2)] transition-colors"
+                className="p-1 rounded-lg hover:bg-muted transition-colors"
                 style={{ color: 'var(--color-text-secondary)' }}
               >
                 <X size={18} />
@@ -767,7 +767,7 @@ export function RecruitmentPage() {
             <div className="flex gap-2 mt-5 justify-end">
               <button
                 onClick={() => { setShowCreateModal(false); setCreateForm(emptyCandidate); }}
-                className="px-4 py-2 text-sm rounded-lg border hover:bg-[var(--color-grey-1)] transition-colors"
+                className="px-4 py-2 text-sm rounded-lg border hover:bg-subtle transition-colors"
                 style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
               >
                 Cancel
@@ -798,7 +798,7 @@ export function RecruitmentPage() {
               </h3>
               <button
                 onClick={() => { setShowEventModal(false); setEventForm(emptyEvent); }}
-                className="p-1 rounded-lg hover:bg-[var(--color-grey-2)] transition-colors"
+                className="p-1 rounded-lg hover:bg-muted transition-colors"
                 style={{ color: 'var(--color-text-secondary)' }}
               >
                 <X size={18} />
@@ -897,7 +897,7 @@ export function RecruitmentPage() {
             <div className="flex gap-2 mt-5 justify-end">
               <button
                 onClick={() => { setShowEventModal(false); setEventForm(emptyEvent); }}
-                className="px-4 py-2 text-sm rounded-lg border hover:bg-[var(--color-grey-1)] transition-colors"
+                className="px-4 py-2 text-sm rounded-lg border hover:bg-subtle transition-colors"
                 style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
               >
                 Cancel

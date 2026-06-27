@@ -56,7 +56,7 @@ export function CalendarPage() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-            className="p-2 rounded-lg hover:bg-[var(--color-grey-1)] transition-colors"
+            className="p-2 rounded-lg hover:bg-subtle transition-colors"
             style={{ color: 'var(--color-text-secondary)' }}
             aria-label="Previous month"
           >
@@ -64,14 +64,14 @@ export function CalendarPage() {
           </button>
           <button
             onClick={() => setCurrentMonth(new Date())}
-            className="px-3 py-1.5 text-sm font-medium rounded-lg hover:bg-[var(--color-grey-1)] transition-colors"
+            className="px-3 py-1.5 text-sm font-medium rounded-lg hover:bg-subtle transition-colors"
             style={{ color: 'var(--color-text)' }}
           >
             Today
           </button>
           <button
             onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-            className="p-2 rounded-lg hover:bg-[var(--color-grey-1)] transition-colors"
+            className="p-2 rounded-lg hover:bg-subtle transition-colors"
             style={{ color: 'var(--color-text-secondary)' }}
             aria-label="Next month"
           >
@@ -113,7 +113,7 @@ export function CalendarPage() {
               <div className="flex justify-end">
                 <span
                   className={`text-xs w-6 h-6 flex items-center justify-center rounded-full ${
-                    today ? 'bg-[var(--color-primary)] text-white font-bold' : ''
+                    today ? 'bg-accent text-white font-bold' : ''
                   }`}
                   style={{ color: today ? undefined : inMonth ? 'var(--color-text)' : 'var(--color-text-secondary)' }}
                 >

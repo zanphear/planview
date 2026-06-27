@@ -432,7 +432,7 @@ function CompetenciesTab({
         <div className="mb-4 relative" ref={dropdownRef}>
           <button
             onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border transition-colors hover:bg-[var(--color-grey-1)]"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border transition-colors hover:bg-subtle"
             style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}
           >
             <Users size={14} />
@@ -446,7 +446,7 @@ function CompetenciesTab({
             >
               <button
                 onClick={() => { setCategoryFilter('all'); setShowCategoryDropdown(false); }}
-                className="w-full text-left px-3 py-1.5 text-sm hover:bg-[var(--color-grey-1)] transition-colors"
+                className="w-full text-left px-3 py-1.5 text-sm hover:bg-subtle transition-colors"
                 style={{ color: categoryFilter === 'all' ? 'var(--color-primary)' : 'var(--color-text)' }}
               >
                 All Categories
@@ -455,7 +455,7 @@ function CompetenciesTab({
                 <button
                   key={cat}
                   onClick={() => { setCategoryFilter(cat); setShowCategoryDropdown(false); }}
-                  className="w-full text-left px-3 py-1.5 text-sm hover:bg-[var(--color-grey-1)] transition-colors"
+                  className="w-full text-left px-3 py-1.5 text-sm hover:bg-subtle transition-colors"
                   style={{ color: categoryFilter === cat ? 'var(--color-primary)' : 'var(--color-text)' }}
                 >
                   {cat}
@@ -549,7 +549,7 @@ function CompetenciesTab({
                       <div className="flex items-center gap-1 shrink-0">
                         <button
                           onClick={() => onEdit(comp)}
-                          className="p-1.5 rounded hover:bg-[var(--color-grey-1)] transition-colors"
+                          className="p-1.5 rounded hover:bg-subtle transition-colors"
                           style={{ color: 'var(--color-text-secondary)' }}
                           title="Edit"
                         >
@@ -650,7 +650,7 @@ function MatrixTab({
           </thead>
           <tbody>
             {members.map((member) => (
-              <tr key={member.id} className="hover:bg-[var(--color-grey-1)] transition-colors">
+              <tr key={member.id} className="hover:bg-subtle transition-colors">
                 <td
                   className="sticky left-0 z-10 px-4 py-2.5 border-b"
                   style={{
@@ -728,7 +728,7 @@ function MatrixTab({
             </span>
             <button
               onClick={onClosePopover}
-              className="p-0.5 rounded hover:bg-[var(--color-grey-1)]"
+              className="p-0.5 rounded hover:bg-subtle"
               style={{ color: 'var(--color-text-secondary)' }}
             >
               <X size={12} />
@@ -749,7 +749,7 @@ function MatrixTab({
             {matrixLookup[`${popover.userId}:${popover.competencyId}`] && (
               <button
                 onClick={() => onClear(popover.userId, popover.competencyId)}
-                className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm hover:bg-[var(--color-grey-1)] transition-colors"
+                className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm hover:bg-subtle transition-colors"
                 style={{ color: 'var(--color-text-secondary)' }}
               >
                 <X size={12} />
@@ -836,7 +836,7 @@ function CompetencyModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded hover:bg-[var(--color-grey-1)] transition-colors"
+            className="p-1.5 rounded hover:bg-subtle transition-colors"
             style={{ color: 'var(--color-text-secondary)' }}
           >
             <X size={18} />
@@ -994,7 +994,7 @@ function CompetencyModal({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-lg text-sm font-medium hover:bg-[var(--color-grey-1)] transition-colors"
+            className="px-4 py-2 rounded-lg text-sm font-medium hover:bg-subtle transition-colors"
             style={{ color: 'var(--color-text-secondary)' }}
           >
             Cancel

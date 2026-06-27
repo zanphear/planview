@@ -125,7 +125,7 @@ export function ShareTimelineModal({ teamId, projectId, entityName, onClose }: S
                   </span>
                   <button
                     onClick={() => copyLink(link.token, link.id)}
-                    className="p-1.5 rounded hover:bg-[var(--color-grey-2)]"
+                    className="p-1.5 rounded hover:bg-muted"
                     style={{ color: 'var(--color-primary)' }}
                     title="Copy link"
                   >
@@ -133,7 +133,7 @@ export function ShareTimelineModal({ teamId, projectId, entityName, onClose }: S
                   </button>
                   <button
                     onClick={() => handleDelete(link.id)}
-                    className="p-1.5 rounded hover:bg-[var(--color-grey-2)]"
+                    className="p-1.5 rounded hover:bg-muted"
                     style={{ color: 'var(--color-danger, #ef4444)' }}
                     title="Delete link"
                   >

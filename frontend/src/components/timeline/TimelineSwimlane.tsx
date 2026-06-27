@@ -59,7 +59,7 @@ export function TimelineSwimlane({ laneId, label, labelColour, tasks, dates, zoo
   return (
     <div
       data-lane-id={laneId}
-      className={`flex border-b transition-colors ${isDropTarget ? 'ring-1 ring-inset ring-[var(--color-primary)]' : ''}`}
+      className={`flex border-b transition-colors ${isDropTarget ? 'ring-1 ring-inset ring-accent' : ''}`}
       style={{ minHeight: swimlaneHeight, borderColor: 'var(--color-border)', backgroundColor: isDropTarget ? 'var(--color-primary-light)' : undefined }}
     >
       {/* Label column */}

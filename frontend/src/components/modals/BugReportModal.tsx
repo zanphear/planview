@@ -72,7 +72,7 @@ export function BugReportModal({ onClose }: BugReportModalProps) {
         <div className="flex justify-end gap-2 px-5 py-4 border-t" style={{ borderColor: 'var(--color-border)' }}>
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm rounded-lg hover:bg-[var(--color-grey-2)] transition-colors"
+            className="px-4 py-2 text-sm rounded-lg hover:bg-muted transition-colors"
             style={{ color: 'var(--color-text-secondary)' }}
           >
             Cancel

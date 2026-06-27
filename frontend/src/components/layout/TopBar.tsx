@@ -16,40 +16,40 @@ export function TopBar() {
   const [showFeatureModal, setShowFeatureModal] = useState(false);
 
   return (
-    <header className="h-14 bg-[var(--color-topbar-bg)] border-b border-[var(--color-border)] flex items-center justify-between px-4 shrink-0 transition-colors">
+    <header className="h-14 bg-topbar border-b border-outline flex items-center justify-between px-4 shrink-0 transition-colors">
       <div className="flex items-center gap-3">
-        <button onClick={toggleSidebar} className="p-2 hover:bg-[var(--color-grey-2)] rounded-lg transition-colors" aria-label="Toggle sidebar">
-          <Menu size={20} className="text-[var(--color-text)]" />
+        <button onClick={toggleSidebar} className="p-2 hover:bg-muted rounded-lg transition-colors" aria-label="Toggle sidebar">
+          <Menu size={20} className="text-foreground" />
         </button>
         <h1 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>Planview</h1>
       </div>
       <div className="flex items-center gap-2">
         <button
           onClick={() => setShowFeatureModal(true)}
-          className="p-2 hover:bg-[var(--color-grey-2)] rounded-lg transition-colors"
+          className="p-2 hover:bg-muted rounded-lg transition-colors"
           title="Request a feature"
           aria-label="Request a feature"
         >
-          <Lightbulb size={18} className="text-[var(--color-text-secondary)]" />
+          <Lightbulb size={18} className="text-muted-foreground" />
         </button>
         <button
           onClick={() => setShowBugModal(true)}
-          className="p-2 hover:bg-[var(--color-grey-2)] rounded-lg transition-colors"
+          className="p-2 hover:bg-muted rounded-lg transition-colors"
           title="Report a bug"
           aria-label="Report a bug"
         >
-          <Bug size={18} className="text-[var(--color-text-secondary)]" />
+          <Bug size={18} className="text-muted-foreground" />
         </button>
         <button
           onClick={toggleDarkMode}
-          className="p-2 hover:bg-[var(--color-grey-2)] rounded-lg transition-colors"
+          className="p-2 hover:bg-muted rounded-lg transition-colors"
           title={darkMode ? 'Light mode' : 'Dark mode'}
           aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
         >
           {darkMode ? (
-            <Sun size={18} className="text-[var(--color-text-secondary)]" />
+            <Sun size={18} className="text-muted-foreground" />
           ) : (
-            <Moon size={18} className="text-[var(--color-text-secondary)]" />
+            <Moon size={18} className="text-muted-foreground" />
           )}
         </button>
         <NotificationBell />

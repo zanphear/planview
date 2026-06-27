@@ -380,7 +380,7 @@ function MeetingDetail({
         </div>
         <button
           onClick={onClose}
-          className="p-1 rounded hover:bg-[var(--color-grey-1)]"
+          className="p-1 rounded hover:bg-subtle"
           style={{ color: 'var(--color-text-secondary)' }}
         >
           <X size={18} />
@@ -562,7 +562,7 @@ function CreateMeetingModal({
           </h3>
           <button
             onClick={onClose}
-            className="p-1 rounded hover:bg-[var(--color-grey-1)]"
+            className="p-1 rounded hover:bg-subtle"
             style={{ color: 'var(--color-text-secondary)' }}
           >
             <X size={18} />

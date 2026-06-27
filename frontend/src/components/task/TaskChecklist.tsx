@@ -62,7 +62,7 @@ export function TaskChecklist({ items, onAdd, onToggle, onDelete }: TaskChecklis
             </span>
             <button
               onClick={() => onDelete(item.id)}
-              className="opacity-0 group-hover:opacity-100 hover:text-[var(--color-danger)]"
+              className="opacity-0 group-hover:opacity-100 hover:text-destructive"
               style={{ color: 'var(--color-text-secondary)' }}
             >
               <Trash2 size={14} />

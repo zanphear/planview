@@ -62,7 +62,7 @@ export function RecurrencePicker({ isRecurring, rule, onChange }: RecurrencePick
           >
             <button
               onClick={() => { onChange(false, null); setOpen(false); }}
-              className="w-full text-left px-3 py-1.5 text-sm hover:bg-[var(--color-grey-1)]"
+              className="w-full text-left px-3 py-1.5 text-sm hover:bg-subtle"
               style={{ color: isRecurring ? 'var(--color-text-secondary)' : 'var(--color-primary)' }}
             >
               No repeat
@@ -71,7 +71,7 @@ export function RecurrencePicker({ isRecurring, rule, onChange }: RecurrencePick
               <button
                 key={preset.rule}
                 onClick={() => { onChange(true, preset.rule); setOpen(false); }}
-                className="w-full text-left px-3 py-1.5 text-sm hover:bg-[var(--color-grey-1)]"
+                className="w-full text-left px-3 py-1.5 text-sm hover:bg-subtle"
                 style={{ color: rule === preset.rule ? 'var(--color-primary)' : 'var(--color-text)' }}
               >
                 {preset.label}

@@ -132,7 +132,7 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
               {att.uploaded_by === user?.id && (
                 <button
                   onClick={() => handleDelete(att.id)}
-                  className="p-0.5 hover:text-[var(--color-danger)]"
+                  className="p-0.5 hover:text-destructive"
                   style={{ color: 'var(--color-text-secondary)' }}
                 >
                   <Trash2 size={14} />

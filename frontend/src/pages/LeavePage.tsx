@@ -532,7 +532,7 @@ function CreateRequestModal({
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-bold" style={{ color: 'var(--color-text)' }}>Request Leave</h3>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-grey-1)]" style={{ color: 'var(--color-text-secondary)' }}>
+          <button onClick={onClose} className="p-1 rounded hover:bg-subtle" style={{ color: 'var(--color-text-secondary)' }}>
             <X size={18} />
           </button>
         </div>
@@ -677,7 +677,7 @@ function CreateAllowanceModal({
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-bold" style={{ color: 'var(--color-text)' }}>Set Allowance, {year}</h3>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-grey-1)]" style={{ color: 'var(--color-text-secondary)' }}>
+          <button onClick={onClose} className="p-1 rounded hover:bg-subtle" style={{ color: 'var(--color-text-secondary)' }}>
             <X size={18} />
           </button>
         </div>

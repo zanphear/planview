@@ -139,7 +139,7 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
                         </button>
                         <button
                           onClick={() => handleDelete(comment.id)}
-                          className="p-0.5 hover:text-[var(--color-danger)]"
+                          className="p-0.5 hover:text-destructive"
                           style={{ color: 'var(--color-text-secondary)' }}
                         >
                           <Trash2 size={14} />

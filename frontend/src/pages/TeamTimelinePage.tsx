@@ -112,11 +112,11 @@ export function TeamTimelinePage() {
   return (
     <div className="h-full flex flex-col">
       {team && (
-        <div className="px-6 py-3 bg-[var(--color-surface)] border-b border-[var(--color-border)] shrink-0 flex items-center justify-between">
+        <div className="px-6 py-3 bg-card border-b border-outline shrink-0 flex items-center justify-between">
           <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>{team.name}</h2>
           <button
             onClick={() => setShowShare(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg hover:bg-[var(--color-grey-2)] transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg hover:bg-muted transition-colors"
             style={{ color: 'var(--color-text-secondary)' }}
           >
             <Share2 size={14} />

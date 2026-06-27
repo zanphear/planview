@@ -120,7 +120,7 @@ export function Taskbox() {
         {tasks.map((task) => (
           <div
             key={task.id}
-            className="flex items-center gap-2 px-2 py-1.5 rounded-lg group hover:bg-[var(--color-grey-1)] transition-colors"
+            className="flex items-center gap-2 px-2 py-1.5 rounded-lg group hover:bg-subtle transition-colors"
           >
             <GripVertical size={12} className="opacity-0 group-hover:opacity-60 cursor-grab shrink-0" style={{ color: 'var(--color-text-secondary)' }} />
             <div
@@ -132,7 +132,7 @@ export function Taskbox() {
             </span>
             <button
               onClick={() => handleDelete(task.id)}
-              className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-[var(--color-grey-2)] transition-opacity"
+              className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-muted transition-opacity"
               style={{ color: 'var(--color-text-secondary)' }}
             >
               <X size={12} />
@@ -163,7 +163,7 @@ export function Taskbox() {
                 setTasks((prev) => [...prev, data]);
                 setShowTemplates(false);
               }}
-              className="w-full text-left px-2 py-1.5 text-sm rounded-lg hover:bg-[var(--color-grey-1)] transition-colors truncate"
+              className="w-full text-left px-2 py-1.5 text-sm rounded-lg hover:bg-subtle transition-colors truncate"
               style={{ color: 'var(--color-text)' }}
             >
               {tpl.colour && <span className="inline-block w-2 h-2 rounded-full mr-1.5" style={{ backgroundColor: tpl.colour }} />}
@@ -188,7 +188,7 @@ export function Taskbox() {
           {templates.length > 0 && (
             <button
               onClick={() => setShowTemplates((s) => !s)}
-              className="p-1.5 rounded-lg hover:bg-[var(--color-grey-1)]"
+              className="p-1.5 rounded-lg hover:bg-subtle"
               style={{ color: showTemplates ? 'var(--color-primary)' : 'var(--color-text-secondary)' }}
               title="Create from template"
             >

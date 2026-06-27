@@ -70,7 +70,7 @@ function OrgChartNodeView({ node, onSelect }: { node: OrgChartNode; onSelect: (u
     <div className="ml-6">
       <div className="flex items-center gap-2 py-1.5">
         {hasChildren ? (
-          <button onClick={() => setExpanded(!expanded)} className="p-0.5 hover:bg-[var(--color-grey-1)] rounded">
+          <button onClick={() => setExpanded(!expanded)} className="p-0.5 hover:bg-subtle rounded">
             {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           </button>
         ) : (
@@ -78,7 +78,7 @@ function OrgChartNodeView({ node, onSelect }: { node: OrgChartNode; onSelect: (u
         )}
         <button
           onClick={() => onSelect(node.user_id)}
-          className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-[var(--color-grey-2)] transition-colors"
+          className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-muted transition-colors"
         >
           <Avatar name={node.name} initials={node.initials} colour={node.colour} avatarUrl={node.avatar_url} size={32} />
           <div className="text-left">
@@ -323,7 +323,7 @@ function ProfileDetail({ profile: initialProfile, workspaceId, currentUserId, cu
                   </button>
                 ) : (
                   <div className="flex gap-2">
-                    <button onClick={() => { setEditing(false); setEditData({}); }} className="px-3 py-1.5 text-sm rounded-lg hover:bg-[var(--color-grey-1)]" style={{ color: 'var(--color-text-secondary)' }}>Cancel</button>
+                    <button onClick={() => { setEditing(false); setEditData({}); }} className="px-3 py-1.5 text-sm rounded-lg hover:bg-subtle" style={{ color: 'var(--color-text-secondary)' }}>Cancel</button>
                     <button onClick={handleSaveProfile} className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                       <Save size={14} /> Save
                     </button>
@@ -499,7 +499,7 @@ function ProfileDetail({ profile: initialProfile, workspaceId, currentUserId, cu
                   </button>
                 ) : (
                   <div className="flex gap-2">
-                    <button onClick={() => { setInsightsEditing(false); setInsightsData({}); }} className="px-3 py-1.5 text-sm rounded-lg hover:bg-[var(--color-grey-1)]" style={{ color: 'var(--color-text-secondary)' }}>Cancel</button>
+                    <button onClick={() => { setInsightsEditing(false); setInsightsData({}); }} className="px-3 py-1.5 text-sm rounded-lg hover:bg-subtle" style={{ color: 'var(--color-text-secondary)' }}>Cancel</button>
                     <button onClick={handleSaveInsights} className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                       <Save size={14} /> Save
                     </button>
@@ -656,7 +656,7 @@ function ProfileDetail({ profile: initialProfile, workspaceId, currentUserId, cu
                       new Date(doc.expiry_date) < new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
 
                     return (
-                      <div key={doc.id} className="flex items-center gap-3 px-4 py-3 border rounded-lg transition-colors hover:border-[var(--color-primary)]" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
+                      <div key={doc.id} className="flex items-center gap-3 px-4 py-3 border rounded-lg transition-colors hover:border-accent" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
                         <span className="text-xl">{docType.icon}</span>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
@@ -770,7 +770,7 @@ function CreateProfileModal({ member, workspaceId, onCreated, onClose }: {
       <div className="rounded-xl shadow-xl w-full max-w-md p-6" style={{ backgroundColor: 'var(--color-surface)' }}>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>Create Profile for {member.name}</h2>
-          <button onClick={onClose} className="p-1 hover:bg-[var(--color-grey-1)] rounded"><X size={18} /></button>
+          <button onClick={onClose} className="p-1 hover:bg-subtle rounded"><X size={18} /></button>
         </div>
         <div className="space-y-3">
           <div>
@@ -800,7 +800,7 @@ function CreateProfileModal({ member, workspaceId, onCreated, onClose }: {
           </div>
         </div>
         <div className="flex justify-end gap-2 mt-6">
-          <button onClick={onClose} className="px-4 py-2 text-sm rounded-lg hover:bg-[var(--color-grey-1)]" style={{ color: 'var(--color-text-secondary)' }}>Cancel</button>
+          <button onClick={onClose} className="px-4 py-2 text-sm rounded-lg hover:bg-subtle" style={{ color: 'var(--color-text-secondary)' }}>Cancel</button>
           <button onClick={handleSubmit} disabled={saving}
             className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
             {saving ? 'Creating...' : 'Create Profile'}
@@ -943,7 +943,7 @@ export function PeoplePage() {
             <button
               onClick={() => setViewMode('directory')}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                viewMode === 'directory' ? '' : 'hover:bg-[var(--color-grey-1)]'
+                viewMode === 'directory' ? '' : 'hover:bg-subtle'
               }`}
               style={viewMode === 'directory'
                 ? { backgroundColor: 'rgba(var(--color-primary-rgb, 65, 134, 224), 0.15)', color: 'var(--color-primary)' }
@@ -955,7 +955,7 @@ export function PeoplePage() {
             <button
               onClick={() => setViewMode('orgchart')}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                viewMode === 'orgchart' ? '' : 'hover:bg-[var(--color-grey-1)]'
+                viewMode === 'orgchart' ? '' : 'hover:bg-subtle'
               }`}
               style={viewMode === 'orgchart'
                 ? { backgroundColor: 'rgba(var(--color-primary-rgb, 65, 134, 224), 0.15)', color: 'var(--color-primary)' }

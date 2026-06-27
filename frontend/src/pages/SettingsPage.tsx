@@ -168,8 +168,8 @@ export function SettingsPage() {
                 onClick={() => setTab(t.id)}
                 className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2.5 transition-colors ${
                   tab === t.id
-                    ? 'bg-[var(--color-primary-light)] font-medium'
-                    : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-grey-2)]'
+                    ? 'bg-accent-subtle font-medium'
+                    : 'text-muted-foreground hover:bg-muted'
                 }`}
                 style={tab === t.id ? { color: 'var(--color-primary)' } : undefined}
               >
@@ -189,7 +189,7 @@ export function SettingsPage() {
         </div>
 
         {/* Content */}
-        <div className="flex-1 bg-[var(--color-surface)] rounded-xl shadow-sm border border-[var(--color-border)] p-6">
+        <div className="flex-1 bg-card rounded-xl shadow-sm border border-outline p-6">
           {tab === 'profile' && (
             <div className="space-y-5">
               <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>Profile Settings</h3>
@@ -235,7 +235,7 @@ export function SettingsPage() {
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 text-sm bg-[var(--color-surface)] text-[var(--color-text)]"
+                  className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 text-sm bg-card text-foreground"
                   style={{ borderColor: 'var(--color-border)', '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
                 />
               </div>
@@ -246,7 +246,7 @@ export function SettingsPage() {
                   onChange={(e) => setInitials(e.target.value.slice(0, 2).toUpperCase())}
                   maxLength={2}
                   placeholder="Auto"
-                  className="w-24 px-3 py-2 border rounded-lg outline-none focus:ring-2 text-sm bg-[var(--color-surface)] text-[var(--color-text)]"
+                  className="w-24 px-3 py-2 border rounded-lg outline-none focus:ring-2 text-sm bg-card text-foreground"
                   style={{ borderColor: 'var(--color-border)', '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
                 />
                 <p className="text-xs mt-1" style={{ color: 'var(--color-text-secondary)' }}>Leave blank for auto-generated</p>
@@ -256,7 +256,7 @@ export function SettingsPage() {
                 <input
                   value={user?.email || ''}
                   disabled
-                  className="w-full px-3 py-2 border rounded-lg text-sm opacity-60 bg-[var(--color-grey-1)] text-[var(--color-text)]"
+                  className="w-full px-3 py-2 border rounded-lg text-sm opacity-60 bg-subtle text-foreground"
                   style={{ borderColor: 'var(--color-border)' }}
                 />
               </div>
@@ -290,7 +290,7 @@ export function SettingsPage() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => { setAdding(true); setInviting(false); }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-[var(--color-grey-2)] transition-colors"
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-muted transition-colors"
                       style={{ color: 'var(--color-text-secondary)', border: '1px solid var(--color-border)' }}
                     >
                       <UserPlus size={14} />
@@ -421,7 +421,7 @@ export function SettingsPage() {
                         setCopiedPw(true);
                         setTimeout(() => setCopiedPw(false), 2000);
                       }}
-                      className="p-1.5 rounded-lg hover:bg-[var(--color-grey-2)]"
+                      className="p-1.5 rounded-lg hover:bg-muted"
                       style={{ color: 'var(--color-primary)' }}
                     >
                       {copiedPw ? <Check size={16} /> : <Copy size={16} />}
@@ -442,7 +442,7 @@ export function SettingsPage() {
                 {members.map((m) => (
                   <div
                     key={m.id}
-                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-[var(--color-grey-1)] transition-colors group"
+                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-subtle transition-colors group"
                   >
                     <Avatar name={m.name} initials={m.initials || undefined} colour={m.colour} size={36} />
                     <div className="flex-1 min-w-0">
@@ -490,7 +490,7 @@ export function SettingsPage() {
                     {(user?.role === 'owner' || user?.role === 'admin') && m.id !== user?.id && m.role !== 'owner' && (
                       <button
                         onClick={() => handleRemoveMember(m.id)}
-                        className="p-1.5 rounded-lg hover:bg-[var(--color-grey-2)] opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="p-1.5 rounded-lg hover:bg-muted opacity-0 group-hover:opacity-100 transition-opacity"
                         style={{ color: 'var(--color-danger, #ef4444)' }}
                         title="Remove member"
                       >
@@ -518,8 +518,8 @@ export function SettingsPage() {
                       onClick={() => setDarkMode(theme.id === 'dark')}
                       className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-colors w-32 ${
                         theme.active
-                          ? 'border-[var(--color-primary)] bg-[var(--color-primary-light)]'
-                          : 'border-[var(--color-border)] hover:border-[var(--color-text-secondary)]'
+                          ? 'border-accent bg-accent-subtle'
+                          : 'border-outline hover:border-muted-foreground'
                       }`}
                     >
                       <span style={{ color: theme.active ? 'var(--color-primary)' : 'var(--color-text-secondary)' }}>
@@ -673,7 +673,7 @@ function NotificationPrefsTab({ user, workspace, fetchMe }: { user: UserType | n
       <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>Notification Preferences</h3>
       <div className="space-y-3">
         {NOTIFICATION_OPTIONS.map(({ key, label, desc }) => (
-          <label key={key} className="flex items-start gap-3 cursor-pointer p-3 rounded-lg hover:bg-[var(--color-grey-1)] transition-colors">
+          <label key={key} className="flex items-start gap-3 cursor-pointer p-3 rounded-lg hover:bg-subtle transition-colors">
             <input
               type="checkbox"
               checked={getChecked(key)}
@@ -883,7 +883,7 @@ function DataTab({ workspaceId }: { workspaceId?: string }) {
             <button
               key={fmt}
               onClick={() => handleExport(fmt)}
-              className="px-3 py-1.5 text-sm border rounded-lg flex items-center gap-1.5 hover:bg-[var(--color-grey-1)] transition-colors"
+              className="px-3 py-1.5 text-sm border rounded-lg flex items-center gap-1.5 hover:bg-subtle transition-colors"
               style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
             >
               <Download size={14} />
@@ -911,7 +911,7 @@ function DataTab({ workspaceId }: { workspaceId?: string }) {
         <button
           onClick={() => fileRef.current?.click()}
           disabled={importing}
-          className="px-3 py-1.5 text-sm border rounded-lg flex items-center gap-1.5 hover:bg-[var(--color-grey-1)] transition-colors disabled:opacity-50"
+          className="px-3 py-1.5 text-sm border rounded-lg flex items-center gap-1.5 hover:bg-subtle transition-colors disabled:opacity-50"
           style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
         >
           <Upload size={14} />
@@ -1217,7 +1217,7 @@ function WebhooksTab({ workspaceId }: { workspaceId?: string }) {
             </button>
             <button
               onClick={() => handleDelete(wh.id)}
-              className="p-1.5 rounded hover:bg-[var(--color-grey-2)]"
+              className="p-1.5 rounded hover:bg-muted"
               style={{ color: 'var(--color-danger, #ef4444)' }}
             >
               <Trash2 size={14} />
@@ -1361,7 +1361,7 @@ function CustomFieldsTab({ workspaceId }: { workspaceId?: string }) {
             </div>
             <button
               onClick={() => handleDelete(f.id)}
-              className="p-1.5 rounded hover:bg-[var(--color-grey-2)]"
+              className="p-1.5 rounded hover:bg-muted"
               style={{ color: 'var(--color-danger, #ef4444)' }}
             >
               <Trash2 size={14} />
@@ -1473,7 +1473,7 @@ function TemplatesTab({ workspaceId }: { workspaceId?: string }) {
                 {tpl.status}{tpl.time_estimate_minutes && ` · ${tpl.time_estimate_minutes}m`}
               </p>
             </div>
-            <button onClick={() => handleDelete(tpl.id)} className="p-1.5 rounded hover:bg-[var(--color-grey-2)]"
+            <button onClick={() => handleDelete(tpl.id)} className="p-1.5 rounded hover:bg-muted"
               style={{ color: 'var(--color-danger, #ef4444)' }}>
               <Trash2 size={14} />
             </button>
@@ -1554,7 +1554,7 @@ function ModulesTab({ workspaceId, enabledModules }: { workspaceId?: string; ena
         {Object.entries(DEFAULT_MODULES).map(([key, meta]) => (
           <div
             key={key}
-            className="flex items-center justify-between p-3 rounded-lg hover:bg-[var(--color-grey-2)] transition-colors"
+            className="flex items-center justify-between p-3 rounded-lg hover:bg-muted transition-colors"
           >
             <div className="flex-1 mr-4">
               <div className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>{meta.label}</div>
@@ -1564,7 +1564,7 @@ function ModulesTab({ workspaceId, enabledModules }: { workspaceId?: string; ena
               onClick={() => handleToggle(key)}
               disabled={saving}
               className={`relative w-11 h-6 rounded-full transition-colors ${
-                modules[key] ? 'bg-[var(--color-primary)]' : 'bg-gray-300 dark:bg-gray-600'
+                modules[key] ? 'bg-accent' : 'bg-gray-300 dark:bg-gray-600'
               }`}
             >
               <span
@@ -1691,7 +1691,7 @@ function ReferenceDataTab({ workspaceId }: { workspaceId?: string }) {
             >
               <button
                 onClick={() => toggleSection(key)}
-                className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-[var(--color-grey-1)] transition-colors"
+                className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-subtle transition-colors"
               >
                 {isOpen ? (
                   <ChevronDown size={16} style={{ color: 'var(--color-text-secondary)' }} />
@@ -1716,7 +1716,7 @@ function ReferenceDataTab({ workspaceId }: { workspaceId?: string }) {
                   {items.map((item) => (
                     <div
                       key={item.id}
-                      className="flex items-center gap-3 px-4 py-2 border-b last:border-b-0 hover:bg-[var(--color-grey-1)] transition-colors group"
+                      className="flex items-center gap-3 px-4 py-2 border-b last:border-b-0 hover:bg-subtle transition-colors group"
                       style={{ borderColor: 'var(--color-border)' }}
                     >
                       {item.colour && (
@@ -1749,7 +1749,7 @@ function ReferenceDataTab({ workspaceId }: { workspaceId?: string }) {
                       </label>
                       <button
                         onClick={() => handleDelete(key, item.id)}
-                        className="p-1 rounded hover:bg-[var(--color-grey-2)] opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                        className="p-1 rounded hover:bg-muted opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
                         style={{ color: 'var(--color-danger, #ef4444)' }}
                         title="Delete"
                         aria-label="Delete value"
@@ -1893,7 +1893,7 @@ function FeedbackTab({ workspaceId }: { workspaceId?: string }) {
             className={`px-3 py-1.5 text-xs font-medium rounded-lg flex items-center gap-1.5 transition-colors ${
               filter === key
                 ? 'text-white'
-                : 'hover:bg-[var(--color-grey-2)]'
+                : 'hover:bg-muted'
             }`}
             style={
               filter === key

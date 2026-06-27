@@ -96,7 +96,7 @@ export function Timeline({ swimlanes, milestones = [], startDate, zoom, onZoomCh
   return (
     <div className="flex flex-col h-full">
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--color-border)] bg-[var(--color-surface)] shrink-0">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-outline bg-card shrink-0">
         <ZoomControls value={zoom} onChange={onZoomChange} />
         <button
           onClick={() => {

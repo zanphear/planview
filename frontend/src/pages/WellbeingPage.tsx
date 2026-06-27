@@ -324,7 +324,7 @@ function CreateSurveyForm({
     >
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>New Pulse Survey</h3>
-        <button onClick={onCancel} className="p-1 rounded hover:bg-[var(--color-grey-1)]" style={{ color: 'var(--color-text-secondary)' }}>
+        <button onClick={onCancel} className="p-1 rounded hover:bg-subtle" style={{ color: 'var(--color-text-secondary)' }}>
           <X size={16} />
         </button>
       </div>
@@ -401,7 +401,7 @@ function SurveyCard({
       {/* Survey header */}
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-[var(--color-grey-1)] transition-colors text-left"
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-subtle transition-colors text-left"
       >
         <div className="flex items-center gap-3">
           <div
@@ -822,7 +822,7 @@ function GiveKudosModal({
             <ThumbsUp size={18} style={{ color: 'var(--color-primary)' }} />
             Give Kudos
           </h3>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-grey-1)]" style={{ color: 'var(--color-text-secondary)' }}>
+          <button onClick={onClose} className="p-1 rounded hover:bg-subtle" style={{ color: 'var(--color-text-secondary)' }}>
             <X size={18} />
           </button>
         </div>

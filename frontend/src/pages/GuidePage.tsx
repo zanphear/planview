@@ -617,7 +617,7 @@ export function GuidePage() {
             key={cat.key}
             onClick={() => setCategory(cat.key)}
             className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
-              category === cat.key ? 'text-white' : 'hover:bg-[var(--color-grey-2)]'
+              category === cat.key ? 'text-white' : 'hover:bg-muted'
             }`}
             style={
               category === cat.key

@@ -80,6 +80,13 @@
   --color-caution: var(--color-warning);
   --color-caution-foreground: var(--color-warning-foreground);
   --color-outline: var(--color-border);
+  --color-subtle: var(--color-grey-1);
+  --color-topbar: var(--color-topbar-bg);
+  --color-accent-subtle: var(--color-primary-light);
+  --color-sidebar: var(--color-sidebar-bg);
+  --color-sidebar-foreground: var(--color-sidebar-text);
+  --color-sidebar-accent: var(--color-sidebar-hover);
+  --color-sidebar-selected: var(--color-sidebar-active);
 }
 
 @layer base {

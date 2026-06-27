@@ -180,7 +180,7 @@ export function Sidebar() {
         <div className="flex justify-center mb-2">
           <img src="/logo-white.png" alt="Siemens Energy" className="h-8 opacity-90" />
         </div>
-        <button className="flex items-center gap-2 w-full hover:bg-white/5 rounded px-2 py-1.5 text-[var(--color-sidebar-text)]">
+        <button className="flex items-center gap-2 w-full hover:bg-white/5 rounded px-2 py-1.5 text-sidebar-foreground">
           <span className="font-semibold text-sm truncate">{workspace?.name || 'Workspace'}</span>
           <ChevronDown size={14} className="ml-auto opacity-60" />
         </button>
@@ -194,8 +194,8 @@ export function Sidebar() {
           className={({ isActive }) =>
             `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
               isActive
-                ? 'bg-[var(--color-sidebar-active)] text-white'
-                : 'text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)]'
+                ? 'bg-sidebar-selected text-white'
+                : 'text-sidebar-foreground hover:bg-sidebar-accent'
             }`
           }
         >
@@ -207,8 +207,8 @@ export function Sidebar() {
           className={({ isActive }) =>
             `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
               isActive
-                ? 'bg-[var(--color-sidebar-active)] text-white'
-                : 'text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)]'
+                ? 'bg-sidebar-selected text-white'
+                : 'text-sidebar-foreground hover:bg-sidebar-accent'
             }`
           }
         >
@@ -220,8 +220,8 @@ export function Sidebar() {
           className={({ isActive }) =>
             `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
               isActive
-                ? 'bg-[var(--color-sidebar-active)] text-white'
-                : 'text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)]'
+                ? 'bg-sidebar-selected text-white'
+                : 'text-sidebar-foreground hover:bg-sidebar-accent'
             }`
           }
         >
@@ -233,8 +233,8 @@ export function Sidebar() {
           className={({ isActive }) =>
             `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
               isActive
-                ? 'bg-[var(--color-sidebar-active)] text-white'
-                : 'text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)]'
+                ? 'bg-sidebar-selected text-white'
+                : 'text-sidebar-foreground hover:bg-sidebar-accent'
             }`
           }
         >
@@ -247,8 +247,8 @@ export function Sidebar() {
           className={({ isActive }) =>
             `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
               isActive
-                ? 'bg-[var(--color-sidebar-active)] text-white'
-                : 'text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)]'
+                ? 'bg-sidebar-selected text-white'
+                : 'text-sidebar-foreground hover:bg-sidebar-accent'
             }`
           }
         >
@@ -262,8 +262,8 @@ export function Sidebar() {
           className={({ isActive }) =>
             `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
               isActive
-                ? 'bg-[var(--color-sidebar-active)] text-white'
-                : 'text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)]'
+                ? 'bg-sidebar-selected text-white'
+                : 'text-sidebar-foreground hover:bg-sidebar-accent'
             }`
           }
         >
@@ -277,8 +277,8 @@ export function Sidebar() {
           className={({ isActive }) =>
             `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
               isActive
-                ? 'bg-[var(--color-sidebar-active)] text-white'
-                : 'text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)]'
+                ? 'bg-sidebar-selected text-white'
+                : 'text-sidebar-foreground hover:bg-sidebar-accent'
             }`
           }
         >
@@ -290,8 +290,8 @@ export function Sidebar() {
           className={({ isActive }) =>
             `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
               isActive
-                ? 'bg-[var(--color-sidebar-active)] text-white'
-                : 'text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)]'
+                ? 'bg-sidebar-selected text-white'
+                : 'text-sidebar-foreground hover:bg-sidebar-accent'
             }`
           }
         >
@@ -308,8 +308,8 @@ export function Sidebar() {
             className={({ isActive }) =>
               `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
                 isActive
-                  ? 'bg-[var(--color-sidebar-active)] text-white'
-                  : 'text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)]'
+                  ? 'bg-sidebar-selected text-white'
+                  : 'text-sidebar-foreground hover:bg-sidebar-accent'
               }`
             }
           >
@@ -324,8 +324,8 @@ export function Sidebar() {
             className={({ isActive }) =>
               `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
                 isActive
-                  ? 'bg-[var(--color-sidebar-active)] text-white'
-                  : 'text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)]'
+                  ? 'bg-sidebar-selected text-white'
+                  : 'text-sidebar-foreground hover:bg-sidebar-accent'
               }`
             }
           >
@@ -346,7 +346,7 @@ export function Sidebar() {
             <NavLink
               key={team.id}
               to={`/teams/${team.id}`}
-              className="flex items-center gap-2.5 pl-9 pr-3 py-1.5 rounded-lg text-sm text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)]"
+              className="flex items-center gap-2.5 pl-9 pr-3 py-1.5 rounded-lg text-sm text-sidebar-foreground hover:bg-sidebar-accent"
             >
               {team.name}
             </NavLink>
@@ -355,7 +355,7 @@ export function Sidebar() {
             <NavLink
               key={project.id}
               to={`/projects/${project.id}/board`}
-              className="flex items-center gap-2.5 pl-9 pr-3 py-1.5 rounded-lg text-sm text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)]"
+              className="flex items-center gap-2.5 pl-9 pr-3 py-1.5 rounded-lg text-sm text-sidebar-foreground hover:bg-sidebar-accent"
             >
               <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: project.colour }} />
               {project.name}
@@ -380,7 +380,7 @@ export function Sidebar() {
         {teams.map((team) => (
           <div
             key={team.id}
-            className="flex items-center gap-2.5 pl-9 pr-2 py-1.5 rounded-lg text-sm group transition-colors text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)]"
+            className="flex items-center gap-2.5 pl-9 pr-2 py-1.5 rounded-lg text-sm group transition-colors text-sidebar-foreground hover:bg-sidebar-accent"
           >
             <NavLink
               to={`/teams/${team.id}`}
@@ -447,8 +447,8 @@ export function Sidebar() {
               key={project.id}
               className={`flex items-center gap-2 pl-9 pr-2 py-1.5 rounded-lg text-sm group transition-colors ${
                 isProjectActive
-                  ? 'bg-[var(--color-sidebar-active)] text-white'
-                  : 'text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)]'
+                  ? 'bg-sidebar-selected text-white'
+                  : 'text-sidebar-foreground hover:bg-sidebar-accent'
               }`}
             >
               <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: project.colour }} />
@@ -513,7 +513,7 @@ export function Sidebar() {
       <div className="px-3 py-3 border-t border-white/10">
         <NavLink
           to="/settings"
-          className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-[var(--color-sidebar-text)] hover:bg-[var(--color-sidebar-hover)] transition-colors"
+          className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
         >
           <Settings size={16} />
           Settings

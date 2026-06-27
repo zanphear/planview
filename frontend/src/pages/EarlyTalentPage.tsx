@@ -252,7 +252,7 @@ export function EarlyTalentPage() {
             onClick={() => setTab(t.key)}
             className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
               tab === t.key
-                ? 'border-[var(--color-primary)] text-[var(--color-primary)]'
+                ? 'border-accent text-accent'
                 : 'border-transparent hover:border-gray-300'
             }`}
             style={tab !== t.key ? { color: 'var(--color-text-secondary)' } : undefined}
@@ -286,7 +286,7 @@ export function EarlyTalentPage() {
               >
                 <button
                   onClick={() => handleExpandProgramme(prog.id)}
-                  className="w-full flex items-center gap-3 p-4 text-left hover:bg-[var(--color-grey-2)] transition-colors"
+                  className="w-full flex items-center gap-3 p-4 text-left hover:bg-muted transition-colors"
                 >
                   <div className="p-2 rounded-lg bg-purple-500/10">
                     <GraduationCap size={18} className="text-purple-500" />
@@ -622,7 +622,7 @@ export function EarlyTalentPage() {
             <div className="p-5">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>New Programme</h3>
-                <button onClick={() => setShowCreateProgramme(false)} className="p-1 rounded hover:bg-[var(--color-grey-2)]">
+                <button onClick={() => setShowCreateProgramme(false)} className="p-1 rounded hover:bg-muted">
                   <X size={18} style={{ color: 'var(--color-text-secondary)' }} />
                 </button>
               </div>
@@ -677,7 +677,7 @@ export function EarlyTalentPage() {
                   </div>
                 </div>
                 <div className="flex justify-end gap-2 pt-2">
-                  <button onClick={() => setShowCreateProgramme(false)} className="px-4 py-2 rounded-lg text-sm font-medium hover:bg-[var(--color-grey-2)]" style={{ color: 'var(--color-text-secondary)' }}>
+                  <button onClick={() => setShowCreateProgramme(false)} className="px-4 py-2 rounded-lg text-sm font-medium hover:bg-muted" style={{ color: 'var(--color-text-secondary)' }}>
                     Cancel
                   </button>
                   <button
@@ -701,7 +701,7 @@ export function EarlyTalentPage() {
             <div className="p-5">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>Enrol Participant</h3>
-                <button onClick={() => setShowEnrolParticipant(false)} className="p-1 rounded hover:bg-[var(--color-grey-2)]">
+                <button onClick={() => setShowEnrolParticipant(false)} className="p-1 rounded hover:bg-muted">
                   <X size={18} style={{ color: 'var(--color-text-secondary)' }} />
                 </button>
               </div>
@@ -782,7 +782,7 @@ export function EarlyTalentPage() {
                   </div>
                 </div>
                 <div className="flex justify-end gap-2 pt-2">
-                  <button onClick={() => setShowEnrolParticipant(false)} className="px-4 py-2 rounded-lg text-sm font-medium hover:bg-[var(--color-grey-2)]" style={{ color: 'var(--color-text-secondary)' }}>
+                  <button onClick={() => setShowEnrolParticipant(false)} className="px-4 py-2 rounded-lg text-sm font-medium hover:bg-muted" style={{ color: 'var(--color-text-secondary)' }}>
                     Cancel
                   </button>
                   <button

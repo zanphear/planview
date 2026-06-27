@@ -228,7 +228,7 @@ export function AIAssistantPage() {
             <div
               key={s.id}
               className={`flex items-center gap-2 px-2 py-1.5 rounded text-sm cursor-pointer group transition-colors ${
-                activeSessionId === s.id ? 'bg-[var(--color-primary)]/10 font-medium' : 'hover:bg-black/5 dark:hover:bg-white/5'
+                activeSessionId === s.id ? 'bg-accent/10 font-medium' : 'hover:bg-black/5 dark:hover:bg-white/5'
               }`}
               style={{ color: 'var(--color-text)' }}
               onClick={() => setActiveSessionId(s.id)}

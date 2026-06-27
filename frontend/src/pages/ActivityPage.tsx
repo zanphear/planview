@@ -47,7 +47,7 @@ export function ActivityPage() {
         </h2>
         <button
           onClick={() => fetchActivities()}
-          className="p-2 rounded-lg hover:bg-[var(--color-grey-2)] transition-colors"
+          className="p-2 rounded-lg hover:bg-muted transition-colors"
           style={{ color: 'var(--color-text-secondary)' }}
           title="Refresh"
         >
@@ -72,7 +72,7 @@ export function ActivityPage() {
         ) : (
           <div className="divide-y" style={{ borderColor: 'var(--color-border)' }}>
             {activities.map((a) => (
-              <div key={a.id} className="flex items-start gap-3 px-5 py-3.5 hover:bg-[var(--color-grey-1)] transition-colors">
+              <div key={a.id} className="flex items-start gap-3 px-5 py-3.5 hover:bg-subtle transition-colors">
                 <Avatar
                   name={a.actor.name}
                   initials={a.actor.initials || undefined}

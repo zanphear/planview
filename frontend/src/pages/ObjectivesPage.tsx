@@ -397,7 +397,7 @@ export function ObjectivesPage() {
               >
                 {/* Card header */}
                 <div
-                  className="flex items-center gap-3 px-4 py-3.5 cursor-pointer hover:bg-[var(--color-grey-1)] transition-colors"
+                  className="flex items-center gap-3 px-4 py-3.5 cursor-pointer hover:bg-subtle transition-colors"
                   onClick={() => toggleExpanded(obj.id)}
                 >
                   <div style={{ color: 'var(--color-text-secondary)' }}>
