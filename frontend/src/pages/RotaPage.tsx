@@ -114,7 +114,7 @@ export function RotaPage() {
 
       {/* Date range label */}
       <div className="text-sm mb-3" style={{ color: 'var(--color-text-secondary)' }}>
-        {format(dateRange[0], 'd MMM yyyy')} — {format(dateRange[dateRange.length - 1], 'd MMM yyyy')}
+        {format(dateRange[0], 'd MMM yyyy')}, {format(dateRange[dateRange.length - 1], 'd MMM yyyy')}
       </div>
 
       {/* Rota sections */}
@@ -578,7 +578,7 @@ function CreateRotaModal({
                     key={key}
                     type="button"
                     onClick={() => setRotaType(key)}
-                    className={`p-3 rounded-lg border text-center transition-all ${
+                    className={`p-3 rounded-lg border text-center transition-colors ${
                       rotaType === key ? 'ring-2 ring-[var(--color-primary)]' : ''
                     }`}
                     style={{
@@ -753,7 +753,7 @@ function EditRotaModal({
                     key={key}
                     type="button"
                     onClick={() => setRotaType(key)}
-                    className={`p-3 rounded-lg border text-center transition-all ${
+                    className={`p-3 rounded-lg border text-center transition-colors ${
                       rotaType === key ? 'ring-2 ring-[var(--color-primary)]' : ''
                     }`}
                     style={{

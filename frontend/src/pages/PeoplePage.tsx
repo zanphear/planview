@@ -1028,7 +1028,7 @@ export function PeoplePage() {
                     <button
                       key={profile.id}
                       onClick={() => navigate(`/people/${profile.user_id}`)}
-                      className="rounded-xl border p-5 text-left hover:shadow-md hover:border-blue-200 transition-all group"
+                      className="rounded-xl border p-5 text-left hover:shadow-md hover:border-blue-200 transition-colors group"
                       style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
                     >
                       <div className="flex items-center gap-3 mb-3">
@@ -1080,7 +1080,7 @@ export function PeoplePage() {
                   <button
                     key={member.id}
                     onClick={() => setCreatingFor(member)}
-                    className="rounded-xl border-2 border-dashed p-5 text-left hover:border-blue-300 transition-all group"
+                    className="rounded-xl border-2 border-dashed p-5 text-left hover:border-blue-300 transition-colors group"
                     style={{ backgroundColor: 'var(--color-bg)', borderColor: 'var(--color-border)' }}
                   >
                     <div className="flex items-center gap-3 mb-3">

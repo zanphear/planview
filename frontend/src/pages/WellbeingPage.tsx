@@ -139,7 +139,7 @@ export function WellbeingPage() {
         <div className="flex items-center gap-1 p-1 rounded-lg" style={{ backgroundColor: 'var(--color-grey-1)' }}>
           <button
             onClick={() => setTab('surveys')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
               tab === 'surveys' ? 'shadow-sm' : ''
             }`}
             style={{
@@ -152,7 +152,7 @@ export function WellbeingPage() {
           </button>
           <button
             onClick={() => setTab('kudos')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
               tab === 'kudos' ? 'shadow-sm' : ''
             }`}
             style={{
@@ -494,7 +494,7 @@ function ScoreBar({ label, value }: { label: string; value: number }) {
       <span className="text-xs w-16 shrink-0" style={{ color: 'var(--color-text-secondary)' }}>{label}</span>
       <div className="flex-1 h-5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-grey-1)' }}>
         <div
-          className="h-full rounded-full transition-all"
+          className="h-full rounded-full transition-colors"
           style={{ width: `${percentage}%`, backgroundColor: colour }}
         />
       </div>

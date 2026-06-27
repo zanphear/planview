@@ -479,7 +479,7 @@ function TimeTracker({
         {estimate > 0 && (
           <div className="h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-grey-2)' }}>
             <div
-              className="h-full rounded-full transition-all"
+              className="h-full rounded-full transition-colors"
               style={{
                 width: `${pct}%`,
                 backgroundColor: pct > 100 ? 'var(--color-danger, #ef4444)' : 'var(--color-primary)',

@@ -63,7 +63,7 @@ export function AnalysisReportsPage() {
     );
   }, []));
 
-  // Polling fallback — while any report is queued/generating, poll every 10s
+  // Polling fallback, while any report is queued/generating, poll every 10s
   const hasActive = reports.some((r) => r.status === 'queued' || r.status === 'generating');
 
   useEffect(() => {

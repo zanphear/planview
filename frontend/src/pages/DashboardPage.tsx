@@ -23,7 +23,7 @@ function ProgressBar({ total, completed, colour }: { total: number; completed: n
   return (
     <div className="flex items-center gap-2 flex-1">
       <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-grey-2)' }}>
-        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: colour }} />
+        <div className="h-full rounded-full transition-colors" style={{ width: `${pct}%`, backgroundColor: colour }} />
       </div>
       <span className="text-xs font-medium w-8 text-right" style={{ color: 'var(--color-text-secondary)' }}>
         {pct}%
@@ -113,7 +113,7 @@ export function DashboardPage() {
         </p>
       </div>
 
-      {/* Top stat cards — task stats + key people stats */}
+      {/* Top stat cards, task stats + key people stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard label="Total Tasks" value={stats.total_tasks} icon={<Inbox size={20} />} colour="var(--color-primary)" />
         <StatCard label="Overdue" value={stats.overdue} icon={<AlertTriangle size={20} />} colour="var(--color-danger)" sub={stats.overdue > 0 ? 'Needs attention' : 'All on track'} />
@@ -183,7 +183,7 @@ export function DashboardPage() {
         </div>
       </div>
 
-      {/* People management charts — 2-col grid */}
+      {/* People management charts, 2-col grid */}
       {p && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Objectives */}
@@ -331,7 +331,7 @@ export function DashboardPage() {
                 </div>
                 <div>
                   <div className="text-2xl font-bold" style={{ color: COLOURS.amber }}>
-                    {p.reviews.avg_rating !== null ? p.reviews.avg_rating.toFixed(1) : '—'}
+                    {p.reviews.avg_rating !== null ? p.reviews.avg_rating.toFixed(1) : ', '}
                   </div>
                   <div className="text-xs mt-1" style={{ color: 'var(--color-text-secondary)' }}>Avg Rating</div>
                 </div>
@@ -491,7 +491,7 @@ function StatusRow({ label, count, total, colour }: { label: string; count: numb
     <div className="flex items-center gap-3">
       <span className="text-sm w-24" style={{ color: 'var(--color-text)' }}>{label}</span>
       <div className="flex-1 h-2.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-grey-2)' }}>
-        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: colour }} />
+        <div className="h-full rounded-full transition-colors" style={{ width: `${pct}%`, backgroundColor: colour }} />
       </div>
       <span className="text-xs font-medium w-8 text-right" style={{ color: 'var(--color-text-secondary)' }}>{count}</span>
     </div>

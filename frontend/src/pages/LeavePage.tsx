@@ -327,7 +327,7 @@ export function LeavePage() {
                     {/* Date range */}
                     <div className="flex items-center gap-1.5 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
                       <Calendar size={14} />
-                      <span>{req.start_date} — {req.end_date}</span>
+                      <span>{req.start_date}, {req.end_date}</span>
                     </div>
 
                     {/* Days count */}
@@ -676,7 +676,7 @@ function CreateAllowanceModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold" style={{ color: 'var(--color-text)' }}>Set Allowance — {year}</h3>
+          <h3 className="text-lg font-bold" style={{ color: 'var(--color-text)' }}>Set Allowance, {year}</h3>
           <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-grey-1)]" style={{ color: 'var(--color-text-secondary)' }}>
             <X size={18} />
           </button>

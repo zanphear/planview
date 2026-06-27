@@ -125,7 +125,7 @@ async def create_task(
     db.add(task)
     await db.flush()
 
-    # Assignees — insert directly into join table to avoid lazy-load on new object
+    # Assignees, insert directly into join table to avoid lazy-load on new object
     if data.assignee_ids:
         for uid in data.assignee_ids:
             await db.execute(task_assignees.insert().values(task_id=task.id, user_id=uid))

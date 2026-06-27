@@ -388,7 +388,7 @@ export function RecruitmentPage() {
                     <button
                       key={candidate.id}
                       onClick={() => setSelectedCandidate(candidate)}
-                      className="w-full text-left p-3 rounded-lg border transition-all hover:shadow-md group"
+                      className="w-full text-left p-3 rounded-lg border transition-colors hover:shadow-md group"
                       style={{
                         backgroundColor: 'var(--color-surface)',
                         borderColor: 'var(--color-border)',

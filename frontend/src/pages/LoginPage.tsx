@@ -101,7 +101,7 @@ export function LoginPage() {
             <button
               onClick={handleOIDCLogin}
               disabled={oidcLoading}
-              className="w-full py-2.5 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-lg flex items-center justify-center gap-2"
+              className="w-full py-2.5 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:shadow-lg flex items-center justify-center gap-2"
               style={{ background: 'linear-gradient(135deg, #8A00E5, #4D217A)' }}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -180,7 +180,7 @@ export function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-2.5 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-lg"
+                className="w-full py-2.5 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:shadow-lg"
                 style={{ background: 'linear-gradient(135deg, #8A00E5, #4D217A)' }}
               >
                 {loading ? 'Loading...' : isRegister ? 'Create Account' : 'Sign In'}
@@ -198,7 +198,7 @@ export function LoginPage() {
                 <button
                   onClick={handleOIDCLogin}
                   disabled={oidcLoading}
-                  className="w-full py-2.5 rounded-lg font-medium border disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-md flex items-center justify-center gap-2"
+                  className="w-full py-2.5 rounded-lg font-medium border disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:shadow-md flex items-center justify-center gap-2"
                   style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)', backgroundColor: 'var(--color-surface)' }}
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

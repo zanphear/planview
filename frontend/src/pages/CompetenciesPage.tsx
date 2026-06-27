@@ -690,7 +690,7 @@ function MatrixTab({
                           const rect = (e.target as HTMLElement).getBoundingClientRect();
                           onCellClick(member.id, comp.id, rect);
                         }}
-                        className="w-full h-8 rounded text-xs font-medium transition-all hover:scale-105"
+                        className="w-full h-8 rounded text-xs font-medium transition-colors hover:scale-105"
                         style={{
                           background: level ? level.bg : 'var(--color-grey-1)',
                           color: level ? level.colour : 'var(--color-text-secondary)',

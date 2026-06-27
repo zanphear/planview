@@ -66,12 +66,12 @@ export function Taskbox() {
     }
   };
 
-  // Collapsed state — just a little tab
+  // Collapsed state, just a little tab
   if (!taskboxOpen) {
     return (
       <button
         onClick={() => setTaskboxOpen(true)}
-        className="fixed bottom-4 right-4 z-30 flex items-center gap-2 px-4 py-2.5 rounded-xl shadow-lg border transition-all hover:shadow-xl"
+        className="fixed bottom-4 right-4 z-30 flex items-center gap-2 px-4 py-2.5 rounded-xl shadow-lg border transition-colors hover:shadow-xl"
         style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
       >
         <Inbox size={16} style={{ color: 'var(--color-primary)' }} />

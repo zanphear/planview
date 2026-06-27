@@ -521,7 +521,7 @@ export function ObjectivesPage() {
                               </span>
                               <div className="w-16 h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-grey-2)' }}>
                                 <div
-                                  className="h-full rounded-full transition-all"
+                                  className="h-full rounded-full transition-colors"
                                   style={{ width: `${krProgress}%`, backgroundColor: 'var(--color-primary)' }}
                                 />
                               </div>

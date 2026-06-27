@@ -277,7 +277,7 @@ export function ReviewsPage() {
                       </div>
                       <div className="text-xs mt-1 flex items-center gap-2" style={{ color: 'var(--color-text-secondary)' }}>
                         <Calendar size={12} />
-                        {cycle.period_start} — {cycle.period_end}
+                        {cycle.period_start}, {cycle.period_end}
                       </div>
                     </div>
                     <div className="flex items-center gap-3">

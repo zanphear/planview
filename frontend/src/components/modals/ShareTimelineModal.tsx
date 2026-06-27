@@ -95,7 +95,7 @@ export function ShareTimelineModal({ teamId, projectId, entityName, onClose }: S
 
         <div className="p-5 space-y-4">
           <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-            Create a public link to share <strong>{entityName}</strong> with anyone — no login required.
+            Create a public link to share <strong>{entityName}</strong> with anyone, no login required.
           </p>
 
           <button

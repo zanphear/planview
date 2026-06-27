@@ -30,7 +30,7 @@ export function MyWorkPage() {
 
   const startDate = useMemo(() => startOfWeek(addDays(new Date(), -7), { weekStartsOn: 1 }), []);
 
-  // Real-time task updates — only include tasks assigned to current user
+  // Real-time task updates, only include tasks assigned to current user
   const myFilter = useCallback(
     (task: Task) => task.assignees?.some((a) => a.id === user?.id) ?? false,
     [user],

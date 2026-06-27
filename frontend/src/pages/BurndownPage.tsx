@@ -174,10 +174,10 @@ export function BurndownPage() {
                 <tr key={p.date} className="border-t" style={{ borderColor: 'var(--color-border)' }}>
                   <td className="px-4 py-1.5" style={{ color: 'var(--color-text)' }}>{p.date}</td>
                   <td className="px-4 py-1.5 text-right" style={{ color: p.created > 0 ? 'var(--color-primary)' : 'var(--color-text-secondary)' }}>
-                    {p.created > 0 ? `+${p.created}` : '—'}
+                    {p.created > 0 ? `+${p.created}` : ', '}
                   </td>
                   <td className="px-4 py-1.5 text-right" style={{ color: p.completed > 0 ? 'var(--color-success)' : 'var(--color-text-secondary)' }}>
-                    {p.completed > 0 ? `+${p.completed}` : '—'}
+                    {p.completed > 0 ? `+${p.completed}` : ', '}
                   </td>
                   <td className="px-4 py-1.5 text-right font-medium" style={{ color: 'var(--color-text)' }}>{p.remaining}</td>
                 </tr>

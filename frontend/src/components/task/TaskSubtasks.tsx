@@ -58,7 +58,7 @@ export function TaskSubtasks({ taskId, subtasks, onRefresh }: TaskSubtasksProps)
       {total > 0 && (
         <div className="h-1.5 rounded-full overflow-hidden mb-2" style={{ backgroundColor: 'var(--color-grey-2)' }}>
           <div
-            className="h-full rounded-full transition-all"
+            className="h-full rounded-full transition-colors"
             style={{ width: `${pct}%`, backgroundColor: 'var(--color-success)' }}
           />
         </div>

@@ -148,7 +148,7 @@ export function AbsenceCalendarPage() {
                       key={absence.id}
                       className="px-1.5 py-0.5 rounded text-[10px] truncate"
                       style={{ backgroundColor: absence.colour + '20', color: absence.colour }}
-                      title={`${absence.user_name} — ${absence.label}`}
+                      title={`${absence.user_name}, ${absence.label}`}
                     >
                       {absence.user_name?.split(' ')[0]}
                     </div>

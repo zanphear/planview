@@ -42,7 +42,7 @@ export function ProjectTimelinePage() {
   const project = projects.find((p) => p.id === projectId);
   const startDate = useMemo(() => startOfWeek(addDays(new Date(), -7), { weekStartsOn: 1 }), []);
 
-  // Real-time task updates — only include tasks for this project
+  // Real-time task updates, only include tasks for this project
   const projectFilter = useCallback(
     (task: Task) => task.project_id === projectId,
     [projectId],

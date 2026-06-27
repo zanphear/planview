@@ -188,7 +188,7 @@ export function AIAssistantPage() {
 
   return (
     <div className="flex h-full">
-      {/* Left panel — sessions + quick reports */}
+      {/* Left panel, sessions + quick reports */}
       <div className="w-64 shrink-0 border-r flex flex-col" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)' }}>
         <div className="p-3 border-b" style={{ borderColor: 'var(--color-border)' }}>
           <button

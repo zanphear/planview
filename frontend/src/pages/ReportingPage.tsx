@@ -85,7 +85,7 @@ export function ReportingPage() {
             ))}
           </div>
 
-          {/* Module detail cards — 2-col grid */}
+          {/* Module detail cards, 2-col grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* People by Department */}
             {Object.keys(data.people.by_department).length > 0 && (
@@ -243,7 +243,7 @@ export function ReportingPage() {
                   </div>
                   <div>
                     <div className="text-2xl font-bold" style={{ color: COLOURS.amber }}>
-                      {data.reviews.avg_rating !== null ? data.reviews.avg_rating.toFixed(1) : '—'}
+                      {data.reviews.avg_rating !== null ? data.reviews.avg_rating.toFixed(1) : ', '}
                     </div>
                     <div className="text-xs mt-1" style={{ color: 'var(--color-text-secondary)' }}>Avg Rating</div>
                   </div>

@@ -64,7 +64,7 @@ export function CustomFieldsEditor({ taskId }: CustomFieldsEditorProps) {
                 className="w-full px-2 py-1 text-sm border rounded-lg"
                 style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
               >
-                <option value="">—</option>
+                <option value="">, </option>
                 {JSON.parse(field.options).map((opt: string) => (
                   <option key={opt} value={opt}>{opt}</option>
                 ))}

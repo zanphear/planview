@@ -144,7 +144,7 @@ export function ResourcePage() {
                       <div className="flex items-center gap-2">
                         <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-grey-2)' }}>
                           <div
-                            className="h-full rounded-full transition-all"
+                            className="h-full rounded-full transition-colors"
                             style={{
                               width: `${barPct}%`,
                               backgroundColor: pct > 100 ? 'var(--color-danger, #ef4444)' : pct > 80 ? '#f59e0b' : 'var(--color-primary)',

@@ -267,7 +267,7 @@ export function SettingsPage() {
               <button
                 onClick={handleSaveProfile}
                 disabled={saving}
-                className="px-4 py-2 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-all hover:shadow-lg"
+                className="px-4 py-2 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors hover:shadow-lg"
                 style={{ background: 'var(--color-primary)' }}
               >
                 {saving ? 'Saving...' : saved ? 'Saved!' : 'Save Changes'}
@@ -516,7 +516,7 @@ export function SettingsPage() {
                     <button
                       key={theme.id}
                       onClick={() => setDarkMode(theme.id === 'dark')}
-                      className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all w-32 ${
+                      className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-colors w-32 ${
                         theme.active
                           ? 'border-[var(--color-primary)] bg-[var(--color-primary-light)]'
                           : 'border-[var(--color-border)] hover:border-[var(--color-text-secondary)]'
@@ -1356,7 +1356,7 @@ function CustomFieldsTab({ workspaceId }: { workspaceId?: string }) {
               <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>{f.name}</p>
               <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
                 {FIELD_TYPES.find((t) => t.value === f.field_type)?.label || f.field_type}
-                {f.options && ` — ${JSON.parse(f.options).join(', ')}`}
+                {f.options && `, ${JSON.parse(f.options).join(', ')}`}
               </p>
             </div>
             <button

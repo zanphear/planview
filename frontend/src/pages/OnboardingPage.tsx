@@ -52,7 +52,7 @@ function ProgressBar({ completed, total }: { completed: number; total: number })
     <div className="flex items-center gap-2">
       <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-border)' }}>
         <div
-          className="h-full rounded-full transition-all duration-300"
+          className="h-full rounded-full transition-colors duration-300"
           style={{ width: `${pct}%`, backgroundColor: '#16a34a' }}
         />
       </div>

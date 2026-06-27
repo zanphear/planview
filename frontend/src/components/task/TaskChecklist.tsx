@@ -37,7 +37,7 @@ export function TaskChecklist({ items, onAdd, onToggle, onDelete }: TaskChecklis
       {total > 0 && (
         <div className="w-full rounded-full h-1.5" style={{ backgroundColor: 'var(--color-grey-2)' }}>
           <div
-            className="h-1.5 rounded-full transition-all"
+            className="h-1.5 rounded-full transition-colors"
             style={{ width: `${progress}%`, backgroundColor: 'var(--color-success)' }}
           />
         </div>

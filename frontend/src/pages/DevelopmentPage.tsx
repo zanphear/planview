@@ -629,7 +629,7 @@ export function DevelopmentPage() {
                                             {goal.progress > 0 && (
                                               <div className="mt-2 flex items-center gap-2">
                                                 <div className="flex-1 h-1.5 rounded-full" style={{ backgroundColor: 'var(--color-border)' }}>
-                                                  <div className="h-full rounded-full transition-all" style={{ width: `${goal.progress}%`, backgroundColor: goal.progress === 100 ? '#16a34a' : 'var(--color-primary)' }} />
+                                                  <div className="h-full rounded-full transition-colors" style={{ width: `${goal.progress}%`, backgroundColor: goal.progress === 100 ? '#16a34a' : 'var(--color-primary)' }} />
                                                 </div>
                                                 <span className="text-xs font-medium" style={{ color: 'var(--color-text-secondary)' }}>{goal.progress}%</span>
                                               </div>

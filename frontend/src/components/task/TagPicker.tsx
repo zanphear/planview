@@ -56,7 +56,7 @@ export function TagPicker({ projectId, selectedIds, onChange }: TagPickerProps) 
             <button
               key={tag.id}
               onClick={() => toggle(tag.id)}
-              className="px-2 py-0.5 rounded-full text-xs font-medium transition-all"
+              className="px-2 py-0.5 rounded-full text-xs font-medium transition-colors"
               style={{
                 backgroundColor: selected ? tag.colour : 'var(--color-grey-2)',
                 color: selected ? '#fff' : 'var(--color-text-secondary)',

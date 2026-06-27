@@ -201,7 +201,7 @@ export function OneToOnesPage() {
                 <button
                   key={meeting.id}
                   onClick={() => setSelectedMeetingId(isSelected ? null : meeting.id)}
-                  className="w-full text-left rounded-lg border p-4 transition-all"
+                  className="w-full text-left rounded-lg border p-4 transition-colors"
                   style={{
                     borderColor: isSelected ? 'var(--color-primary)' : 'var(--color-border)',
                     backgroundColor: isSelected ? 'rgba(65,134,224,0.05)' : 'var(--color-surface)',
@@ -398,7 +398,7 @@ function MeetingDetail({
               <button
                 key={m.value}
                 onClick={() => handleMoodChange(m.value)}
-                className="flex flex-col items-center gap-1 px-3 py-2 rounded-lg border transition-all"
+                className="flex flex-col items-center gap-1 px-3 py-2 rounded-lg border transition-colors"
                 style={{
                   borderColor: mood === m.value ? 'var(--color-primary)' : 'var(--color-border)',
                   backgroundColor: mood === m.value ? 'rgba(65,134,224,0.08)' : 'transparent',

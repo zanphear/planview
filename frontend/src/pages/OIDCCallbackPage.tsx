@@ -20,7 +20,7 @@ export function OIDCCallbackPage() {
     }
 
     if (state && savedState && state !== savedState) {
-      setError('State mismatch — possible CSRF attack. Please try again.');
+      setError('State mismatch, possible CSRF attack. Please try again.');
       return;
     }
 
@@ -52,7 +52,7 @@ export function OIDCCallbackPage() {
             <p className="text-sm mb-6" style={{ color: 'var(--color-danger)' }}>{error}</p>
             <button
               onClick={() => navigate('/login', { replace: true })}
-              className="px-4 py-2 text-white rounded-lg font-medium transition-all hover:shadow-lg"
+              className="px-4 py-2 text-white rounded-lg font-medium transition-colors hover:shadow-lg"
               style={{ background: 'linear-gradient(135deg, #8A00E5, #4D217A)' }}
             >
               Back to Login

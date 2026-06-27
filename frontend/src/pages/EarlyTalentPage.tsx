@@ -499,7 +499,7 @@ export function EarlyTalentPage() {
                           </span>
                           <div className="w-24 h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-grey-2)' }}>
                             <div
-                              className="h-full rounded-full transition-all"
+                              className="h-full rounded-full transition-colors"
                               style={{
                                 width: `${p.qualification_progress}%`,
                                 backgroundColor: p.qualification_progress >= 75 ? '#22c55e' : p.qualification_progress >= 50 ? '#f59e0b' : 'var(--color-primary)',

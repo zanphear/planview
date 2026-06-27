@@ -33,7 +33,7 @@ export function TeamTimelinePage() {
   const team = teams.find((t) => t.id === teamId);
   const startDate = useMemo(() => startOfWeek(addDays(new Date(), -7), { weekStartsOn: 1 }), []);
 
-  // Real-time task updates — only include tasks assigned to a team member
+  // Real-time task updates, only include tasks assigned to a team member
   const memberIds = useMemo(() => new Set(team?.members.map((m) => m.id) || []), [team]);
   const teamFilter = useCallback(
     (task: Task) => task.assignees?.some((a) => memberIds.has(a.id)) ?? false,
