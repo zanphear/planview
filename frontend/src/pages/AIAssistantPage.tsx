@@ -1,5 +1,18 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Bot, Send, Plus, Trash2, FileText, Users, Shield, Award, Target, ClipboardList, Loader2, ExternalLink } from 'lucide-react';
+import {
+  Bot,
+  Send,
+  Plus,
+  Trash2,
+  FileText,
+  Users,
+  Shield,
+  Award,
+  Target,
+  ClipboardList,
+  Loader2,
+  ExternalLink,
+} from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useNavigate } from 'react-router-dom';
@@ -37,14 +50,21 @@ export function AIAssistantPage() {
 
   useEffect(() => {
     if (!workspace) return;
-    aiApi.status(workspace.id).then(r => setEnabled(r.data.enabled)).catch(() => setEnabled(false));
-    aiApi.listSessions(workspace.id).then(r => setSessions(r.data)).catch(() => {});
+    aiApi
+      .status(workspace.id)
+      .then((r) => setEnabled(r.data.enabled))
+      .catch(() => setEnabled(false));
+    aiApi
+      .listSessions(workspace.id)
+      .then((r) => setSessions(r.data))
+      .catch(() => {});
   }, [workspace]);
 
   useEffect(() => {
     if (!workspace || !activeSessionId) return;
-    aiApi.getSession(workspace.id, activeSessionId)
-      .then(r => setMessages(r.data.messages))
+    aiApi
+      .getSession(workspace.id, activeSessionId)
+      .then((r) => setMessages(r.data.messages))
       .catch(() => setMessages([]));
   }, [workspace, activeSessionId]);
 
@@ -55,20 +75,23 @@ export function AIAssistantPage() {
   const createSession = useCallback(async () => {
     if (!workspace) return;
     const { data } = await aiApi.createSession(workspace.id);
-    setSessions(prev => [data, ...prev]);
+    setSessions((prev) => [data, ...prev]);
     setActiveSessionId(data.id);
     setMessages([]);
   }, [workspace]);
 
-  const deleteSession = useCallback(async (id: string) => {
-    if (!workspace) return;
-    await aiApi.deleteSession(workspace.id, id);
-    setSessions(prev => prev.filter(s => s.id !== id));
-    if (activeSessionId === id) {
-      setActiveSessionId(null);
-      setMessages([]);
-    }
-  }, [workspace, activeSessionId]);
+  const deleteSession = useCallback(
+    async (id: string) => {
+      if (!workspace) return;
+      await aiApi.deleteSession(workspace.id, id);
+      setSessions((prev) => prev.filter((s) => s.id !== id));
+      if (activeSessionId === id) {
+        setActiveSessionId(null);
+        setMessages([]);
+      }
+    },
+    [workspace, activeSessionId],
+  );
 
   const sendMessage = useCallback(async () => {
     if (!workspace || !activeSessionId || !input.trim() || streaming) return;
@@ -85,7 +108,7 @@ export function AIAssistantPage() {
       tool_calls: null,
       created_at: new Date().toISOString(),
     };
-    setMessages(prev => [...prev, userMsg]);
+    setMessages((prev) => [...prev, userMsg]);
 
     try {
       let collected = '';
@@ -101,7 +124,7 @@ export function AIAssistantPage() {
         tool_calls: null,
         created_at: new Date().toISOString(),
       };
-      setMessages(prev => [...prev, assistantMsg]);
+      setMessages((prev) => [...prev, assistantMsg]);
     } catch {
       const errMsg: AIChatMessage = {
         id: crypto.randomUUID(),
@@ -111,70 +134,77 @@ export function AIAssistantPage() {
         tool_calls: null,
         created_at: new Date().toISOString(),
       };
-      setMessages(prev => [...prev, errMsg]);
+      setMessages((prev) => [...prev, errMsg]);
     } finally {
       setStreaming(false);
       setStreamingText('');
     }
   }, [workspace, activeSessionId, input, streaming]);
 
-  const runQuickReport = useCallback(async (reportType: string) => {
-    if (!workspace || streaming) return;
-    // Create a new session for the report if none active
-    let sid = activeSessionId;
-    if (!sid) {
-      const { data } = await aiApi.createSession(workspace.id, `Report: ${reportType.replace(/_/g, ' ')}`);
-      setSessions(prev => [data, ...prev]);
-      setActiveSessionId(data.id);
-      sid = data.id;
-    }
-
-    setStreaming(true);
-    setStreamingText('');
-    setLastReportId(null);
-
-    const label = QUICK_REPORTS.find(r => r.type === reportType)?.label || reportType.replace(/_/g, ' ');
-    const userMsg: AIChatMessage = {
-      id: crypto.randomUUID(),
-      session_id: sid,
-      role: 'user',
-      content: `Generate a ${label} report`,
-      tool_calls: null,
-      created_at: new Date().toISOString(),
-    };
-    setMessages(prev => [...prev, userMsg]);
-
-    try {
-      const result = await apiRunQuickReport(workspace.id, reportType, (text) => {
-        setStreamingText(text);
-      });
-      const assistantMsg: AIChatMessage = {
-        id: crypto.randomUUID(),
-        session_id: sid,
-        role: 'assistant',
-        content: result.content,
-        tool_calls: null,
-        created_at: new Date().toISOString(),
-      };
-      setMessages(prev => [...prev, assistantMsg]);
-      if (result.reportId) {
-        setLastReportId(result.reportId);
+  const runQuickReport = useCallback(
+    async (reportType: string) => {
+      if (!workspace || streaming) return;
+      // Create a new session for the report if none active
+      let sid = activeSessionId;
+      if (!sid) {
+        const { data } = await aiApi.createSession(
+          workspace.id,
+          `Report: ${reportType.replace(/_/g, ' ')}`,
+        );
+        setSessions((prev) => [data, ...prev]);
+        setActiveSessionId(data.id);
+        sid = data.id;
       }
-    } catch {
-      const errMsg: AIChatMessage = {
+
+      setStreaming(true);
+      setStreamingText('');
+      setLastReportId(null);
+
+      const label =
+        QUICK_REPORTS.find((r) => r.type === reportType)?.label || reportType.replace(/_/g, ' ');
+      const userMsg: AIChatMessage = {
         id: crypto.randomUUID(),
         session_id: sid,
-        role: 'assistant',
-        content: 'Sorry, failed to generate the report. Please try again.',
+        role: 'user',
+        content: `Generate a ${label} report`,
         tool_calls: null,
         created_at: new Date().toISOString(),
       };
-      setMessages(prev => [...prev, errMsg]);
-    } finally {
-      setStreaming(false);
-      setStreamingText('');
-    }
-  }, [workspace, activeSessionId, streaming]);
+      setMessages((prev) => [...prev, userMsg]);
+
+      try {
+        const result = await apiRunQuickReport(workspace.id, reportType, (text) => {
+          setStreamingText(text);
+        });
+        const assistantMsg: AIChatMessage = {
+          id: crypto.randomUUID(),
+          session_id: sid,
+          role: 'assistant',
+          content: result.content,
+          tool_calls: null,
+          created_at: new Date().toISOString(),
+        };
+        setMessages((prev) => [...prev, assistantMsg]);
+        if (result.reportId) {
+          setLastReportId(result.reportId);
+        }
+      } catch {
+        const errMsg: AIChatMessage = {
+          id: crypto.randomUUID(),
+          session_id: sid,
+          role: 'assistant',
+          content: 'Sorry, failed to generate the report. Please try again.',
+          tool_calls: null,
+          created_at: new Date().toISOString(),
+        };
+        setMessages((prev) => [...prev, errMsg]);
+      } finally {
+        setStreaming(false);
+        setStreamingText('');
+      }
+    },
+    [workspace, activeSessionId, streaming],
+  );
 
   if (!user || !isModuleEnabled) return null;
 
@@ -189,7 +219,10 @@ export function AIAssistantPage() {
   return (
     <div className="flex h-full">
       {/* Left panel, sessions + quick reports */}
-      <div className="w-64 shrink-0 border-r flex flex-col" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)' }}>
+      <div
+        className="w-64 shrink-0 border-r flex flex-col"
+        style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)' }}
+      >
         <div className="p-3 border-b" style={{ borderColor: 'var(--color-border)' }}>
           <button
             onClick={createSession}
@@ -203,11 +236,14 @@ export function AIAssistantPage() {
         {/* Quick Reports */}
         {enabled && (
           <div className="p-3 border-b" style={{ borderColor: 'var(--color-border)' }}>
-            <div className="text-xs font-medium uppercase tracking-wider mb-2" style={{ color: 'var(--color-text-secondary)' }}>
+            <div
+              className="text-xs font-medium uppercase tracking-wider mb-2"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
               Quick Reports
             </div>
             <div className="space-y-1">
-              {QUICK_REPORTS.map(r => (
+              {QUICK_REPORTS.map((r) => (
                 <button
                   key={r.type}
                   onClick={() => runQuickReport(r.type)}
@@ -224,19 +260,28 @@ export function AIAssistantPage() {
 
         {/* Session list */}
         <div className="flex-1 overflow-y-auto p-2 space-y-1">
-          {sessions.map(s => (
+          {sessions.map((s) => (
             <div
               key={s.id}
               className={`flex items-center gap-2 px-2 py-1.5 rounded text-sm cursor-pointer group transition-colors ${
-                activeSessionId === s.id ? 'bg-accent/10 font-medium' : 'hover:bg-black/5 dark:hover:bg-white/5'
+                activeSessionId === s.id
+                  ? 'bg-accent/10 font-medium'
+                  : 'hover:bg-black/5 dark:hover:bg-white/5'
               }`}
               style={{ color: 'var(--color-text)' }}
               onClick={() => setActiveSessionId(s.id)}
             >
-              <Bot size={14} className="shrink-0" style={{ color: 'var(--color-text-secondary)' }} />
+              <Bot
+                size={14}
+                className="shrink-0"
+                style={{ color: 'var(--color-text-secondary)' }}
+              />
               <span className="truncate flex-1">{s.title}</span>
               <button
-                onClick={(e) => { e.stopPropagation(); deleteSession(s.id); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  deleteSession(s.id);
+                }}
                 className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-red-100 dark:hover:bg-red-900/30 transition-opacity"
               >
                 <Trash2 size={12} className="text-red-500" />
@@ -251,8 +296,13 @@ export function AIAssistantPage() {
         {!activeSessionId ? (
           <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8">
             <Bot size={48} style={{ color: 'var(--color-text-secondary)' }} />
-            <h2 className="text-xl font-semibold" style={{ color: 'var(--color-text)' }}>AI Assistant</h2>
-            <p className="text-sm text-center max-w-md" style={{ color: 'var(--color-text-secondary)' }}>
+            <h2 className="text-xl font-semibold" style={{ color: 'var(--color-text)' }}>
+              AI Assistant
+            </h2>
+            <p
+              className="text-sm text-center max-w-md"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
               {enabled
                 ? 'Start a new chat or select a quick report to get AI-powered insights about your team.'
                 : 'AI assistant is not configured. Set AI_MODEL_URL in your environment to enable it.'}
@@ -271,8 +321,11 @@ export function AIAssistantPage() {
           <>
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {messages.map(msg => (
-                <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              {messages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
                   {msg.role === 'user' ? (
                     <div
                       className="max-w-[75%] rounded-xl rounded-br-sm px-4 py-2.5 text-sm whitespace-pre-wrap"
@@ -283,7 +336,11 @@ export function AIAssistantPage() {
                   ) : (
                     <div
                       className="max-w-[75%] rounded-xl rounded-bl-sm px-4 py-2.5 text-sm border prose prose-sm dark:prose-invert max-w-none"
-                      style={{ backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', borderColor: 'var(--color-border)' }}
+                      style={{
+                        backgroundColor: 'var(--color-surface)',
+                        color: 'var(--color-text)',
+                        borderColor: 'var(--color-border)',
+                      }}
                     >
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
                     </div>
@@ -294,19 +351,37 @@ export function AIAssistantPage() {
                 <div className="flex justify-start">
                   <div
                     className="max-w-[75%] rounded-xl rounded-bl-sm px-4 py-2.5 text-sm border prose prose-sm dark:prose-invert max-w-none"
-                    style={{ backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', borderColor: 'var(--color-border)' }}
+                    style={{
+                      backgroundColor: 'var(--color-surface)',
+                      color: 'var(--color-text)',
+                      borderColor: 'var(--color-border)',
+                    }}
                   >
                     <ReactMarkdown remarkPlugins={[remarkGfm]}>{streamingText}</ReactMarkdown>
-                    <span className="inline-block w-1.5 h-4 ml-0.5 animate-pulse" style={{ backgroundColor: 'var(--color-primary)' }} />
+                    <span
+                      className="inline-block w-1.5 h-4 ml-0.5 animate-pulse"
+                      style={{ backgroundColor: 'var(--color-primary)' }}
+                    />
                   </div>
                 </div>
               )}
               {streaming && !streamingText && (
                 <div className="flex justify-start">
-                  <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl border"
-                    style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
-                    <Loader2 size={14} className="animate-spin" style={{ color: 'var(--color-primary)' }} />
-                    <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Thinking...</span>
+                  <div
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl border"
+                    style={{
+                      backgroundColor: 'var(--color-surface)',
+                      borderColor: 'var(--color-border)',
+                    }}
+                  >
+                    <Loader2
+                      size={14}
+                      className="animate-spin"
+                      style={{ color: 'var(--color-primary)' }}
+                    />
+                    <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                      Thinking...
+                    </span>
                   </div>
                 </div>
               )}
@@ -315,9 +390,17 @@ export function AIAssistantPage() {
 
             {/* Report link banner */}
             {lastReportId && (
-              <div className="border-t px-4 py-2 flex items-center gap-2" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)' }}>
+              <div
+                className="border-t px-4 py-2 flex items-center gap-2"
+                style={{
+                  borderColor: 'var(--color-border)',
+                  backgroundColor: 'var(--color-surface)',
+                }}
+              >
                 <FileText size={14} className="text-purple-500" />
-                <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Report saved.</span>
+                <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                  Report saved.
+                </span>
                 <button
                   onClick={() => navigate('/analysis')}
                   className="text-sm font-medium flex items-center gap-1 hover:underline"
@@ -341,16 +424,18 @@ export function AIAssistantPage() {
                       sendMessage();
                     }
                   }}
-                  placeholder={enabled ? "Type a message..." : "AI not configured"}
+                  placeholder={enabled ? 'Type a message...' : 'AI not configured'}
                   disabled={!enabled || streaming}
                   rows={1}
                   className="flex-1 resize-none rounded-xl border px-4 py-2.5 text-sm outline-none focus:ring-2 disabled:opacity-50"
-                  style={{
-                    backgroundColor: 'var(--color-surface)',
-                    borderColor: 'var(--color-border)',
-                    color: 'var(--color-text)',
-                    '--tw-ring-color': 'var(--color-primary)',
-                  } as React.CSSProperties}
+                  style={
+                    {
+                      backgroundColor: 'var(--color-surface)',
+                      borderColor: 'var(--color-border)',
+                      color: 'var(--color-text)',
+                      '--tw-ring-color': 'var(--color-primary)',
+                    } as React.CSSProperties
+                  }
                 />
                 <button
                   onClick={sendMessage}

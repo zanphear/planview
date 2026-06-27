@@ -66,10 +66,12 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
                 : 'text-foreground hover:bg-muted'
             }`}
           >
-            {item.icon && <span className="w-4 h-4 flex items-center justify-center">{item.icon}</span>}
+            {item.icon && (
+              <span className="w-4 h-4 flex items-center justify-center">{item.icon}</span>
+            )}
             {item.label}
           </button>
-        )
+        ),
       )}
     </div>
   );

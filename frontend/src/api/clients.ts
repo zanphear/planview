@@ -9,8 +9,7 @@ export interface Client {
 }
 
 export const clientsApi = {
-  list: (workspaceId: string) =>
-    api.get<Client[]>(`/workspaces/${workspaceId}/clients`),
+  list: (workspaceId: string) => api.get<Client[]>(`/workspaces/${workspaceId}/clients`),
 
   create: (workspaceId: string, data: { name: string }) =>
     api.post<Client>(`/workspaces/${workspaceId}/clients`, data),

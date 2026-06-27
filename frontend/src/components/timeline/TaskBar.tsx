@@ -16,7 +16,16 @@ interface TaskBarProps {
   onContextAction?: (action: string, task: Task) => void;
 }
 
-export function TaskBar({ task, left, width, columnWidth, isDragging, onClick, onDragStart, onContextAction }: TaskBarProps) {
+export function TaskBar({
+  task,
+  left,
+  width,
+  columnWidth,
+  isDragging,
+  onClick,
+  onDragStart,
+  onContextAction,
+}: TaskBarProps) {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
   const colour = task.colour || task.project?.colour || '#4186E0';
   const isDone = task.status === 'done';
@@ -142,7 +151,10 @@ export function TaskBar({ task, left, width, columnWidth, isDragging, onClick, o
 
         {/* Project name (below task, only if room) */}
         {pixelWidth > 100 && task.project && (
-          <div className="absolute -bottom-3 left-0 text-[9px] truncate" style={{ maxWidth: pixelWidth, color: 'var(--color-text-secondary)' }}>
+          <div
+            className="absolute -bottom-3 left-0 text-[9px] truncate"
+            style={{ maxWidth: pixelWidth, color: 'var(--color-text-secondary)' }}
+          >
             {task.project.name}
           </div>
         )}

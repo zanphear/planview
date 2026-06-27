@@ -50,13 +50,16 @@ export function MyWorkPage() {
       timelineApi.get(workspace.id, { since, until, users: user.id }),
       milestonesApi.list(workspace.id),
       membersApi.list(workspace.id),
-    ]).then(([tasksRes, milestonesRes, membersRes]) => {
-      setTasks(tasksRes.data);
-      setMilestones(milestonesRes.data);
-      setMembers(membersRes.data);
-    }).catch((err) => {
-      console.error('Failed to load my work:', err);
-    }).finally(() => setLoading(false));
+    ])
+      .then(([tasksRes, milestonesRes, membersRes]) => {
+        setTasks(tasksRes.data);
+        setMilestones(milestonesRes.data);
+        setMembers(membersRes.data);
+      })
+      .catch((err) => {
+        console.error('Failed to load my work:', err);
+      })
+      .finally(() => setLoading(false));
   }, [workspace, user, zoom, startDate]);
 
   const swimlanes: Swimlane[] = useMemo(() => {
@@ -71,43 +74,54 @@ export function MyWorkPage() {
     ];
   }, [user, tasks]);
 
-  const handleCreateTask = useCallback(async (_laneId: string, date: string) => {
-    if (!workspace) return;
-    try {
-      const { data } = await tasksApi.create(workspace.id, {
-        name: 'New task',
-        date_from: date,
-        date_to: date,
-        status: 'todo',
-        assignee_ids: user ? [user.id] : [],
-      });
-      setTasks((prev) => [...prev, data]);
-      setSelectedTask(data);
-    } catch (err) {
-      console.error('Failed to create task:', err);
-    }
-  }, [workspace, user]);
+  const handleCreateTask = useCallback(
+    async (_laneId: string, date: string) => {
+      if (!workspace) return;
+      try {
+        const { data } = await tasksApi.create(workspace.id, {
+          name: 'New task',
+          date_from: date,
+          date_to: date,
+          status: 'todo',
+          assignee_ids: user ? [user.id] : [],
+        });
+        setTasks((prev) => [...prev, data]);
+        setSelectedTask(data);
+      } catch (err) {
+        console.error('Failed to create task:', err);
+      }
+    },
+    [workspace, user],
+  );
 
-  const handleTaskUpdate = useCallback(async (taskId: string, updates: { date_from?: string; date_to?: string }) => {
-    if (!workspace) return;
-    try {
-      const { data } = await tasksApi.update(workspace.id, taskId, updates);
-      setTasks((prev) => prev.map((t) => (t.id === taskId ? data : t)));
-    } catch (err) {
-      console.error('Failed to update task:', err);
-    }
-  }, [workspace]);
+  const handleTaskUpdate = useCallback(
+    async (taskId: string, updates: { date_from?: string; date_to?: string }) => {
+      if (!workspace) return;
+      try {
+        const { data } = await tasksApi.update(workspace.id, taskId, updates);
+        setTasks((prev) => prev.map((t) => (t.id === taskId ? data : t)));
+      } catch (err) {
+        console.error('Failed to update task:', err);
+      }
+    },
+    [workspace],
+  );
 
   return (
     <div className="h-full flex flex-col">
       <div className="px-6 py-3 bg-card border-b border-outline shrink-0">
-        <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>My Work</h2>
+        <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>
+          My Work
+        </h2>
       </div>
 
       <div className="flex-1 overflow-hidden">
         {loading ? (
           <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: 'var(--color-primary)' }} />
+            <div
+              className="animate-spin rounded-full h-8 w-8 border-b-2"
+              style={{ borderColor: 'var(--color-primary)' }}
+            />
           </div>
         ) : tasks.length === 0 ? (
           <EmptyState
@@ -131,11 +145,7 @@ export function MyWorkPage() {
       </div>
 
       {selectedTask && (
-        <TaskDetail
-          task={selectedTask}
-          members={members}
-          onClose={() => setSelectedTask(null)}
-        />
+        <TaskDetail task={selectedTask} members={members} onClose={() => setSelectedTask(null)} />
       )}
     </div>
   );

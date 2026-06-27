@@ -33,8 +33,10 @@ export const reviewsApi = {
   listCycles: (workspaceId: string) =>
     api.get<ReviewCycle[]>(`/workspaces/${workspaceId}/reviews/cycles`),
 
-  createCycle: (workspaceId: string, data: { name: string; period_start: string; period_end: string }) =>
-    api.post<ReviewCycle>(`/workspaces/${workspaceId}/reviews/cycles`, data),
+  createCycle: (
+    workspaceId: string,
+    data: { name: string; period_start: string; period_end: string },
+  ) => api.post<ReviewCycle>(`/workspaces/${workspaceId}/reviews/cycles`, data),
 
   updateCycle: (workspaceId: string, cycleId: string, data: Partial<ReviewCycle>) =>
     api.put<ReviewCycle>(`/workspaces/${workspaceId}/reviews/cycles/${cycleId}`, data),

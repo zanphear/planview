@@ -40,8 +40,16 @@ export const leaveApi = {
   listRequests: (workspaceId: string, params?: { user_id?: string; status?: string }) =>
     api.get<LeaveRequest[]>(`/workspaces/${workspaceId}/leave/requests`, { params }),
 
-  createRequest: (workspaceId: string, data: { leave_type: string; start_date: string; end_date: string; days: number; notes?: string }) =>
-    api.post<LeaveRequest>(`/workspaces/${workspaceId}/leave/requests`, data),
+  createRequest: (
+    workspaceId: string,
+    data: {
+      leave_type: string;
+      start_date: string;
+      end_date: string;
+      days: number;
+      notes?: string;
+    },
+  ) => api.post<LeaveRequest>(`/workspaces/${workspaceId}/leave/requests`, data),
 
   updateRequest: (workspaceId: string, requestId: string, data: Partial<LeaveRequest>) =>
     api.put<LeaveRequest>(`/workspaces/${workspaceId}/leave/requests/${requestId}`, data),

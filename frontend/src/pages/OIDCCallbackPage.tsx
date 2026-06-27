@@ -46,10 +46,17 @@ export function OIDCCallbackPage() {
         className="min-h-screen w-full flex items-center justify-center"
         style={{ background: 'linear-gradient(135deg, #1B1534 0%, #4D217A 50%, #1B1534 100%)' }}
       >
-        <div className="w-full max-w-md rounded-2xl shadow-2xl p-8" style={{ backgroundColor: 'var(--color-surface)' }}>
+        <div
+          className="w-full max-w-md rounded-2xl shadow-2xl p-8"
+          style={{ backgroundColor: 'var(--color-surface)' }}
+        >
           <div className="text-center">
-            <h1 className="text-xl font-bold mb-2" style={{ color: 'var(--color-text)' }}>Login Failed</h1>
-            <p className="text-sm mb-6" style={{ color: 'var(--color-danger)' }}>{error}</p>
+            <h1 className="text-xl font-bold mb-2" style={{ color: 'var(--color-text)' }}>
+              Login Failed
+            </h1>
+            <p className="text-sm mb-6" style={{ color: 'var(--color-danger)' }}>
+              {error}
+            </p>
             <button
               onClick={() => navigate('/login', { replace: true })}
               className="px-4 py-2 text-white rounded-lg font-medium transition-colors hover:shadow-lg"

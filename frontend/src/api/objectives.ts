@@ -42,15 +42,19 @@ export const objectivesApi = {
   listPeriods: (workspaceId: string) =>
     api.get<ReviewPeriod[]>(`/workspaces/${workspaceId}/review-periods`),
 
-  createPeriod: (workspaceId: string, data: { name: string; start_date: string; end_date: string }) =>
-    api.post<ReviewPeriod>(`/workspaces/${workspaceId}/review-periods`, data),
+  createPeriod: (
+    workspaceId: string,
+    data: { name: string; start_date: string; end_date: string },
+  ) => api.post<ReviewPeriod>(`/workspaces/${workspaceId}/review-periods`, data),
 
   // Objectives
   list: (workspaceId: string, params?: { user_id?: string; period_id?: string }) =>
     api.get<Objective[]>(`/workspaces/${workspaceId}/objectives`, { params }),
 
-  create: (workspaceId: string, data: Partial<Objective> & { key_results?: Partial<KeyResult>[] }) =>
-    api.post<Objective>(`/workspaces/${workspaceId}/objectives`, data),
+  create: (
+    workspaceId: string,
+    data: Partial<Objective> & { key_results?: Partial<KeyResult>[] },
+  ) => api.post<Objective>(`/workspaces/${workspaceId}/objectives`, data),
 
   update: (workspaceId: string, objectiveId: string, data: Partial<Objective>) =>
     api.put<Objective>(`/workspaces/${workspaceId}/objectives/${objectiveId}`, data),
@@ -62,6 +66,14 @@ export const objectivesApi = {
   addKeyResult: (workspaceId: string, objectiveId: string, data: Partial<KeyResult>) =>
     api.post<KeyResult>(`/workspaces/${workspaceId}/objectives/${objectiveId}/key-results`, data),
 
-  updateKeyResult: (workspaceId: string, objectiveId: string, krId: string, data: Partial<KeyResult>) =>
-    api.put<KeyResult>(`/workspaces/${workspaceId}/objectives/${objectiveId}/key-results/${krId}`, data),
+  updateKeyResult: (
+    workspaceId: string,
+    objectiveId: string,
+    krId: string,
+    data: Partial<KeyResult>,
+  ) =>
+    api.put<KeyResult>(
+      `/workspaces/${workspaceId}/objectives/${objectiveId}/key-results/${krId}`,
+      data,
+    ),
 };

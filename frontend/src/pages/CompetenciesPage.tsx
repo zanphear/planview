@@ -1,5 +1,17 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
-import { Award, Plus, Grid3X3, Users, ChevronDown, X, Edit3, Trash2, Shield, BookOpen, TrendingUp } from 'lucide-react';
+import {
+  Award,
+  Plus,
+  Grid3X3,
+  Users,
+  ChevronDown,
+  X,
+  Edit3,
+  Trash2,
+  Shield,
+  BookOpen,
+  TrendingUp,
+} from 'lucide-react';
 import { useWorkspaceStore } from '../stores/workspaceStore';
 import { useAuthStore } from '../stores/authStore';
 import { competenciesApi } from '../api/competencies';
@@ -61,7 +73,11 @@ export function CompetenciesPage() {
   const [saving, setSaving] = useState(false);
 
   // Popover state for matrix cell
-  const [popover, setPopover] = useState<{ userId: string; competencyId: string; rect: DOMRect } | null>(null);
+  const [popover, setPopover] = useState<{
+    userId: string;
+    competencyId: string;
+    rect: DOMRect;
+  } | null>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
 
   // Category filter
@@ -136,7 +152,9 @@ export function CompetenciesPage() {
 
   const uniqueCategories = useMemo(() => {
     const cats = new Set<string>();
-    competencies.forEach((c) => { if (c.category) cats.add(c.category); });
+    competencies.forEach((c) => {
+      if (c.category) cats.add(c.category);
+    });
     return cats.size;
   }, [competencies]);
 
@@ -159,7 +177,18 @@ export function CompetenciesPage() {
       const cat = c.category || 'Uncategorised';
       counts[cat] = (counts[cat] || 0) + 1;
     });
-    const palette = [COLOURS.blue, COLOURS.purple, COLOURS.teal, COLOURS.amber, COLOURS.green, COLOURS.pink, COLOURS.indigo, COLOURS.cyan, COLOURS.red, COLOURS.slate];
+    const palette = [
+      COLOURS.blue,
+      COLOURS.purple,
+      COLOURS.teal,
+      COLOURS.amber,
+      COLOURS.green,
+      COLOURS.pink,
+      COLOURS.indigo,
+      COLOURS.cyan,
+      COLOURS.red,
+      COLOURS.slate,
+    ];
     return Object.entries(counts)
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([label, value], i) => ({ label, value, colour: palette[i % palette.length] }));
@@ -167,9 +196,22 @@ export function CompetenciesPage() {
 
   const categoryColourMap = useMemo(() => {
     const map: Record<string, string> = {};
-    const palette = [COLOURS.blue, COLOURS.purple, COLOURS.teal, COLOURS.amber, COLOURS.green, COLOURS.pink, COLOURS.indigo, COLOURS.cyan, COLOURS.red, COLOURS.slate];
+    const palette = [
+      COLOURS.blue,
+      COLOURS.purple,
+      COLOURS.teal,
+      COLOURS.amber,
+      COLOURS.green,
+      COLOURS.pink,
+      COLOURS.indigo,
+      COLOURS.cyan,
+      COLOURS.red,
+      COLOURS.slate,
+    ];
     const cats = Array.from(new Set(competencies.map((c) => c.category || 'Uncategorised'))).sort();
-    cats.forEach((cat, i) => { map[cat] = palette[i % palette.length]; });
+    cats.forEach((cat, i) => {
+      map[cat] = palette[i % palette.length];
+    });
     return map;
   }, [competencies]);
 
@@ -194,7 +236,10 @@ export function CompetenciesPage() {
 
   const parseLevels = (text: string): string[] | null => {
     if (!text.trim()) return null;
-    const result = text.split('\n').map((l) => l.trim()).filter(Boolean);
+    const result = text
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean);
     return result.length > 0 ? result : null;
   };
 
@@ -332,16 +377,41 @@ export function CompetenciesPage() {
 
       {/* Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard label="Total Competencies" value={competencies.length} icon={<Award size={20} />} colour={COLOURS.blue} />
-        <StatCard label="Categories" value={uniqueCategories} icon={<BookOpen size={20} />} colour={COLOURS.purple} />
-        <StatCard label="Team Members Assessed" value={assessedMembers} icon={<Users size={20} />} colour={COLOURS.teal} />
-        <StatCard label="Avg Coverage" value={avgCoverage + '%'} icon={<TrendingUp size={20} />} colour={COLOURS.green} />
+        <StatCard
+          label="Total Competencies"
+          value={competencies.length}
+          icon={<Award size={20} />}
+          colour={COLOURS.blue}
+        />
+        <StatCard
+          label="Categories"
+          value={uniqueCategories}
+          icon={<BookOpen size={20} />}
+          colour={COLOURS.purple}
+        />
+        <StatCard
+          label="Team Members Assessed"
+          value={assessedMembers}
+          icon={<Users size={20} />}
+          colour={COLOURS.teal}
+        />
+        <StatCard
+          label="Avg Coverage"
+          value={avgCoverage + '%'}
+          icon={<TrendingUp size={20} />}
+          colour={COLOURS.green}
+        />
       </div>
 
       {/* Category Chart */}
       {competencies.length > 0 && (
-        <div className="rounded-xl border p-5 mb-6" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
-          <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-text)' }}>Competencies by Category</h3>
+        <div
+          className="rounded-xl border p-5 mb-6"
+          style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+        >
+          <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-text)' }}>
+            Competencies by Category
+          </h3>
           <BarChart bars={categoryBars} height={150} />
         </div>
       )}
@@ -366,9 +436,7 @@ export function CompetenciesPage() {
           matrixLookup={matrixLookup}
           popover={popover}
           popoverRef={popoverRef}
-          onCellClick={(userId, competencyId, rect) =>
-            setPopover({ userId, competencyId, rect })
-          }
+          onCellClick={(userId, competencyId, rect) => setPopover({ userId, competencyId, rect })}
           onAssess={handleAssess}
           onClear={handleClearAssessment}
           onClosePopover={() => setPopover(null)}
@@ -445,18 +513,28 @@ function CompetenciesTab({
               style={{ background: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
             >
               <button
-                onClick={() => { setCategoryFilter('all'); setShowCategoryDropdown(false); }}
+                onClick={() => {
+                  setCategoryFilter('all');
+                  setShowCategoryDropdown(false);
+                }}
                 className="w-full text-left px-3 py-1.5 text-sm hover:bg-subtle transition-colors"
-                style={{ color: categoryFilter === 'all' ? 'var(--color-primary)' : 'var(--color-text)' }}
+                style={{
+                  color: categoryFilter === 'all' ? 'var(--color-primary)' : 'var(--color-text)',
+                }}
               >
                 All Categories
               </button>
               {categories.map((cat) => (
                 <button
                   key={cat}
-                  onClick={() => { setCategoryFilter(cat); setShowCategoryDropdown(false); }}
+                  onClick={() => {
+                    setCategoryFilter(cat);
+                    setShowCategoryDropdown(false);
+                  }}
                   className="w-full text-left px-3 py-1.5 text-sm hover:bg-subtle transition-colors"
-                  style={{ color: categoryFilter === cat ? 'var(--color-primary)' : 'var(--color-text)' }}
+                  style={{
+                    color: categoryFilter === cat ? 'var(--color-primary)' : 'var(--color-text)',
+                  }}
                 >
                   {cat}
                 </button>
@@ -478,97 +556,98 @@ function CompetenciesTab({
           {grouped.map(([category, comps]) => {
             const catColour = categoryColourMap[category] || 'var(--color-text-secondary)';
             return (
-            <div key={category}>
-              <div className="mb-3">
-                <span
-                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
-                  style={{ backgroundColor: catColour + '18', color: catColour }}
-                >
-                  {category}
-                </span>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {comps.map((comp) => (
-                  <div
-                    key={comp.id}
-                    className="rounded-lg border p-4 hover:shadow-md transition-shadow"
-                    style={{
-                      background: 'var(--color-surface)',
-                      borderColor: 'var(--color-border)',
-                    }}
+              <div key={category}>
+                <div className="mb-3">
+                  <span
+                    className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                    style={{ backgroundColor: catColour + '18', color: catColour }}
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h4
-                            className="font-medium truncate"
-                            style={{ color: 'var(--color-text)' }}
-                          >
-                            {comp.name}
-                          </h4>
-                          {comp.requires_certification && (
-                            <span
-                              className="flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full shrink-0"
-                              style={{ background: '#dbeafe', color: '#1d4ed8' }}
-                              title={
-                                comp.certification_validity_months
-                                  ? `Certification valid for ${comp.certification_validity_months} months`
-                                  : 'Certification required'
-                              }
+                    {category}
+                  </span>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {comps.map((comp) => (
+                    <div
+                      key={comp.id}
+                      className="rounded-lg border p-4 hover:shadow-md transition-shadow"
+                      style={{
+                        background: 'var(--color-surface)',
+                        borderColor: 'var(--color-border)',
+                      }}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <h4
+                              className="font-medium truncate"
+                              style={{ color: 'var(--color-text)' }}
                             >
-                              <Shield size={10} />
-                              Cert
-                            </span>
+                              {comp.name}
+                            </h4>
+                            {comp.requires_certification && (
+                              <span
+                                className="flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full shrink-0"
+                                style={{ background: '#dbeafe', color: '#1d4ed8' }}
+                                title={
+                                  comp.certification_validity_months
+                                    ? `Certification valid for ${comp.certification_validity_months} months`
+                                    : 'Certification required'
+                                }
+                              >
+                                <Shield size={10} />
+                                Cert
+                              </span>
+                            )}
+                          </div>
+                          {comp.description && (
+                            <p
+                              className="text-sm mt-1 line-clamp-2"
+                              style={{ color: 'var(--color-text-secondary)' }}
+                            >
+                              {comp.description}
+                            </p>
+                          )}
+                          {comp.levels && comp.levels.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {comp.levels.map((lvl) => (
+                                <span
+                                  key={lvl}
+                                  className="text-xs px-1.5 py-0.5 rounded"
+                                  style={{
+                                    background: 'var(--color-grey-1)',
+                                    color: 'var(--color-text-secondary)',
+                                  }}
+                                >
+                                  {lvl}
+                                </span>
+                              ))}
+                            </div>
                           )}
                         </div>
-                        {comp.description && (
-                          <p
-                            className="text-sm mt-1 line-clamp-2"
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            onClick={() => onEdit(comp)}
+                            className="p-1.5 rounded hover:bg-subtle transition-colors"
                             style={{ color: 'var(--color-text-secondary)' }}
+                            title="Edit"
                           >
-                            {comp.description}
-                          </p>
-                        )}
-                        {comp.levels && comp.levels.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {comp.levels.map((lvl) => (
-                              <span
-                                key={lvl}
-                                className="text-xs px-1.5 py-0.5 rounded"
-                                style={{
-                                  background: 'var(--color-grey-1)',
-                                  color: 'var(--color-text-secondary)',
-                                }}
-                              >
-                                {lvl}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button
-                          onClick={() => onEdit(comp)}
-                          className="p-1.5 rounded hover:bg-subtle transition-colors"
-                          style={{ color: 'var(--color-text-secondary)' }}
-                          title="Edit"
-                        >
-                          <Edit3 size={14} />
-                        </button>
-                        <button
-                          onClick={() => onDelete(comp.id)}
-                          className="p-1.5 rounded hover:bg-red-50 transition-colors text-red-500"
-                          title="Delete"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                            <Edit3 size={14} />
+                          </button>
+                          <button
+                            onClick={() => onDelete(comp.id)}
+                            className="p-1.5 rounded hover:bg-red-50 transition-colors text-red-500"
+                            title="Delete"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          )})}
+            );
+          })}
         </div>
       )}
     </div>
@@ -777,10 +856,7 @@ function MatrixTab({
           </div>
         ))}
         <div className="flex items-center gap-1.5">
-          <div
-            className="w-3 h-3 rounded"
-            style={{ background: 'var(--color-grey-1)' }}
-          />
+          <div className="w-3 h-3 rounded" style={{ background: 'var(--color-grey-1)' }} />
           <span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
             Not Assessed
           </span>
@@ -808,7 +884,9 @@ function CompetencyModal({
   onClose: () => void;
 }) {
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
@@ -915,10 +993,14 @@ function CompetencyModal({
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => setForm((f) => ({ ...f, requires_certification: !f.requires_certification }))}
+              onClick={() =>
+                setForm((f) => ({ ...f, requires_certification: !f.requires_certification }))
+              }
               className="relative w-10 h-5 rounded-full transition-colors"
               style={{
-                background: form.requires_certification ? 'var(--color-primary)' : 'var(--color-grey-2, #d1d5db)',
+                background: form.requires_certification
+                  ? 'var(--color-primary)'
+                  : 'var(--color-grey-2, #d1d5db)',
               }}
             >
               <span

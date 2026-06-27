@@ -1,5 +1,16 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { Plus, X, Users, Calendar, CheckCircle2, Circle, Filter, MessageSquare, CheckCircle, ClipboardList } from 'lucide-react';
+import {
+  Plus,
+  X,
+  Users,
+  Calendar,
+  CheckCircle2,
+  Circle,
+  Filter,
+  MessageSquare,
+  CheckCircle,
+  ClipboardList,
+} from 'lucide-react';
 import { useWorkspaceStore } from '../stores/workspaceStore';
 import { useAuthStore } from '../stores/authStore';
 import { meetingsApi } from '../api/meetings';
@@ -84,13 +95,26 @@ export function OneToOnesPage() {
 
   const selectedMeeting = meetings.find((m) => m.id === selectedMeetingId) || null;
 
-  const completedCount = useMemo(() => meetings.filter((m) => m.status === 'completed').length, [meetings]);
-  const upcomingCount = useMemo(() => meetings.filter((m) => m.status === 'scheduled' || new Date(m.scheduled_date) > new Date()).length, [meetings]);
-  const openActions = useMemo(() => meetings.reduce((sum, m) => sum + m.actions.filter((a) => a.status === 'open').length, 0), [meetings]);
+  const completedCount = useMemo(
+    () => meetings.filter((m) => m.status === 'completed').length,
+    [meetings],
+  );
+  const upcomingCount = useMemo(
+    () =>
+      meetings.filter((m) => m.status === 'scheduled' || new Date(m.scheduled_date) > new Date())
+        .length,
+    [meetings],
+  );
+  const openActions = useMemo(
+    () => meetings.reduce((sum, m) => sum + m.actions.filter((a) => a.status === 'open').length, 0),
+    [meetings],
+  );
 
   const statusSegments = useMemo(() => {
     const counts: Record<string, number> = {};
-    meetings.forEach((m) => { counts[m.status] = (counts[m.status] || 0) + 1; });
+    meetings.forEach((m) => {
+      counts[m.status] = (counts[m.status] || 0) + 1;
+    });
     return [
       { label: 'Scheduled', value: counts['scheduled'] || 0, colour: COLOURS.blue },
       { label: 'Completed', value: counts['completed'] || 0, colour: COLOURS.green },
@@ -100,7 +124,9 @@ export function OneToOnesPage() {
 
   const moodBars = useMemo(() => {
     const counts: Record<string, number> = {};
-    meetings.forEach((m) => { if (m.mood) counts[m.mood] = (counts[m.mood] || 0) + 1; });
+    meetings.forEach((m) => {
+      if (m.mood) counts[m.mood] = (counts[m.mood] || 0) + 1;
+    });
     if (Object.keys(counts).length === 0) return [];
     return [
       { label: 'Great', value: counts['great'] || 0, colour: COLOURS.green },
@@ -155,22 +181,62 @@ export function OneToOnesPage() {
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard label="Total Meetings" value={meetings.length} icon={<MessageSquare size={20} />} colour={COLOURS.blue} />
-        <StatCard label="Completed" value={completedCount} icon={<CheckCircle size={20} />} colour={COLOURS.green} />
-        <StatCard label="Upcoming" value={upcomingCount} icon={<Calendar size={20} />} colour={COLOURS.purple} />
-        <StatCard label="Open Actions" value={openActions} icon={<ClipboardList size={20} />} colour={COLOURS.amber} />
+        <StatCard
+          label="Total Meetings"
+          value={meetings.length}
+          icon={<MessageSquare size={20} />}
+          colour={COLOURS.blue}
+        />
+        <StatCard
+          label="Completed"
+          value={completedCount}
+          icon={<CheckCircle size={20} />}
+          colour={COLOURS.green}
+        />
+        <StatCard
+          label="Upcoming"
+          value={upcomingCount}
+          icon={<Calendar size={20} />}
+          colour={COLOURS.purple}
+        />
+        <StatCard
+          label="Open Actions"
+          value={openActions}
+          icon={<ClipboardList size={20} />}
+          colour={COLOURS.amber}
+        />
       </div>
 
       {/* Charts */}
       {meetings.length > 0 && (
-        <div className={`grid grid-cols-1 ${moodBars.length > 0 ? 'lg:grid-cols-2' : ''} gap-4 mb-6`}>
-          <div className="rounded-xl border p-5" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
-            <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-text)' }}>Meeting Status</h3>
-            <DonutChart segments={statusSegments} size={120} centerValue={meetings.length} centerLabel="total" />
+        <div
+          className={`grid grid-cols-1 ${moodBars.length > 0 ? 'lg:grid-cols-2' : ''} gap-4 mb-6`}
+        >
+          <div
+            className="rounded-xl border p-5"
+            style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+          >
+            <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-text)' }}>
+              Meeting Status
+            </h3>
+            <DonutChart
+              segments={statusSegments}
+              size={120}
+              centerValue={meetings.length}
+              centerLabel="total"
+            />
           </div>
           {moodBars.length > 0 && (
-            <div className="rounded-xl border p-5" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
-              <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-text)' }}>Mood Trend</h3>
+            <div
+              className="rounded-xl border p-5"
+              style={{
+                backgroundColor: 'var(--color-surface)',
+                borderColor: 'var(--color-border)',
+              }}
+            >
+              <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-text)' }}>
+                Mood Trend
+              </h3>
               <BarChart bars={moodBars} height={130} />
             </div>
           )}
@@ -184,7 +250,11 @@ export function OneToOnesPage() {
           {meetings.length === 0 ? (
             <div className="flex-1 flex items-center justify-center py-16">
               <div className="text-center">
-                <Users size={48} className="mx-auto mb-3 opacity-30" style={{ color: 'var(--color-text-secondary)' }} />
+                <Users
+                  size={48}
+                  className="mx-auto mb-3 opacity-30"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                />
                 <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
                   No meetings found. Schedule one to get started.
                 </p>
@@ -210,7 +280,10 @@ export function OneToOnesPage() {
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="font-medium text-sm truncate" style={{ color: 'var(--color-text)' }}>
+                      <div
+                        className="font-medium text-sm truncate"
+                        style={{ color: 'var(--color-text)' }}
+                      >
                         {getMemberName(meeting.report_id)}
                       </div>
                       <div className="flex items-center gap-2 mt-1">
@@ -272,7 +345,6 @@ export function OneToOnesPage() {
     </div>
   );
 }
-
 
 // --- Meeting Detail Panel ---
 
@@ -361,7 +433,10 @@ function MeetingDetail({
       style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)' }}
     >
       {/* Detail header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: 'var(--color-border)' }}>
+      <div
+        className="flex items-center justify-between px-4 py-3 border-b"
+        style={{ borderColor: 'var(--color-border)' }}
+      >
         <div>
           <div className="font-semibold text-sm" style={{ color: 'var(--color-text)' }}>
             {getMemberName(meeting.report_id)}
@@ -390,7 +465,10 @@ function MeetingDetail({
       <div className="p-4 space-y-5">
         {/* Mood selector */}
         <div>
-          <label className="block text-xs font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
+          <label
+            className="block text-xs font-medium mb-2"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
             Mood
           </label>
           <div className="flex gap-2">
@@ -415,7 +493,10 @@ function MeetingDetail({
 
         {/* Notes */}
         <div>
-          <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--color-text-secondary)' }}>
+          <label
+            className="block text-xs font-medium mb-1.5"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
             Notes
           </label>
           <textarea
@@ -440,7 +521,10 @@ function MeetingDetail({
 
         {/* Actions */}
         <div>
-          <label className="block text-xs font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
+          <label
+            className="block text-xs font-medium mb-2"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
             Actions ({meeting.actions.filter((a) => a.status === 'open').length} open)
           </label>
           <div className="space-y-1.5 mb-3">
@@ -450,21 +534,23 @@ function MeetingDetail({
               </p>
             ) : (
               meeting.actions.map((action) => (
-                <div
-                  key={action.id}
-                  className="flex items-start gap-2 group"
-                >
+                <div key={action.id} className="flex items-start gap-2 group">
                   <button
                     onClick={() => handleToggleAction(action)}
                     className="mt-0.5 shrink-0"
-                    style={{ color: action.status === 'done' ? '#10b981' : 'var(--color-text-secondary)' }}
+                    style={{
+                      color: action.status === 'done' ? '#10b981' : 'var(--color-text-secondary)',
+                    }}
                   >
                     {action.status === 'done' ? <CheckCircle2 size={16} /> : <Circle size={16} />}
                   </button>
                   <span
                     className="text-sm"
                     style={{
-                      color: action.status === 'done' ? 'var(--color-text-secondary)' : 'var(--color-text)',
+                      color:
+                        action.status === 'done'
+                          ? 'var(--color-text-secondary)'
+                          : 'var(--color-text)',
                       textDecoration: action.status === 'done' ? 'line-through' : 'none',
                     }}
                   >
@@ -504,7 +590,6 @@ function MeetingDetail({
   );
 }
 
-
 // --- Create Meeting Modal ---
 
 function CreateMeetingModal({
@@ -519,13 +604,13 @@ function CreateMeetingModal({
   onCreated: () => void;
 }) {
   const [reportId, setReportId] = useState('');
-  const [scheduledDate, setScheduledDate] = useState(
-    new Date().toISOString().split('T')[0]
-  );
+  const [scheduledDate, setScheduledDate] = useState(new Date().toISOString().split('T')[0]);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
@@ -550,7 +635,10 @@ function CreateMeetingModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      onClick={onClose}
+    >
       <div
         className="w-full max-w-md rounded-xl shadow-2xl p-6"
         style={{ backgroundColor: 'var(--color-surface)' }}
@@ -571,7 +659,10 @@ function CreateMeetingModal({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>
+            <label
+              className="block text-sm font-medium mb-1"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
               Report
             </label>
             <select
@@ -595,7 +686,10 @@ function CreateMeetingModal({
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>
+            <label
+              className="block text-sm font-medium mb-1"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
               Date
             </label>
             <input

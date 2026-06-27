@@ -26,7 +26,9 @@ export function TaskChecklist({ items, onAdd, onToggle, onDelete }: TaskChecklis
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>Checklist</span>
+        <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+          Checklist
+        </span>
         {total > 0 && (
           <span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
             {done}/{total}
@@ -35,7 +37,10 @@ export function TaskChecklist({ items, onAdd, onToggle, onDelete }: TaskChecklis
       </div>
 
       {total > 0 && (
-        <div className="w-full rounded-full h-1.5" style={{ backgroundColor: 'var(--color-grey-2)' }}>
+        <div
+          className="w-full rounded-full h-1.5"
+          style={{ backgroundColor: 'var(--color-grey-2)' }}
+        >
           <div
             className="h-1.5 rounded-full transition-colors"
             style={{ width: `${progress}%`, backgroundColor: 'var(--color-success)' }}
@@ -46,7 +51,11 @@ export function TaskChecklist({ items, onAdd, onToggle, onDelete }: TaskChecklis
       <div className="space-y-1">
         {items.map((item) => (
           <div key={item.id} className="flex items-center gap-2 group">
-            <GripVertical size={14} className="opacity-0 group-hover:opacity-100 cursor-grab" style={{ color: 'var(--color-text-secondary)' }} />
+            <GripVertical
+              size={14}
+              className="opacity-0 group-hover:opacity-100 cursor-grab"
+              style={{ color: 'var(--color-text-secondary)' }}
+            />
             <input
               type="checkbox"
               checked={item.is_completed}
@@ -56,7 +65,9 @@ export function TaskChecklist({ items, onAdd, onToggle, onDelete }: TaskChecklis
             />
             <span
               className={`flex-1 text-sm ${item.is_completed ? 'line-through' : ''}`}
-              style={{ color: item.is_completed ? 'var(--color-text-secondary)' : 'var(--color-text)' }}
+              style={{
+                color: item.is_completed ? 'var(--color-text-secondary)' : 'var(--color-text)',
+              }}
             >
               {item.title}
             </span>
@@ -79,7 +90,14 @@ export function TaskChecklist({ items, onAdd, onToggle, onDelete }: TaskChecklis
           onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
           placeholder="Add item..."
           className="flex-1 px-2 py-1 text-sm border rounded outline-none focus:ring-1"
-          style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
+          style={
+            {
+              borderColor: 'var(--color-border)',
+              backgroundColor: 'var(--color-surface)',
+              color: 'var(--color-text)',
+              '--tw-ring-color': 'var(--color-primary)',
+            } as React.CSSProperties
+          }
         />
         <button
           onClick={handleAdd}

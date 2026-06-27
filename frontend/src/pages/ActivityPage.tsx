@@ -13,26 +13,29 @@ export function ActivityPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
 
-  const fetchActivities = useCallback(async (offset = 0) => {
-    if (!workspace) return;
-    const isInitial = offset === 0;
-    if (isInitial) setLoading(true);
-    else setLoadingMore(true);
+  const fetchActivities = useCallback(
+    async (offset = 0) => {
+      if (!workspace) return;
+      const isInitial = offset === 0;
+      if (isInitial) setLoading(true);
+      else setLoadingMore(true);
 
-    try {
-      const { data } = await activityApi.list(workspace.id, { limit: 50, offset });
-      if (isInitial) {
-        setActivities(data);
-      } else {
-        setActivities((prev) => [...prev, ...data]);
+      try {
+        const { data } = await activityApi.list(workspace.id, { limit: 50, offset });
+        if (isInitial) {
+          setActivities(data);
+        } else {
+          setActivities((prev) => [...prev, ...data]);
+        }
+        setHasMore(data.length === 50);
+      } catch {
+        // ignore
       }
-      setHasMore(data.length === 50);
-    } catch {
-      // ignore
-    }
-    setLoading(false);
-    setLoadingMore(false);
-  }, [workspace]);
+      setLoading(false);
+      setLoadingMore(false);
+    },
+    [workspace],
+  );
 
   useEffect(() => {
     fetchActivities();
@@ -41,7 +44,10 @@ export function ActivityPage() {
   return (
     <div className="p-6 max-w-3xl mx-auto">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
+        <h2
+          className="text-xl font-semibold flex items-center gap-2"
+          style={{ color: 'var(--color-text)' }}
+        >
           <ActivityIcon size={22} />
           Activity Feed
         </h2>
@@ -72,7 +78,10 @@ export function ActivityPage() {
         ) : (
           <div className="divide-y" style={{ borderColor: 'var(--color-border)' }}>
             {activities.map((a) => (
-              <div key={a.id} className="flex items-start gap-3 px-5 py-3.5 hover:bg-subtle transition-colors">
+              <div
+                key={a.id}
+                className="flex items-start gap-3 px-5 py-3.5 hover:bg-subtle transition-colors"
+              >
                 <Avatar
                   name={a.actor.name}
                   initials={a.actor.initials || undefined}
@@ -81,12 +90,9 @@ export function ActivityPage() {
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm" style={{ color: 'var(--color-text)' }}>
-                    <span className="font-medium">{a.actor.name}</span>
-                    {' '}{a.action}{' '}
+                    <span className="font-medium">{a.actor.name}</span> {a.action}{' '}
                     <span className="opacity-70">{a.entity_type}</span>
-                    {a.entity_name && (
-                      <span className="font-medium"> "{a.entity_name}"</span>
-                    )}
+                    {a.entity_name && <span className="font-medium"> "{a.entity_name}"</span>}
                   </p>
                   <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-secondary)' }}>
                     {formatTime(a.created_at)}
@@ -98,7 +104,10 @@ export function ActivityPage() {
         )}
 
         {hasMore && activities.length > 0 && (
-          <div className="px-5 py-3 border-t text-center" style={{ borderColor: 'var(--color-border)' }}>
+          <div
+            className="px-5 py-3 border-t text-center"
+            style={{ borderColor: 'var(--color-border)' }}
+          >
             <button
               onClick={() => fetchActivities(activities.length)}
               disabled={loadingMore}
@@ -125,5 +134,9 @@ function formatTime(dateStr: string): string {
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days}d ago`;
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: d.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined });
+  return d.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: d.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined,
+  });
 }

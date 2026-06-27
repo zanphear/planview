@@ -24,17 +24,15 @@ export function LoadingSpinner({ size = 32, message, fullPage = false }: Loading
         />
       </svg>
       {message && (
-        <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>{message}</p>
+        <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+          {message}
+        </p>
       )}
     </div>
   );
 
   if (fullPage) {
-    return (
-      <div className="flex items-center justify-center h-full min-h-[200px]">
-        {spinner}
-      </div>
-    );
+    return <div className="flex items-center justify-center h-full min-h-[200px]">{spinner}</div>;
   }
 
   return spinner;

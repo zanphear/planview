@@ -2,7 +2,17 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
-import { Bold, Italic, List, ListOrdered, Heading2, Code, Link as LinkIcon, Undo, Redo } from 'lucide-react';
+import {
+  Bold,
+  Italic,
+  List,
+  ListOrdered,
+  Heading2,
+  Code,
+  Link as LinkIcon,
+  Undo,
+  Redo,
+} from 'lucide-react';
 import { useCallback, useEffect } from 'react';
 
 interface RichTextEditorProps {
@@ -11,7 +21,11 @@ interface RichTextEditorProps {
   placeholder?: string;
 }
 
-export function RichTextEditor({ content, onChange, placeholder = 'Add a description...' }: RichTextEditorProps) {
+export function RichTextEditor({
+  content,
+  onChange,
+  placeholder = 'Add a description...',
+}: RichTextEditorProps) {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -29,7 +43,8 @@ export function RichTextEditor({ content, onChange, placeholder = 'Add a descrip
     },
     editorProps: {
       attributes: {
-        class: 'prose prose-sm max-w-none focus:outline-none min-h-[80px] px-3 py-2 text-sm text-foreground',
+        class:
+          'prose prose-sm max-w-none focus:outline-none min-h-[80px] px-3 py-2 text-sm text-foreground',
       },
     },
   });
@@ -102,11 +117,7 @@ export function RichTextEditor({ content, onChange, placeholder = 'Add a descrip
         >
           <Code size={14} />
         </ToolButton>
-        <ToolButton
-          active={editor.isActive('link')}
-          onClick={setLink}
-          title="Link"
-        >
+        <ToolButton active={editor.isActive('link')} onClick={setLink} title="Link">
           <LinkIcon size={14} />
         </ToolButton>
         <div className="w-px h-4 bg-outline mx-0.5" />
@@ -154,8 +165,8 @@ function ToolButton({
         active
           ? 'bg-accent text-white'
           : disabled
-          ? 'text-muted-foreground opacity-30'
-          : 'text-muted-foreground hover:bg-muted'
+            ? 'text-muted-foreground opacity-30'
+            : 'text-muted-foreground hover:bg-muted'
       }`}
     >
       {children}

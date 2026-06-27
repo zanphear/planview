@@ -16,12 +16,7 @@ import { useWSEvent } from '../hooks/WebSocketContext';
 import { tasksApi, type Task } from '../api/tasks';
 import { membersApi } from '../api/users';
 import { useProject } from '../api/queries/projects';
-import {
-  useProjectTasks,
-  useCreateTask,
-  useBulkUpdateTasks,
-  taskKeys,
-} from '../api/queries/tasks';
+import { useProjectTasks, useCreateTask, useBulkUpdateTasks, taskKeys } from '../api/queries/tasks';
 
 // Pending placeholder shaped like the board (one skeleton column per status).
 function BoardSkeleton() {
@@ -34,7 +29,10 @@ function BoardSkeleton() {
             <div
               key={card}
               className="rounded-xl border p-3 space-y-2"
-              style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+              style={{
+                backgroundColor: 'var(--color-surface)',
+                borderColor: 'var(--color-border)',
+              }}
             >
               <Skeleton className="h-4 w-3/4" />
               <Skeleton className="h-3 w-1/2" />
@@ -91,27 +89,39 @@ export function ProjectBoardPage() {
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Real-time: task created in this project
-  useWSEvent('task.created', (data) => {
-    if (data.actor_id === userId) return;
-    const task = data.task as Task;
-    if (task.project_id === projectId) addTask(task);
-  }, [userId, projectId, addTask]);
+  useWSEvent(
+    'task.created',
+    (data) => {
+      if (data.actor_id === userId) return;
+      const task = data.task as Task;
+      if (task.project_id === projectId) addTask(task);
+    },
+    [userId, projectId, addTask],
+  );
 
   // Real-time: task updated
-  useWSEvent('task.updated', (data) => {
-    const task = data.task as Task;
-    if (task.project_id === projectId) {
-      updateTaskInStore(task);
-    } else {
-      // Task was moved out of this project
-      removeTaskFromStore(task.id);
-    }
-  }, [projectId, updateTaskInStore, removeTaskFromStore]);
+  useWSEvent(
+    'task.updated',
+    (data) => {
+      const task = data.task as Task;
+      if (task.project_id === projectId) {
+        updateTaskInStore(task);
+      } else {
+        // Task was moved out of this project
+        removeTaskFromStore(task.id);
+      }
+    },
+    [projectId, updateTaskInStore, removeTaskFromStore],
+  );
 
   // Real-time: task deleted
-  useWSEvent('task.deleted', (data) => {
-    removeTaskFromStore(data.task_id as string);
-  }, [removeTaskFromStore]);
+  useWSEvent(
+    'task.deleted',
+    (data) => {
+      removeTaskFromStore(data.task_id as string);
+    },
+    [removeTaskFromStore],
+  );
 
   const handleCreateTask = useCallback(() => {
     if (!workspace || !projectId || !newTaskName.trim()) return;
@@ -122,7 +132,8 @@ export function ProjectBoardPage() {
   const filteredTasks = useMemo(() => {
     let result = tasks;
     if (filters.status) result = result.filter((t) => t.status === filters.status);
-    if (filters.assignee) result = result.filter((t) => t.assignees.some((a) => a.id === filters.assignee));
+    if (filters.assignee)
+      result = result.filter((t) => t.assignees.some((a) => a.id === filters.assignee));
     return result;
   }, [tasks, filters]);
 
@@ -131,7 +142,7 @@ export function ProjectBoardPage() {
       const latest = tasks.find((t) => t.id === task.id) || task;
       setSelectedTask(latest);
     },
-    [tasks]
+    [tasks],
   );
 
   const handleToggleSelect = useCallback((taskId: string) => {
@@ -143,21 +154,34 @@ export function ProjectBoardPage() {
     });
   }, []);
 
-  const handleBulkStatus = useCallback(async (status: string) => {
-    if (!workspace) return;
-    try {
-      await bulkUpdate.mutateAsync({ task_ids: Array.from(selectedIds), status });
-      setSelectedIds(new Set());
-    } catch (err) { console.error('Bulk status failed:', err); }
-  }, [workspace, selectedIds, bulkUpdate]);
+  const handleBulkStatus = useCallback(
+    async (status: string) => {
+      if (!workspace) return;
+      try {
+        await bulkUpdate.mutateAsync({ task_ids: Array.from(selectedIds), status });
+        setSelectedIds(new Set());
+      } catch (err) {
+        console.error('Bulk status failed:', err);
+      }
+    },
+    [workspace, selectedIds, bulkUpdate],
+  );
 
-  const handleBulkAssign = useCallback(async (assigneeId: string) => {
-    if (!workspace) return;
-    try {
-      await bulkUpdate.mutateAsync({ task_ids: Array.from(selectedIds), assignee_ids: [assigneeId] });
-      setSelectedIds(new Set());
-    } catch (err) { console.error('Bulk assign failed:', err); }
-  }, [workspace, selectedIds, bulkUpdate]);
+  const handleBulkAssign = useCallback(
+    async (assigneeId: string) => {
+      if (!workspace) return;
+      try {
+        await bulkUpdate.mutateAsync({
+          task_ids: Array.from(selectedIds),
+          assignee_ids: [assigneeId],
+        });
+        setSelectedIds(new Set());
+      } catch (err) {
+        console.error('Bulk assign failed:', err);
+      }
+    },
+    [workspace, selectedIds, bulkUpdate],
+  );
 
   const pendingDeleteRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -191,21 +215,27 @@ export function ProjectBoardPage() {
     }, 5000);
   }, [workspace, projectId, selectedIds, qc]);
 
-  const handleExport = useCallback(async (fmt: string) => {
-    if (!workspace) return;
-    const token = localStorage.getItem('access_token');
-    const res = await fetch(`/api/v1/workspaces/${workspace.id}/export/tasks.${fmt}?project_id=${projectId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${project?.name || 'tasks'}.${fmt}`;
-    a.click();
-    URL.revokeObjectURL(url);
-    Toast.show(`Exported as ${fmt.toUpperCase()}`);
-  }, [workspace, projectId, project]);
+  const handleExport = useCallback(
+    async (fmt: string) => {
+      if (!workspace) return;
+      const token = localStorage.getItem('access_token');
+      const res = await fetch(
+        `/api/v1/workspaces/${workspace.id}/export/tasks.${fmt}?project_id=${projectId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${project?.name || 'tasks'}.${fmt}`;
+      a.click();
+      URL.revokeObjectURL(url);
+      Toast.show(`Exported as ${fmt.toUpperCase()}`);
+    },
+    [workspace, projectId, project],
+  );
 
   // ── Board render: four explicit states ──────────────────────────────────────
   const renderBoard = () => {
@@ -220,7 +250,9 @@ export function ProjectBoardPage() {
             Couldn't load tasks
           </h3>
           <p className="text-sm max-w-xs mb-4" style={{ color: 'var(--color-text-secondary)' }}>
-            {tasksQuery.error instanceof Error ? tasksQuery.error.message : 'Something went wrong fetching this board.'}
+            {tasksQuery.error instanceof Error
+              ? tasksQuery.error.message
+              : 'Something went wrong fetching this board.'}
           </p>
           <button
             onClick={() => tasksQuery.refetch()}
@@ -271,7 +303,9 @@ export function ProjectBoardPage() {
           {project && (
             <>
               <div className="w-4 h-4 rounded" style={{ backgroundColor: project.colour }} />
-              <h2 className="text-xl font-semibold" style={{ color: 'var(--color-text)' }}>{project.name}</h2>
+              <h2 className="text-xl font-semibold" style={{ color: 'var(--color-text)' }}>
+                {project.name}
+              </h2>
             </>
           )}
         </div>
@@ -289,7 +323,10 @@ export function ProjectBoardPage() {
             </button>
             <div
               className="absolute right-0 top-full mt-1 w-28 rounded-lg border shadow-lg py-1 hidden group-hover:block z-10"
-              style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+              style={{
+                backgroundColor: 'var(--color-surface)',
+                borderColor: 'var(--color-border)',
+              }}
             >
               {['csv', 'json', 'ics'].map((fmt) => (
                 <button
@@ -311,7 +348,14 @@ export function ProjectBoardPage() {
             onKeyDown={(e) => e.key === 'Enter' && handleCreateTask()}
             placeholder="New task..."
             className="px-3 py-1.5 text-sm border rounded-lg outline-none focus:ring-2 w-60"
-            style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
+            style={
+              {
+                borderColor: 'var(--color-border)',
+                backgroundColor: 'var(--color-surface)',
+                color: 'var(--color-text)',
+                '--tw-ring-color': 'var(--color-primary)',
+              } as React.CSSProperties
+            }
           />
           <button
             onClick={handleCreateTask}
@@ -326,9 +370,7 @@ export function ProjectBoardPage() {
       </div>
 
       {/* Board (four states: pending / error / empty / success) */}
-      <div className="flex-1 overflow-hidden">
-        {renderBoard()}
-      </div>
+      <div className="flex-1 overflow-hidden">{renderBoard()}</div>
 
       {/* Bulk action bar */}
       {selectedIds.size > 0 && (
@@ -344,11 +386,7 @@ export function ProjectBoardPage() {
 
       {/* Task detail panel */}
       {selectedTask && (
-        <TaskDetail
-          task={selectedTask}
-          members={members}
-          onClose={() => setSelectedTask(null)}
-        />
+        <TaskDetail task={selectedTask} members={members} onClose={() => setSelectedTask(null)} />
       )}
     </div>
   );

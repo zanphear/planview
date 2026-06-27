@@ -1,7 +1,15 @@
 import { useEffect, useState, useMemo } from 'react';
 import {
-  startOfWeek, endOfWeek, addWeeks, subWeeks, addDays,
-  format, eachDayOfInterval, isWeekend, isToday, isSameDay,
+  startOfWeek,
+  endOfWeek,
+  addWeeks,
+  subWeeks,
+  addDays,
+  format,
+  eachDayOfInterval,
+  isWeekend,
+  isToday,
+  isSameDay,
 } from 'date-fns';
 import { ChevronLeft, ChevronRight, Plus, Trash2, Edit2, X, Phone, Clock, Sun } from 'lucide-react';
 import { useWorkspaceStore } from '../stores/workspaceStore';
@@ -95,7 +103,11 @@ export function RotaPage() {
             value={weeksToShow}
             onChange={(e) => setWeeksToShow(Number(e.target.value))}
             className="text-sm px-2 py-1.5 rounded-lg border"
-            style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+            style={{
+              borderColor: 'var(--color-border)',
+              backgroundColor: 'var(--color-surface)',
+              color: 'var(--color-text)',
+            }}
           >
             <option value={1}>1 week</option>
             <option value={2}>2 weeks</option>
@@ -114,14 +126,19 @@ export function RotaPage() {
 
       {/* Date range label */}
       <div className="text-sm mb-3" style={{ color: 'var(--color-text-secondary)' }}>
-        {format(dateRange[0], 'd MMM yyyy')}, {format(dateRange[dateRange.length - 1], 'd MMM yyyy')}
+        {format(dateRange[0], 'd MMM yyyy')},{' '}
+        {format(dateRange[dateRange.length - 1], 'd MMM yyyy')}
       </div>
 
       {/* Rota sections */}
       {rotas.length === 0 ? (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <Phone size={48} className="mx-auto mb-3 opacity-30" style={{ color: 'var(--color-text-secondary)' }} />
+            <Phone
+              size={48}
+              className="mx-auto mb-3 opacity-30"
+              style={{ color: 'var(--color-text-secondary)' }}
+            />
             <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
               No rotas configured yet. Create one to get started.
             </p>
@@ -168,11 +185,17 @@ export function RotaPage() {
   );
 }
 
-
 // --- Rota Section (one per rota) ---
 
 function RotaSection({
-  rota, dateRange, members, workspaceId, onUpdate, onEdit, addingEntry, onToggleAddEntry,
+  rota,
+  dateRange,
+  members,
+  workspaceId,
+  onUpdate,
+  onEdit,
+  addingEntry,
+  onToggleAddEntry,
 }: {
   rota: Rota;
   dateRange: Date[];
@@ -186,11 +209,12 @@ function RotaSection({
   const Icon = ROTA_TYPE_ICONS[rota.rota_type] || Phone;
   const typeInfo = ROTA_TYPE_LABELS[rota.rota_type] || { label: rota.rota_type, desc: '' };
 
-  const timeLabel = rota.rota_type === 'weekday' && rota.start_time && rota.end_time
-    ? `${rota.start_time.slice(0, 5)} - ${rota.end_time.slice(0, 5)}`
-    : rota.rota_type === '24hour'
-      ? '24h'
-      : '';
+  const timeLabel =
+    rota.rota_type === 'weekday' && rota.start_time && rota.end_time
+      ? `${rota.start_time.slice(0, 5)} - ${rota.end_time.slice(0, 5)}`
+      : rota.rota_type === '24hour'
+        ? '24h'
+        : '';
 
   const handleDeleteEntry = async (entryId: string) => {
     try {
@@ -202,15 +226,26 @@ function RotaSection({
   };
 
   return (
-    <div className="rounded-xl border" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)' }}>
+    <div
+      className="rounded-xl border"
+      style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)' }}
+    >
       {/* Rota header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: 'var(--color-border)' }}>
+      <div
+        className="flex items-center justify-between px-4 py-3 border-b"
+        style={{ borderColor: 'var(--color-border)' }}
+      >
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: rota.colour + '20', color: rota.colour }}>
+          <div
+            className="w-8 h-8 rounded-lg flex items-center justify-center"
+            style={{ backgroundColor: rota.colour + '20', color: rota.colour }}
+          >
             <Icon size={16} />
           </div>
           <div>
-            <div className="font-semibold text-sm" style={{ color: 'var(--color-text)' }}>{rota.name}</div>
+            <div className="font-semibold text-sm" style={{ color: 'var(--color-text)' }}>
+              {rota.name}
+            </div>
             <div className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
               {typeInfo.label}
               {timeLabel && ` \u00B7 ${timeLabel}`}
@@ -244,7 +279,10 @@ function RotaSection({
           rotaId={rota.id}
           workspaceId={workspaceId}
           members={members}
-          onCreated={() => { onToggleAddEntry(); onUpdate(); }}
+          onCreated={() => {
+            onToggleAddEntry();
+            onUpdate();
+          }}
           onCancel={onToggleAddEntry}
         />
       )}
@@ -254,7 +292,10 @@ function RotaSection({
         <div style={{ minWidth: dateRange.length * 48 + 160 }}>
           {/* Day headers */}
           <div className="flex border-b" style={{ borderColor: 'var(--color-border)' }}>
-            <div className="w-40 shrink-0 px-3 py-2 text-xs font-medium" style={{ color: 'var(--color-text-secondary)' }}>
+            <div
+              className="w-40 shrink-0 px-3 py-2 text-xs font-medium"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
               Person
             </div>
             {dateRange.map((day) => {
@@ -266,7 +307,11 @@ function RotaSection({
                   key={day.toISOString()}
                   className="w-12 shrink-0 text-center py-2"
                   style={{
-                    backgroundColor: today ? 'rgba(65,134,224,0.08)' : weekend && !showDay ? 'var(--color-grey-1)' : undefined,
+                    backgroundColor: today
+                      ? 'rgba(65,134,224,0.08)'
+                      : weekend && !showDay
+                        ? 'var(--color-grey-1)'
+                        : undefined,
                     opacity: weekend && !showDay ? 0.4 : 1,
                   }}
                 >
@@ -286,7 +331,10 @@ function RotaSection({
 
           {/* Entries as swimlanes */}
           {rota.entries.length === 0 ? (
-            <div className="px-4 py-6 text-center text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+            <div
+              className="px-4 py-6 text-center text-xs"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
               No entries yet. Click + to add someone to this rota.
             </div>
           ) : (
@@ -304,11 +352,14 @@ function RotaSection({
   );
 }
 
-
 // --- Entry Rows ---
 
 function EntryRows({
-  entries, dateRange, rotaColour, includeWeekends, onDelete,
+  entries,
+  dateRange,
+  rotaColour,
+  includeWeekends,
+  onDelete,
 }: {
   entries: RotaEntry[];
   dateRange: Date[];
@@ -332,7 +383,11 @@ function EntryRows({
   return (
     <>
       {byUser.map(({ user, entries: userEntries }) => (
-        <div key={user?.id || 'unknown'} className="flex border-b last:border-b-0" style={{ borderColor: 'var(--color-border)' }}>
+        <div
+          key={user?.id || 'unknown'}
+          className="flex border-b last:border-b-0"
+          style={{ borderColor: 'var(--color-border)' }}
+        >
           {/* User label */}
           <div className="w-40 shrink-0 px-3 py-2 flex items-center gap-2">
             <div
@@ -366,7 +421,11 @@ function EntryRows({
                 key={day.toISOString()}
                 className="w-12 shrink-0 h-10 flex items-center justify-center relative group"
                 style={{
-                  backgroundColor: today ? 'rgba(65,134,224,0.05)' : dimmed ? 'var(--color-grey-1)' : undefined,
+                  backgroundColor: today
+                    ? 'rgba(65,134,224,0.05)'
+                    : dimmed
+                      ? 'var(--color-grey-1)'
+                      : undefined,
                   opacity: dimmed ? 0.3 : 1,
                 }}
               >
@@ -395,11 +454,14 @@ function EntryRows({
   );
 }
 
-
 // --- Add Entry Form ---
 
 function AddEntryForm({
-  rotaId, workspaceId, members, onCreated, onCancel,
+  rotaId,
+  workspaceId,
+  members,
+  onCreated,
+  onCancel,
 }: {
   rotaId: string;
   workspaceId: string;
@@ -433,51 +495,81 @@ function AddEntryForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex items-end gap-3 px-4 py-3 border-b" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-bg)' }}>
+    <form
+      onSubmit={handleSubmit}
+      className="flex items-end gap-3 px-4 py-3 border-b"
+      style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-bg)' }}
+    >
       <div className="flex-1 min-w-0">
-        <label className="block text-xs mb-1" style={{ color: 'var(--color-text-secondary)' }}>Person</label>
+        <label className="block text-xs mb-1" style={{ color: 'var(--color-text-secondary)' }}>
+          Person
+        </label>
         <select
           value={userId}
           onChange={(e) => setUserId(e.target.value)}
           required
           className="w-full text-sm px-2 py-1.5 rounded border"
-          style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+          style={{
+            borderColor: 'var(--color-border)',
+            backgroundColor: 'var(--color-surface)',
+            color: 'var(--color-text)',
+          }}
         >
           <option value="">Select...</option>
           {members.map((m) => (
-            <option key={m.id} value={m.id}>{m.name}</option>
+            <option key={m.id} value={m.id}>
+              {m.name}
+            </option>
           ))}
         </select>
       </div>
       <div>
-        <label className="block text-xs mb-1" style={{ color: 'var(--color-text-secondary)' }}>From</label>
+        <label className="block text-xs mb-1" style={{ color: 'var(--color-text-secondary)' }}>
+          From
+        </label>
         <input
           type="date"
           value={dateFrom}
           onChange={(e) => setDateFrom(e.target.value)}
           className="text-sm px-2 py-1.5 rounded border"
-          style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+          style={{
+            borderColor: 'var(--color-border)',
+            backgroundColor: 'var(--color-surface)',
+            color: 'var(--color-text)',
+          }}
         />
       </div>
       <div>
-        <label className="block text-xs mb-1" style={{ color: 'var(--color-text-secondary)' }}>To</label>
+        <label className="block text-xs mb-1" style={{ color: 'var(--color-text-secondary)' }}>
+          To
+        </label>
         <input
           type="date"
           value={dateTo}
           onChange={(e) => setDateTo(e.target.value)}
           className="text-sm px-2 py-1.5 rounded border"
-          style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+          style={{
+            borderColor: 'var(--color-border)',
+            backgroundColor: 'var(--color-surface)',
+            color: 'var(--color-text)',
+          }}
         />
       </div>
       <div>
-        <label className="block text-xs mb-1" style={{ color: 'var(--color-text-secondary)' }}>Notes</label>
+        <label className="block text-xs mb-1" style={{ color: 'var(--color-text-secondary)' }}>
+          Notes
+        </label>
         <input
           type="text"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Optional"
           className="text-sm px-2 py-1.5 rounded border w-32"
-          style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+          style={{
+            borderColor: 'var(--color-border)',
+            backgroundColor: 'var(--color-surface)',
+            color: 'var(--color-text)',
+          }}
         />
       </div>
       <button
@@ -501,11 +593,12 @@ function AddEntryForm({
   );
 }
 
-
 // --- Create Rota Modal ---
 
 function CreateRotaModal({
-  workspaceId, onClose, onCreated,
+  workspaceId,
+  onClose,
+  onCreated,
 }: {
   workspaceId: string;
   onClose: () => void;
@@ -541,22 +634,37 @@ function CreateRotaModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      onClick={onClose}
+    >
       <div
         className="w-full max-w-md rounded-xl shadow-2xl p-6"
         style={{ backgroundColor: 'var(--color-surface)' }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold" style={{ color: 'var(--color-text)' }}>New Rota</h3>
-          <button onClick={onClose} className="p-1 rounded hover:bg-subtle" style={{ color: 'var(--color-text-secondary)' }} aria-label="Close">
+          <h3 className="text-lg font-bold" style={{ color: 'var(--color-text)' }}>
+            New Rota
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-1 rounded hover:bg-subtle"
+            style={{ color: 'var(--color-text-secondary)' }}
+            aria-label="Close"
+          >
             <X size={18} />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Name</label>
+            <label
+              className="block text-sm font-medium mb-1"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
+              Name
+            </label>
             <input
               type="text"
               value={name}
@@ -564,12 +672,21 @@ function CreateRotaModal({
               required
               placeholder="e.g. On-Call Rota"
               className="w-full px-3 py-2 text-sm rounded-lg border"
-              style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+              style={{
+                borderColor: 'var(--color-border)',
+                backgroundColor: 'var(--color-surface)',
+                color: 'var(--color-text)',
+              }}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>Type</label>
+            <label
+              className="block text-sm font-medium mb-2"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
+              Type
+            </label>
             <div className="grid grid-cols-3 gap-2">
               {Object.entries(ROTA_TYPE_LABELS).map(([key, info]) => {
                 const Icon = ROTA_TYPE_ICONS[key];
@@ -582,13 +699,29 @@ function CreateRotaModal({
                       rotaType === key ? 'ring-2 ring-accent' : ''
                     }`}
                     style={{
-                      borderColor: rotaType === key ? 'var(--color-primary)' : 'var(--color-border)',
-                      backgroundColor: rotaType === key ? 'rgba(65,134,224,0.05)' : 'var(--color-surface)',
+                      borderColor:
+                        rotaType === key ? 'var(--color-primary)' : 'var(--color-border)',
+                      backgroundColor:
+                        rotaType === key ? 'rgba(65,134,224,0.05)' : 'var(--color-surface)',
                     }}
                   >
-                    <Icon size={20} className="mx-auto mb-1" style={{ color: rotaType === key ? 'var(--color-primary)' : 'var(--color-text-secondary)' }} />
-                    <div className="text-xs font-medium" style={{ color: 'var(--color-text)' }}>{info.label}</div>
-                    <div className="text-[10px] mt-0.5" style={{ color: 'var(--color-text-secondary)' }}>{info.desc}</div>
+                    <Icon
+                      size={20}
+                      className="mx-auto mb-1"
+                      style={{
+                        color:
+                          rotaType === key ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+                      }}
+                    />
+                    <div className="text-xs font-medium" style={{ color: 'var(--color-text)' }}>
+                      {info.label}
+                    </div>
+                    <div
+                      className="text-[10px] mt-0.5"
+                      style={{ color: 'var(--color-text-secondary)' }}
+                    >
+                      {info.desc}
+                    </div>
                   </button>
                 );
               })}
@@ -598,23 +731,41 @@ function CreateRotaModal({
           {rotaType === 'weekday' && (
             <div className="flex gap-3">
               <div className="flex-1">
-                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Start Time</label>
+                <label
+                  className="block text-sm font-medium mb-1"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
+                  Start Time
+                </label>
                 <input
                   type="time"
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
                   className="w-full px-3 py-2 text-sm rounded-lg border"
-                  style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+                  style={{
+                    borderColor: 'var(--color-border)',
+                    backgroundColor: 'var(--color-surface)',
+                    color: 'var(--color-text)',
+                  }}
                 />
               </div>
               <div className="flex-1">
-                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>End Time</label>
+                <label
+                  className="block text-sm font-medium mb-1"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
+                  End Time
+                </label>
                 <input
                   type="time"
                   value={endTime}
                   onChange={(e) => setEndTime(e.target.value)}
                   className="w-full px-3 py-2 text-sm rounded-lg border"
-                  style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+                  style={{
+                    borderColor: 'var(--color-border)',
+                    backgroundColor: 'var(--color-surface)',
+                    color: 'var(--color-text)',
+                  }}
                 />
               </div>
             </div>
@@ -628,15 +779,29 @@ function CreateRotaModal({
                 onChange={(e) => setIncludeWeekends(e.target.checked)}
                 className="rounded"
               />
-              <span className="text-sm" style={{ color: 'var(--color-text)' }}>Include weekends</span>
+              <span className="text-sm" style={{ color: 'var(--color-text)' }}>
+                Include weekends
+              </span>
             </label>
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Colour</label>
+            <label
+              className="block text-sm font-medium mb-1"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
+              Colour
+            </label>
             <div className="flex items-center gap-2">
-              <input type="color" value={colour} onChange={(e) => setColour(e.target.value)} className="w-8 h-8 rounded cursor-pointer" />
-              <span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>{colour}</span>
+              <input
+                type="color"
+                value={colour}
+                onChange={(e) => setColour(e.target.value)}
+                className="w-8 h-8 rounded cursor-pointer"
+              />
+              <span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                {colour}
+              </span>
             </div>
           </div>
 
@@ -664,11 +829,14 @@ function CreateRotaModal({
   );
 }
 
-
 // --- Edit Rota Modal ---
 
 function EditRotaModal({
-  rota, workspaceId, onClose, onSaved, onDeleted,
+  rota,
+  workspaceId,
+  onClose,
+  onSaved,
+  onDeleted,
 }: {
   rota: Rota;
   workspaceId: string;
@@ -717,34 +885,58 @@ function EditRotaModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      onClick={onClose}
+    >
       <div
         className="w-full max-w-md rounded-xl shadow-2xl p-6"
         style={{ backgroundColor: 'var(--color-surface)' }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold" style={{ color: 'var(--color-text)' }}>Edit Rota</h3>
-          <button onClick={onClose} className="p-1 rounded hover:bg-subtle" style={{ color: 'var(--color-text-secondary)' }} aria-label="Close">
+          <h3 className="text-lg font-bold" style={{ color: 'var(--color-text)' }}>
+            Edit Rota
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-1 rounded hover:bg-subtle"
+            style={{ color: 'var(--color-text-secondary)' }}
+            aria-label="Close"
+          >
             <X size={18} />
           </button>
         </div>
 
         <form onSubmit={handleSave} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Name</label>
+            <label
+              className="block text-sm font-medium mb-1"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
+              Name
+            </label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
               className="w-full px-3 py-2 text-sm rounded-lg border"
-              style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+              style={{
+                borderColor: 'var(--color-border)',
+                backgroundColor: 'var(--color-surface)',
+                color: 'var(--color-text)',
+              }}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>Type</label>
+            <label
+              className="block text-sm font-medium mb-2"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
+              Type
+            </label>
             <div className="grid grid-cols-3 gap-2">
               {Object.entries(ROTA_TYPE_LABELS).map(([key, info]) => {
                 const Icon = ROTA_TYPE_ICONS[key];
@@ -757,12 +949,23 @@ function EditRotaModal({
                       rotaType === key ? 'ring-2 ring-accent' : ''
                     }`}
                     style={{
-                      borderColor: rotaType === key ? 'var(--color-primary)' : 'var(--color-border)',
-                      backgroundColor: rotaType === key ? 'rgba(65,134,224,0.05)' : 'var(--color-surface)',
+                      borderColor:
+                        rotaType === key ? 'var(--color-primary)' : 'var(--color-border)',
+                      backgroundColor:
+                        rotaType === key ? 'rgba(65,134,224,0.05)' : 'var(--color-surface)',
                     }}
                   >
-                    <Icon size={20} className="mx-auto mb-1" style={{ color: rotaType === key ? 'var(--color-primary)' : 'var(--color-text-secondary)' }} />
-                    <div className="text-xs font-medium" style={{ color: 'var(--color-text)' }}>{info.label}</div>
+                    <Icon
+                      size={20}
+                      className="mx-auto mb-1"
+                      style={{
+                        color:
+                          rotaType === key ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+                      }}
+                    />
+                    <div className="text-xs font-medium" style={{ color: 'var(--color-text)' }}>
+                      {info.label}
+                    </div>
                   </button>
                 );
               })}
@@ -772,35 +975,99 @@ function EditRotaModal({
           {rotaType === 'weekday' && (
             <div className="flex gap-3">
               <div className="flex-1">
-                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Start Time</label>
-                <input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }} />
+                <label
+                  className="block text-sm font-medium mb-1"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
+                  Start Time
+                </label>
+                <input
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  className="w-full px-3 py-2 text-sm rounded-lg border"
+                  style={{
+                    borderColor: 'var(--color-border)',
+                    backgroundColor: 'var(--color-surface)',
+                    color: 'var(--color-text)',
+                  }}
+                />
               </div>
               <div className="flex-1">
-                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>End Time</label>
-                <input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} className="w-full px-3 py-2 text-sm rounded-lg border" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }} />
+                <label
+                  className="block text-sm font-medium mb-1"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
+                  End Time
+                </label>
+                <input
+                  type="time"
+                  value={endTime}
+                  onChange={(e) => setEndTime(e.target.value)}
+                  className="w-full px-3 py-2 text-sm rounded-lg border"
+                  style={{
+                    borderColor: 'var(--color-border)',
+                    backgroundColor: 'var(--color-surface)',
+                    color: 'var(--color-text)',
+                  }}
+                />
               </div>
             </div>
           )}
 
           <label className="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" checked={includeWeekends} onChange={(e) => setIncludeWeekends(e.target.checked)} className="rounded" />
-            <span className="text-sm" style={{ color: 'var(--color-text)' }}>Include weekends</span>
+            <input
+              type="checkbox"
+              checked={includeWeekends}
+              onChange={(e) => setIncludeWeekends(e.target.checked)}
+              className="rounded"
+            />
+            <span className="text-sm" style={{ color: 'var(--color-text)' }}>
+              Include weekends
+            </span>
           </label>
 
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Colour</label>
+            <label
+              className="block text-sm font-medium mb-1"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
+              Colour
+            </label>
             <div className="flex items-center gap-2">
-              <input type="color" value={colour} onChange={(e) => setColour(e.target.value)} className="w-8 h-8 rounded cursor-pointer" />
-              <span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>{colour}</span>
+              <input
+                type="color"
+                value={colour}
+                onChange={(e) => setColour(e.target.value)}
+                className="w-8 h-8 rounded cursor-pointer"
+              />
+              <span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                {colour}
+              </span>
             </div>
           </div>
 
           <div className="flex items-center justify-between pt-2">
             {confirmDelete ? (
               <div className="flex items-center gap-2">
-                <span className="text-xs" style={{ color: 'var(--color-danger)' }}>Delete this rota?</span>
-                <button type="button" onClick={handleDelete} className="text-xs px-2 py-1 rounded bg-red-500 text-white">Yes</button>
-                <button type="button" onClick={() => setConfirmDelete(false)} className="text-xs px-2 py-1 rounded" style={{ color: 'var(--color-text-secondary)' }}>No</button>
+                <span className="text-xs" style={{ color: 'var(--color-danger)' }}>
+                  Delete this rota?
+                </span>
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  className="text-xs px-2 py-1 rounded bg-red-500 text-white"
+                >
+                  Yes
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(false)}
+                  className="text-xs px-2 py-1 rounded"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
+                  No
+                </button>
               </div>
             ) : (
               <button
@@ -814,7 +1081,14 @@ function EditRotaModal({
               </button>
             )}
             <div className="flex gap-2">
-              <button type="button" onClick={onClose} className="px-4 py-2 text-sm rounded-lg" style={{ color: 'var(--color-text-secondary)' }}>Cancel</button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-sm rounded-lg"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
+                Cancel
+              </button>
               <button
                 type="submit"
                 disabled={saving || !name.trim()}

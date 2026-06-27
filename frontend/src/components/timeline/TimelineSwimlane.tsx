@@ -14,23 +14,45 @@ interface TimelineSwimlaneProps {
   zoom: ZoomLevel;
   dragState: DragState | null;
   onTaskClick: (task: Task) => void;
-  onDragStart?: (taskId: string, mode: DragMode, e: React.MouseEvent, dateFrom: string, dateTo: string, laneId: string) => void;
+  onDragStart?: (
+    taskId: string,
+    mode: DragMode,
+    e: React.MouseEvent,
+    dateFrom: string,
+    dateTo: string,
+    laneId: string,
+  ) => void;
   onCreateTask?: (laneId: string, date: string) => void;
   onContextAction?: (action: string, task: Task) => void;
 }
 
-export function TimelineSwimlane({ laneId, label, labelColour, tasks, dates, zoom, dragState, onTaskClick, onDragStart, onCreateTask, onContextAction }: TimelineSwimlaneProps) {
+export function TimelineSwimlane({
+  laneId,
+  label,
+  labelColour,
+  tasks,
+  dates,
+  zoom,
+  dragState,
+  onTaskClick,
+  onDragStart,
+  onCreateTask,
+  onContextAction,
+}: TimelineSwimlaneProps) {
   const config = ZOOM_CONFIGS[zoom];
   const rangeStart = dates[0];
 
   // Highlight when a task is being dragged into this lane from another lane
-  const isDropTarget = dragState?.mode === 'move' &&
+  const isDropTarget =
+    dragState?.mode === 'move' &&
     dragState.targetLaneId === laneId &&
     dragState.targetLaneId !== dragState.originalLaneId;
 
   // Stack tasks to avoid overlap
   const rows: Task[][] = [];
-  const sortedTasks = [...tasks].sort((a, b) => (a.date_from || '').localeCompare(b.date_from || ''));
+  const sortedTasks = [...tasks].sort((a, b) =>
+    (a.date_from || '').localeCompare(b.date_from || ''),
+  );
 
   for (const task of sortedTasks) {
     if (!task.date_from || !task.date_to) continue;
@@ -60,14 +82,26 @@ export function TimelineSwimlane({ laneId, label, labelColour, tasks, dates, zoo
     <div
       data-lane-id={laneId}
       className={`flex border-b transition-colors ${isDropTarget ? 'ring-1 ring-inset ring-accent' : ''}`}
-      style={{ minHeight: swimlaneHeight, borderColor: 'var(--color-border)', backgroundColor: isDropTarget ? 'var(--color-primary-light)' : undefined }}
+      style={{
+        minHeight: swimlaneHeight,
+        borderColor: 'var(--color-border)',
+        backgroundColor: isDropTarget ? 'var(--color-primary-light)' : undefined,
+      }}
     >
       {/* Label column */}
-      <div className="w-48 shrink-0 border-r px-3 py-2 flex items-start gap-2" style={{ borderColor: 'var(--color-border)' }}>
+      <div
+        className="w-48 shrink-0 border-r px-3 py-2 flex items-start gap-2"
+        style={{ borderColor: 'var(--color-border)' }}
+      >
         {labelColour && (
-          <div className="w-2.5 h-2.5 rounded-full shrink-0 mt-1" style={{ backgroundColor: labelColour }} />
+          <div
+            className="w-2.5 h-2.5 rounded-full shrink-0 mt-1"
+            style={{ backgroundColor: labelColour }}
+          />
         )}
-        <span className="text-sm font-medium truncate" style={{ color: 'var(--color-text)' }}>{label}</span>
+        <span className="text-sm font-medium truncate" style={{ color: 'var(--color-text)' }}>
+          {label}
+        </span>
       </div>
 
       {/* Tasks area */}
@@ -120,12 +154,17 @@ export function TimelineSwimlane({ laneId, label, labelColour, tasks, dates, zoo
                   columnWidth={config.columnWidth}
                   isDragging={beingDragged}
                   onClick={() => onTaskClick(task)}
-                  onDragStart={onDragStart ? (mode, e) => onDragStart(task.id, mode, e, task.date_from!, task.date_to!, laneId) : undefined}
+                  onDragStart={
+                    onDragStart
+                      ? (mode, e) =>
+                          onDragStart(task.id, mode, e, task.date_from!, task.date_to!, laneId)
+                      : undefined
+                  }
                   onContextAction={onContextAction}
                 />
               </div>
             );
-          })
+          }),
         )}
       </div>
     </div>

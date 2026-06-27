@@ -18,10 +18,16 @@ export function TopBar() {
   return (
     <header className="h-14 bg-topbar border-b border-outline flex items-center justify-between px-4 shrink-0 transition-colors">
       <div className="flex items-center gap-3">
-        <button onClick={toggleSidebar} className="p-2 hover:bg-muted rounded-lg transition-colors" aria-label="Toggle sidebar">
+        <button
+          onClick={toggleSidebar}
+          className="p-2 hover:bg-muted rounded-lg transition-colors"
+          aria-label="Toggle sidebar"
+        >
           <Menu size={20} className="text-foreground" />
         </button>
-        <h1 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>Planview</h1>
+        <h1 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>
+          Planview
+        </h1>
       </div>
       <div className="flex items-center gap-2">
         <button

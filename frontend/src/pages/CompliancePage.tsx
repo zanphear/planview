@@ -1,7 +1,15 @@
 import { useEffect, useState, useMemo } from 'react';
 import {
-  Shield, AlertTriangle, CheckCircle, Clock, Plus, Search, Filter,
-  X, Edit2, Trash2,
+  Shield,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  Plus,
+  Search,
+  Filter,
+  X,
+  Edit2,
+  Trash2,
 } from 'lucide-react';
 import { useWorkspaceStore } from '../stores/workspaceStore';
 import { useLookupValues } from '../stores/lookupStore';
@@ -28,7 +36,9 @@ const ITEM_TYPES: Record<ItemType, { label: string; colour: string }> = {
 
 const ALL_TYPES: ItemType[] = ['certificate', 'visa', 'contract', 'license', 'training'];
 
-function getItemStatus(item: ComplianceItem): 'valid' | 'expiring_soon' | 'expired' | 'not_applicable' {
+function getItemStatus(
+  item: ComplianceItem,
+): 'valid' | 'expiring_soon' | 'expired' | 'not_applicable' {
   if (!item.expiry_date) return 'not_applicable';
   const now = new Date();
   const expiry = new Date(item.expiry_date);
@@ -106,7 +116,10 @@ export function CompliancePage() {
   }, [items, members, searchQuery, typeFilter, statusFilter]);
 
   const counts = useMemo(() => {
-    let total = 0, expiringSoon = 0, expired = 0, valid = 0;
+    let total = 0,
+      expiringSoon = 0,
+      expired = 0,
+      valid = 0;
     for (const item of items) {
       total++;
       const s = getItemStatus(item);
@@ -117,11 +130,14 @@ export function CompliancePage() {
     return { total, expiringSoon, expired, valid };
   }, [items]);
 
-  const statusSegments = useMemo(() => [
-    { label: 'Valid', value: counts.valid, colour: COLOURS.green },
-    { label: 'Expiring Soon', value: counts.expiringSoon, colour: COLOURS.amber },
-    { label: 'Expired', value: counts.expired, colour: COLOURS.red },
-  ], [counts]);
+  const statusSegments = useMemo(
+    () => [
+      { label: 'Valid', value: counts.valid, colour: COLOURS.green },
+      { label: 'Expiring Soon', value: counts.expiringSoon, colour: COLOURS.amber },
+      { label: 'Expired', value: counts.expired, colour: COLOURS.red },
+    ],
+    [counts],
+  );
 
   const handleDelete = async (itemId: string) => {
     if (!workspace) return;
@@ -151,7 +167,10 @@ export function CompliancePage() {
           </h2>
         </div>
         <button
-          onClick={() => { setEditingItem(null); setShowModal(true); }}
+          onClick={() => {
+            setEditingItem(null);
+            setShowModal(true);
+          }}
           className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg text-white transition-colors"
           style={{ background: 'linear-gradient(135deg, #8A00E5, #4D217A)' }}
         >
@@ -162,27 +181,65 @@ export function CompliancePage() {
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-4">
-        <SummaryCard label="Total Items" count={counts.total} colour="#3b82f6" icon={<Shield size={18} />} />
-        <SummaryCard label="Expiring Soon" count={counts.expiringSoon} colour="#f59e0b" icon={<Clock size={18} />} />
-        <SummaryCard label="Expired" count={counts.expired} colour="#ef4444" icon={<AlertTriangle size={18} />} />
-        <SummaryCard label="Valid" count={counts.valid} colour="#10b981" icon={<CheckCircle size={18} />} />
-        <div className="rounded-xl border p-5" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
-          <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-text)' }}>Status Distribution</h3>
-          <DonutChart segments={statusSegments} size={120} centerValue={items.length} centerLabel="items" />
+        <SummaryCard
+          label="Total Items"
+          count={counts.total}
+          colour="#3b82f6"
+          icon={<Shield size={18} />}
+        />
+        <SummaryCard
+          label="Expiring Soon"
+          count={counts.expiringSoon}
+          colour="#f59e0b"
+          icon={<Clock size={18} />}
+        />
+        <SummaryCard
+          label="Expired"
+          count={counts.expired}
+          colour="#ef4444"
+          icon={<AlertTriangle size={18} />}
+        />
+        <SummaryCard
+          label="Valid"
+          count={counts.valid}
+          colour="#10b981"
+          icon={<CheckCircle size={18} />}
+        />
+        <div
+          className="rounded-xl border p-5"
+          style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+        >
+          <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-text)' }}>
+            Status Distribution
+          </h3>
+          <DonutChart
+            segments={statusSegments}
+            size={120}
+            centerValue={items.length}
+            centerLabel="items"
+          />
         </div>
       </div>
 
       {/* Filters */}
       <div className="flex items-center gap-3 mb-4 flex-wrap">
         <div className="relative flex-1 min-w-[200px] max-w-sm">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-secondary)' }} />
+          <Search
+            size={14}
+            className="absolute left-3 top-1/2 -translate-y-1/2"
+            style={{ color: 'var(--color-text-secondary)' }}
+          />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by title, person or reference..."
             className="w-full pl-9 pr-3 py-1.5 text-sm rounded-lg border"
-            style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+            style={{
+              borderColor: 'var(--color-border)',
+              backgroundColor: 'var(--color-surface)',
+              color: 'var(--color-text)',
+            }}
           />
         </div>
         <div className="flex items-center gap-1.5 flex-wrap">
@@ -198,10 +255,18 @@ export function CompliancePage() {
           >
             All Types
           </button>
-          {(lookupValues.length > 0 ? lookupValues : ALL_TYPES.map((t) => ({ value: t, label: ITEM_TYPES[t].label, colour: ITEM_TYPES[t].colour }))).map((lv) => {
+          {(lookupValues.length > 0
+            ? lookupValues
+            : ALL_TYPES.map((t) => ({
+                value: t,
+                label: ITEM_TYPES[t].label,
+                colour: ITEM_TYPES[t].colour,
+              }))
+          ).map((lv) => {
             const val = typeof lv === 'object' && 'value' in lv ? lv.value : lv;
-            const label = typeof lv === 'object' && 'label' in lv ? (lv.label || lv.value) : val;
-            const colour = typeof lv === 'object' && 'colour' in lv ? (lv.colour || '#64748b') : '#64748b';
+            const label = typeof lv === 'object' && 'label' in lv ? lv.label || lv.value : val;
+            const colour =
+              typeof lv === 'object' && 'colour' in lv ? lv.colour || '#64748b' : '#64748b';
             const isActive = typeFilter === val;
             return (
               <button
@@ -222,7 +287,11 @@ export function CompliancePage() {
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
             className="text-sm px-2 py-1.5 rounded-lg border"
-            style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+            style={{
+              borderColor: 'var(--color-border)',
+              backgroundColor: 'var(--color-surface)',
+              color: 'var(--color-text)',
+            }}
           >
             <option value="all">All Statuses</option>
             <option value="valid">Valid</option>
@@ -237,7 +306,11 @@ export function CompliancePage() {
       {filteredItems.length === 0 ? (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <Shield size={48} className="mx-auto mb-3 opacity-30" style={{ color: 'var(--color-text-secondary)' }} />
+            <Shield
+              size={48}
+              className="mx-auto mb-3 opacity-30"
+              style={{ color: 'var(--color-text-secondary)' }}
+            />
             <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
               {items.length === 0
                 ? 'No compliance items yet. Add one to get started.'
@@ -248,45 +321,102 @@ export function CompliancePage() {
       ) : (
         <div className="flex-1 overflow-auto">
           {/* Desktop table */}
-          <div className="hidden md:block rounded-xl border overflow-hidden" style={{ borderColor: 'var(--color-border)' }}>
+          <div
+            className="hidden md:block rounded-xl border overflow-hidden"
+            style={{ borderColor: 'var(--color-border)' }}
+          >
             <table className="w-full text-sm">
               <thead>
                 <tr style={{ backgroundColor: 'var(--color-grey-1)' }}>
-                  <th className="text-left px-4 py-2.5 font-medium" style={{ color: 'var(--color-text-secondary)' }}>Type</th>
-                  <th className="text-left px-4 py-2.5 font-medium" style={{ color: 'var(--color-text-secondary)' }}>Title</th>
-                  <th className="text-left px-4 py-2.5 font-medium" style={{ color: 'var(--color-text-secondary)' }}>Person</th>
-                  <th className="text-left px-4 py-2.5 font-medium" style={{ color: 'var(--color-text-secondary)' }}>Reference</th>
-                  <th className="text-left px-4 py-2.5 font-medium" style={{ color: 'var(--color-text-secondary)' }}>Expiry Date</th>
-                  <th className="text-left px-4 py-2.5 font-medium" style={{ color: 'var(--color-text-secondary)' }}>Status</th>
-                  <th className="text-right px-4 py-2.5 font-medium" style={{ color: 'var(--color-text-secondary)' }}>Actions</th>
+                  <th
+                    className="text-left px-4 py-2.5 font-medium"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                  >
+                    Type
+                  </th>
+                  <th
+                    className="text-left px-4 py-2.5 font-medium"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                  >
+                    Title
+                  </th>
+                  <th
+                    className="text-left px-4 py-2.5 font-medium"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                  >
+                    Person
+                  </th>
+                  <th
+                    className="text-left px-4 py-2.5 font-medium"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                  >
+                    Reference
+                  </th>
+                  <th
+                    className="text-left px-4 py-2.5 font-medium"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                  >
+                    Expiry Date
+                  </th>
+                  <th
+                    className="text-left px-4 py-2.5 font-medium"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                  >
+                    Status
+                  </th>
+                  <th
+                    className="text-right px-4 py-2.5 font-medium"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                  >
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {filteredItems.map((item) => {
                   const status = getItemStatus(item);
-                  const rowBg = status === 'expired'
-                    ? 'rgba(239,68,68,0.04)'
-                    : status === 'expiring_soon'
-                      ? 'rgba(245,158,11,0.04)'
-                      : undefined;
+                  const rowBg =
+                    status === 'expired'
+                      ? 'rgba(239,68,68,0.04)'
+                      : status === 'expiring_soon'
+                        ? 'rgba(245,158,11,0.04)'
+                        : undefined;
                   return (
                     <tr
                       key={item.id}
                       className="border-t"
                       style={{ borderColor: 'var(--color-border)', backgroundColor: rowBg }}
                     >
-                      <td className="px-4 py-2.5"><TypeBadge type={item.item_type} /></td>
-                      <td className="px-4 py-2.5 font-medium" style={{ color: 'var(--color-text)' }}>{item.title}</td>
-                      <td className="px-4 py-2.5" style={{ color: 'var(--color-text)' }}>{getMemberName(item.user_id)}</td>
-                      <td className="px-4 py-2.5" style={{ color: 'var(--color-text-secondary)' }}>{item.reference_number || '-'}</td>
-                      <td className="px-4 py-2.5" style={{ color: 'var(--color-text)' }}>
-                        {item.expiry_date ? new Date(item.expiry_date).toLocaleDateString('en-GB') : '-'}
+                      <td className="px-4 py-2.5">
+                        <TypeBadge type={item.item_type} />
                       </td>
-                      <td className="px-4 py-2.5"><StatusBadge status={status} /></td>
+                      <td
+                        className="px-4 py-2.5 font-medium"
+                        style={{ color: 'var(--color-text)' }}
+                      >
+                        {item.title}
+                      </td>
+                      <td className="px-4 py-2.5" style={{ color: 'var(--color-text)' }}>
+                        {getMemberName(item.user_id)}
+                      </td>
+                      <td className="px-4 py-2.5" style={{ color: 'var(--color-text-secondary)' }}>
+                        {item.reference_number || '-'}
+                      </td>
+                      <td className="px-4 py-2.5" style={{ color: 'var(--color-text)' }}>
+                        {item.expiry_date
+                          ? new Date(item.expiry_date).toLocaleDateString('en-GB')
+                          : '-'}
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <StatusBadge status={status} />
+                      </td>
                       <td className="px-4 py-2.5 text-right">
                         <div className="flex items-center justify-end gap-1">
                           <button
-                            onClick={() => { setEditingItem(item); setShowModal(true); }}
+                            onClick={() => {
+                              setEditingItem(item);
+                              setShowModal(true);
+                            }}
                             className="p-1.5 rounded-lg hover:bg-subtle transition-colors"
                             style={{ color: 'var(--color-text-secondary)' }}
                             title="Edit"
@@ -332,11 +462,12 @@ export function CompliancePage() {
           <div className="md:hidden space-y-3">
             {filteredItems.map((item) => {
               const status = getItemStatus(item);
-              const cardBorder = status === 'expired'
-                ? '#ef4444'
-                : status === 'expiring_soon'
-                  ? '#f59e0b'
-                  : 'var(--color-border)';
+              const cardBorder =
+                status === 'expired'
+                  ? '#ef4444'
+                  : status === 'expiring_soon'
+                    ? '#f59e0b'
+                    : 'var(--color-border)';
               return (
                 <div
                   key={item.id}
@@ -350,7 +481,10 @@ export function CompliancePage() {
                     </div>
                     <div className="flex items-center gap-1">
                       <button
-                        onClick={() => { setEditingItem(item); setShowModal(true); }}
+                        onClick={() => {
+                          setEditingItem(item);
+                          setShowModal(true);
+                        }}
                         className="p-1 rounded hover:bg-subtle"
                         style={{ color: 'var(--color-text-secondary)' }}
                       >
@@ -358,8 +492,19 @@ export function CompliancePage() {
                       </button>
                       {deleteConfirm === item.id ? (
                         <div className="flex items-center gap-1">
-                          <button onClick={() => handleDelete(item.id)} className="text-xs px-2 py-0.5 rounded bg-red-500 text-white">Yes</button>
-                          <button onClick={() => setDeleteConfirm(null)} className="text-xs px-2 py-0.5 rounded" style={{ color: 'var(--color-text-secondary)' }}>No</button>
+                          <button
+                            onClick={() => handleDelete(item.id)}
+                            className="text-xs px-2 py-0.5 rounded bg-red-500 text-white"
+                          >
+                            Yes
+                          </button>
+                          <button
+                            onClick={() => setDeleteConfirm(null)}
+                            className="text-xs px-2 py-0.5 rounded"
+                            style={{ color: 'var(--color-text-secondary)' }}
+                          >
+                            No
+                          </button>
                         </div>
                       ) : (
                         <button
@@ -372,11 +517,21 @@ export function CompliancePage() {
                       )}
                     </div>
                   </div>
-                  <h3 className="font-medium text-sm mb-1" style={{ color: 'var(--color-text)' }}>{item.title}</h3>
-                  <div className="text-xs space-y-0.5" style={{ color: 'var(--color-text-secondary)' }}>
+                  <h3 className="font-medium text-sm mb-1" style={{ color: 'var(--color-text)' }}>
+                    {item.title}
+                  </h3>
+                  <div
+                    className="text-xs space-y-0.5"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                  >
                     <p>{getMemberName(item.user_id)}</p>
                     {item.reference_number && <p>Ref: {item.reference_number}</p>}
-                    <p>Expires: {item.expiry_date ? new Date(item.expiry_date).toLocaleDateString('en-GB') : 'N/A'}</p>
+                    <p>
+                      Expires:{' '}
+                      {item.expiry_date
+                        ? new Date(item.expiry_date).toLocaleDateString('en-GB')
+                        : 'N/A'}
+                    </p>
                   </div>
                 </div>
               );
@@ -391,7 +546,10 @@ export function CompliancePage() {
           item={editingItem}
           members={members}
           workspaceId={workspace.id}
-          onClose={() => { setShowModal(false); setEditingItem(null); }}
+          onClose={() => {
+            setShowModal(false);
+            setEditingItem(null);
+          }}
           onSaved={loadData}
         />
       )}
@@ -399,10 +557,14 @@ export function CompliancePage() {
   );
 }
 
-
 // --- Summary Card ---
 
-function SummaryCard({ label, count, colour, icon }: {
+function SummaryCard({
+  label,
+  count,
+  colour,
+  icon,
+}: {
   label: string;
   count: number;
   colour: string;
@@ -420,18 +582,25 @@ function SummaryCard({ label, count, colour, icon }: {
         {icon}
       </div>
       <div>
-        <div className="text-2xl font-bold" style={{ color: 'var(--color-text)' }}>{count}</div>
-        <div className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>{label}</div>
+        <div className="text-2xl font-bold" style={{ color: 'var(--color-text)' }}>
+          {count}
+        </div>
+        <div className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+          {label}
+        </div>
       </div>
     </div>
   );
 }
 
-
 // --- Create / Edit Modal ---
 
 function ComplianceModal({
-  item, members, workspaceId, onClose, onSaved,
+  item,
+  members,
+  workspaceId,
+  onClose,
+  onSaved,
 }: {
   item: ComplianceItem | null;
   members: User[];
@@ -478,7 +647,10 @@ function ComplianceModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      onClick={onClose}
+    >
       <div
         className="w-full max-w-lg rounded-xl shadow-2xl p-6 max-h-[90vh] overflow-y-auto"
         style={{ backgroundColor: 'var(--color-surface)' }}
@@ -488,42 +660,71 @@ function ComplianceModal({
           <h3 className="text-lg font-bold" style={{ color: 'var(--color-text)' }}>
             {isEdit ? 'Edit Compliance Item' : 'Add Compliance Item'}
           </h3>
-          <button onClick={onClose} className="p-1 rounded hover:bg-subtle" style={{ color: 'var(--color-text-secondary)' }}>
+          <button
+            onClick={onClose}
+            className="p-1 rounded hover:bg-subtle"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
             <X size={18} />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Person</label>
+            <label
+              className="block text-sm font-medium mb-1"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
+              Person
+            </label>
             <select
               value={userId}
               onChange={(e) => setUserId(e.target.value)}
               required
               className="w-full px-3 py-2 text-sm rounded-lg border"
-              style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+              style={{
+                borderColor: 'var(--color-border)',
+                backgroundColor: 'var(--color-surface)',
+                color: 'var(--color-text)',
+              }}
             >
               <option value="">Select a member...</option>
               {members.map((m) => (
-                <option key={m.id} value={m.id}>{m.name}</option>
+                <option key={m.id} value={m.id}>
+                  {m.name}
+                </option>
               ))}
             </select>
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Type</label>
+            <label
+              className="block text-sm font-medium mb-1"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
+              Type
+            </label>
             <LookupSelect
               category="compliance_item_type"
               value={itemType}
               onChange={(v) => setItemType(v)}
               placeholder="Select item type..."
               className="w-full px-3 py-2 text-sm rounded-lg border"
-              style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+              style={{
+                borderColor: 'var(--color-border)',
+                backgroundColor: 'var(--color-surface)',
+                color: 'var(--color-text)',
+              }}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Title</label>
+            <label
+              className="block text-sm font-medium mb-1"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
+              Title
+            </label>
             <input
               type="text"
               value={title}
@@ -531,54 +732,94 @@ function ComplianceModal({
               required
               placeholder="e.g. NEBOSH General Certificate"
               className="w-full px-3 py-2 text-sm rounded-lg border"
-              style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+              style={{
+                borderColor: 'var(--color-border)',
+                backgroundColor: 'var(--color-surface)',
+                color: 'var(--color-text)',
+              }}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Reference Number</label>
+            <label
+              className="block text-sm font-medium mb-1"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
+              Reference Number
+            </label>
             <input
               type="text"
               value={referenceNumber}
               onChange={(e) => setReferenceNumber(e.target.value)}
               placeholder="Optional"
               className="w-full px-3 py-2 text-sm rounded-lg border"
-              style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+              style={{
+                borderColor: 'var(--color-border)',
+                backgroundColor: 'var(--color-surface)',
+                color: 'var(--color-text)',
+              }}
             />
           </div>
 
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Issue Date</label>
+              <label
+                className="block text-sm font-medium mb-1"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
+                Issue Date
+              </label>
               <input
                 type="date"
                 value={issueDate}
                 onChange={(e) => setIssueDate(e.target.value)}
                 className="w-full px-3 py-2 text-sm rounded-lg border"
-                style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+                style={{
+                  borderColor: 'var(--color-border)',
+                  backgroundColor: 'var(--color-surface)',
+                  color: 'var(--color-text)',
+                }}
               />
             </div>
             <div className="flex-1">
-              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Expiry Date</label>
+              <label
+                className="block text-sm font-medium mb-1"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
+                Expiry Date
+              </label>
               <input
                 type="date"
                 value={expiryDate}
                 onChange={(e) => setExpiryDate(e.target.value)}
                 className="w-full px-3 py-2 text-sm rounded-lg border"
-                style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+                style={{
+                  borderColor: 'var(--color-border)',
+                  backgroundColor: 'var(--color-surface)',
+                  color: 'var(--color-text)',
+                }}
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Notes</label>
+            <label
+              className="block text-sm font-medium mb-1"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
+              Notes
+            </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Optional notes..."
               rows={3}
               className="w-full px-3 py-2 text-sm rounded-lg border resize-none"
-              style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+              style={{
+                borderColor: 'var(--color-border)',
+                backgroundColor: 'var(--color-surface)',
+                color: 'var(--color-text)',
+              }}
             />
           </div>
 

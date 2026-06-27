@@ -38,8 +38,15 @@ export const wellbeingApi = {
   createSurvey: (workspaceId: string, data: { title: string; end_date?: string }) =>
     api.post<PulseSurvey>(`/workspaces/${workspaceId}/wellbeing/surveys`, data),
 
-  submitResponse: (workspaceId: string, surveyId: string, data: { morale: number; workload: number; support: number; comments?: string }) =>
-    api.post<PulseResponse>(`/workspaces/${workspaceId}/wellbeing/surveys/${surveyId}/respond`, data),
+  submitResponse: (
+    workspaceId: string,
+    surveyId: string,
+    data: { morale: number; workload: number; support: number; comments?: string },
+  ) =>
+    api.post<PulseResponse>(
+      `/workspaces/${workspaceId}/wellbeing/surveys/${surveyId}/respond`,
+      data,
+    ),
 
   // Kudos
   listKudos: (workspaceId: string) =>

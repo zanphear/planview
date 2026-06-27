@@ -32,28 +32,55 @@ export function ProjectEditModal({ project, onSave, onDelete, onClose }: Project
         className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] rounded-xl shadow-2xl z-50 border"
         style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: 'var(--color-border)' }}>
-          <h3 className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>Edit Project</h3>
-          <button onClick={onClose} className="p-1 rounded hover:opacity-70" style={{ color: 'var(--color-text-secondary)' }} aria-label="Close">
+        <div
+          className="flex items-center justify-between px-5 py-4 border-b"
+          style={{ borderColor: 'var(--color-border)' }}
+        >
+          <h3 className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>
+            Edit Project
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-1 rounded hover:opacity-70"
+            style={{ color: 'var(--color-text-secondary)' }}
+            aria-label="Close"
+          >
             <X size={18} />
           </button>
         </div>
 
         <div className="p-5 space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Name</label>
+            <label
+              className="block text-sm font-medium mb-1"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
+              Name
+            </label>
             <input
               autoFocus
               value={name}
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSave()}
               className="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2"
-              style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
+              style={
+                {
+                  borderColor: 'var(--color-border)',
+                  backgroundColor: 'var(--color-surface)',
+                  color: 'var(--color-text)',
+                  '--tw-ring-color': 'var(--color-primary)',
+                } as React.CSSProperties
+              }
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>Colour</label>
+            <label
+              className="block text-sm font-medium mb-2"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
+              Colour
+            </label>
             <ColourPicker value={colour} onChange={setColour} />
           </div>
 
@@ -65,10 +92,15 @@ export function ProjectEditModal({ project, onSave, onDelete, onClose }: Project
             >
               <Star size={18} fill={isFavourite ? 'currentColor' : 'none'} />
             </button>
-            <span className="text-sm" style={{ color: 'var(--color-text)' }}>Favourite</span>
+            <span className="text-sm" style={{ color: 'var(--color-text)' }}>
+              Favourite
+            </span>
           </label>
 
-          <div className="flex items-center justify-between pt-3 border-t" style={{ borderColor: 'var(--color-border)' }}>
+          <div
+            className="flex items-center justify-between pt-3 border-t"
+            style={{ borderColor: 'var(--color-border)' }}
+          >
             {!confirmDelete ? (
               <button
                 onClick={() => setConfirmDelete(true)}

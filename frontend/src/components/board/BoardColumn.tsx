@@ -12,7 +12,14 @@ interface BoardColumnProps {
   isOverColumn?: boolean;
 }
 
-export function BoardColumn({ status, tasks, onTaskClick, selectedIds, onToggleSelect, isOverColumn }: BoardColumnProps) {
+export function BoardColumn({
+  status,
+  tasks,
+  onTaskClick,
+  selectedIds,
+  onToggleSelect,
+  isOverColumn,
+}: BoardColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: status.id });
   const highlight = isOver || isOverColumn;
 
@@ -25,8 +32,13 @@ export function BoardColumn({ status, tasks, onTaskClick, selectedIds, onToggleS
       {/* Column header */}
       <div className="px-3 py-2.5 flex items-center gap-2">
         <span>{status.emoji}</span>
-        <span className="font-medium text-sm" style={{ color: 'var(--color-text)' }}>{status.label}</span>
-        <span className="ml-auto text-xs px-1.5 py-0.5 rounded-full" style={{ color: 'var(--color-text-secondary)', backgroundColor: 'var(--color-grey-2)' }}>
+        <span className="font-medium text-sm" style={{ color: 'var(--color-text)' }}>
+          {status.label}
+        </span>
+        <span
+          className="ml-auto text-xs px-1.5 py-0.5 rounded-full"
+          style={{ color: 'var(--color-text-secondary)', backgroundColor: 'var(--color-grey-2)' }}
+        >
           {tasks.length}
         </span>
       </div>

@@ -56,13 +56,15 @@ export function TeamTimelinePage() {
       timelineApi.get(workspace.id, { since, until, users: userIds || undefined }),
       milestonesApi.list(workspace.id),
       membersApi.list(workspace.id),
-    ]).then(([tasksRes, milestonesRes, membersRes]) => {
-      setTasks(tasksRes.data);
-      setMilestones(milestonesRes.data);
-      setMembers(membersRes.data);
-    }).catch((err) => {
-      console.error('Failed to load team timeline:', err);
-    });
+    ])
+      .then(([tasksRes, milestonesRes, membersRes]) => {
+        setTasks(tasksRes.data);
+        setMilestones(milestonesRes.data);
+        setMembers(membersRes.data);
+      })
+      .catch((err) => {
+        console.error('Failed to load team timeline:', err);
+      });
   }, [workspace, teamId, teams, zoom, startDate]);
 
   const swimlanes: Swimlane[] = useMemo(() => {
@@ -75,45 +77,53 @@ export function TeamTimelinePage() {
     }));
   }, [team, tasks]);
 
-  const handleCreateTask = useCallback(async (laneId: string, date: string) => {
-    if (!workspace) return;
-    try {
-      const { data } = await tasksApi.create(workspace.id, {
-        name: 'New task',
-        date_from: date,
-        date_to: date,
-        status: 'todo',
-        assignee_ids: [laneId],
-      });
-      setTasks((prev) => [...prev, data]);
-      setSelectedTask(data);
-    } catch (err) {
-      console.error('Failed to create task:', err);
-    }
-  }, [workspace]);
+  const handleCreateTask = useCallback(
+    async (laneId: string, date: string) => {
+      if (!workspace) return;
+      try {
+        const { data } = await tasksApi.create(workspace.id, {
+          name: 'New task',
+          date_from: date,
+          date_to: date,
+          status: 'todo',
+          assignee_ids: [laneId],
+        });
+        setTasks((prev) => [...prev, data]);
+        setSelectedTask(data);
+      } catch (err) {
+        console.error('Failed to create task:', err);
+      }
+    },
+    [workspace],
+  );
 
   const handleContextAction = useTaskContextActions(setTasks, setSelectedTask);
 
-  const handleTaskUpdate = useCallback(async (taskId: string, updates: { date_from?: string; date_to?: string; laneId?: string }) => {
-    if (!workspace) return;
-    const apiData: Record<string, unknown> = {};
-    if (updates.date_from) apiData.date_from = updates.date_from;
-    if (updates.date_to) apiData.date_to = updates.date_to;
-    if (updates.laneId) apiData.assignee_ids = [updates.laneId];
+  const handleTaskUpdate = useCallback(
+    async (taskId: string, updates: { date_from?: string; date_to?: string; laneId?: string }) => {
+      if (!workspace) return;
+      const apiData: Record<string, unknown> = {};
+      if (updates.date_from) apiData.date_from = updates.date_from;
+      if (updates.date_to) apiData.date_to = updates.date_to;
+      if (updates.laneId) apiData.assignee_ids = [updates.laneId];
 
-    try {
-      const { data } = await tasksApi.update(workspace.id, taskId, apiData);
-      setTasks((prev) => prev.map((t) => (t.id === taskId ? data : t)));
-    } catch (err) {
-      console.error('Failed to update task:', err);
-    }
-  }, [workspace]);
+      try {
+        const { data } = await tasksApi.update(workspace.id, taskId, apiData);
+        setTasks((prev) => prev.map((t) => (t.id === taskId ? data : t)));
+      } catch (err) {
+        console.error('Failed to update task:', err);
+      }
+    },
+    [workspace],
+  );
 
   return (
     <div className="h-full flex flex-col">
       {team && (
         <div className="px-6 py-3 bg-card border-b border-outline shrink-0 flex items-center justify-between">
-          <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>{team.name}</h2>
+          <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>
+            {team.name}
+          </h2>
           <button
             onClick={() => setShowShare(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg hover:bg-muted transition-colors"
@@ -148,11 +158,7 @@ export function TeamTimelinePage() {
       </div>
 
       {selectedTask && (
-        <TaskDetail
-          task={selectedTask}
-          members={members}
-          onClose={() => setSelectedTask(null)}
-        />
+        <TaskDetail task={selectedTask} members={members} onClose={() => setSelectedTask(null)} />
       )}
 
       {showShare && team && (

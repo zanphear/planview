@@ -19,10 +19,16 @@ export function StatCard({ label, value, icon, colour, sub }: StatCardProps) {
         {icon}
       </div>
       <div>
-        <p className="text-2xl font-bold" style={{ color: 'var(--color-text)' }}>{value}</p>
-        <p className="text-xs font-medium" style={{ color: 'var(--color-text-secondary)' }}>{label}</p>
+        <p className="text-2xl font-bold" style={{ color: 'var(--color-text)' }}>
+          {value}
+        </p>
+        <p className="text-xs font-medium" style={{ color: 'var(--color-text-secondary)' }}>
+          {label}
+        </p>
         {sub && (
-          <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-secondary)' }}>{sub}</p>
+          <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-secondary)' }}>
+            {sub}
+          </p>
         )}
       </div>
     </div>

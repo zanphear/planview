@@ -35,8 +35,7 @@ export const authApi = {
   login: (data: { email: string; password: string; totp_code?: string }) =>
     api.post<TokenResponse>('/auth/login', data),
 
-  refresh: (refresh_token: string) =>
-    api.post<TokenResponse>('/auth/refresh', { refresh_token }),
+  refresh: (refresh_token: string) => api.post<TokenResponse>('/auth/refresh', { refresh_token }),
 
   me: () => api.get<User>('/auth/me'),
 
@@ -46,15 +45,16 @@ export const authApi = {
   oidcConfig: () => api.get<OIDCConfig>('/auth/oidc/config'),
 
   oidcAuthorize: (redirectUri: string) =>
-    api.get<{ redirect_url: string; state: string }>('/auth/oidc/authorize', { params: { redirect_uri: redirectUri } }),
+    api.get<{ redirect_url: string; state: string }>('/auth/oidc/authorize', {
+      params: { redirect_uri: redirectUri },
+    }),
 
   oidcCallback: (code: string, state: string) =>
     api.post<TokenResponse>('/auth/oidc/callback', { code, state }),
 };
 
 export const membersApi = {
-  list: (workspaceId: string) =>
-    api.get<User[]>(`/workspaces/${workspaceId}/members`),
+  list: (workspaceId: string) => api.get<User[]>(`/workspaces/${workspaceId}/members`),
 
   get: (workspaceId: string, userId: string) =>
     api.get<User>(`/workspaces/${workspaceId}/members/${userId}`),
@@ -63,7 +63,10 @@ export const membersApi = {
     api.put<User>(`/workspaces/${workspaceId}/members/${userId}`, data),
 
   invite: (workspaceId: string, data: { name: string; email: string; role?: string }) =>
-    api.post<{ user: User; temp_password: string }>(`/workspaces/${workspaceId}/members/invite`, data),
+    api.post<{ user: User; temp_password: string }>(
+      `/workspaces/${workspaceId}/members/invite`,
+      data,
+    ),
 
   remove: (workspaceId: string, userId: string) =>
     api.delete(`/workspaces/${workspaceId}/members/${userId}`),

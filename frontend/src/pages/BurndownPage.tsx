@@ -30,7 +30,10 @@ export function BurndownPage() {
   return (
     <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
-        <h2 className="text-xl font-bold flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
+        <h2
+          className="text-xl font-bold flex items-center gap-2"
+          style={{ color: 'var(--color-text)' }}
+        >
           <TrendingDown size={22} />
           Burndown Chart
         </h2>
@@ -47,7 +50,9 @@ export function BurndownPage() {
           >
             <option value="">All Projects</option>
             {projects.map((p) => (
-              <option key={p.id} value={p.id}>{p.name}</option>
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
             ))}
           </select>
           <select
@@ -95,14 +100,24 @@ export function BurndownPage() {
         <div className="relative h-64">
           {/* Y-axis labels */}
           <div className="absolute left-0 top-0 bottom-6 w-10 flex flex-col justify-between text-right pr-2">
-            <span className="text-[10px]" style={{ color: 'var(--color-text-secondary)' }}>{maxRemaining}</span>
-            <span className="text-[10px]" style={{ color: 'var(--color-text-secondary)' }}>{Math.round(maxRemaining / 2)}</span>
-            <span className="text-[10px]" style={{ color: 'var(--color-text-secondary)' }}>0</span>
+            <span className="text-[10px]" style={{ color: 'var(--color-text-secondary)' }}>
+              {maxRemaining}
+            </span>
+            <span className="text-[10px]" style={{ color: 'var(--color-text-secondary)' }}>
+              {Math.round(maxRemaining / 2)}
+            </span>
+            <span className="text-[10px]" style={{ color: 'var(--color-text-secondary)' }}>
+              0
+            </span>
           </div>
 
           {/* Chart area */}
           <div className="ml-12 h-full relative">
-            <svg viewBox={`0 0 ${points.length} ${maxRemaining}`} className="w-full h-[calc(100%-24px)]" preserveAspectRatio="none">
+            <svg
+              viewBox={`0 0 ${points.length} ${maxRemaining}`}
+              className="w-full h-[calc(100%-24px)]"
+              preserveAspectRatio="none"
+            >
               {/* Remaining line */}
               <polyline
                 fill="none"
@@ -132,11 +147,17 @@ export function BurndownPage() {
 
             {/* X-axis labels */}
             <div className="flex justify-between mt-1">
-              {points.filter((_, i) => i % Math.ceil(points.length / 6) === 0 || i === points.length - 1).map((p) => (
-                <span key={p.date} className="text-[10px]" style={{ color: 'var(--color-text-secondary)' }}>
-                  {p.date.slice(5)}
-                </span>
-              ))}
+              {points
+                .filter((_, i) => i % Math.ceil(points.length / 6) === 0 || i === points.length - 1)
+                .map((p) => (
+                  <span
+                    key={p.date}
+                    className="text-[10px]"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                  >
+                    {p.date.slice(5)}
+                  </span>
+                ))}
             </div>
           </div>
         </div>
@@ -144,12 +165,22 @@ export function BurndownPage() {
         {/* Legend */}
         <div className="flex items-center gap-6 mt-4 justify-center">
           <div className="flex items-center gap-1.5">
-            <div className="w-3 h-0.5 rounded" style={{ backgroundColor: 'var(--color-primary)' }} />
-            <span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>Remaining</span>
+            <div
+              className="w-3 h-0.5 rounded"
+              style={{ backgroundColor: 'var(--color-primary)' }}
+            />
+            <span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+              Remaining
+            </span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-3 h-0.5 rounded border-dashed border-t" style={{ borderColor: 'var(--color-text-secondary)' }} />
-            <span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>Ideal</span>
+            <div
+              className="w-3 h-0.5 rounded border-dashed border-t"
+              style={{ borderColor: 'var(--color-text-secondary)' }}
+            />
+            <span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+              Ideal
+            </span>
           </div>
         </div>
       </div>
@@ -163,23 +194,65 @@ export function BurndownPage() {
           <table className="w-full text-sm">
             <thead>
               <tr style={{ backgroundColor: 'var(--color-grey-1)' }}>
-                <th className="text-left px-4 py-2 font-medium" style={{ color: 'var(--color-text-secondary)' }}>Date</th>
-                <th className="text-right px-4 py-2 font-medium" style={{ color: 'var(--color-text-secondary)' }}>Created</th>
-                <th className="text-right px-4 py-2 font-medium" style={{ color: 'var(--color-text-secondary)' }}>Completed</th>
-                <th className="text-right px-4 py-2 font-medium" style={{ color: 'var(--color-text-secondary)' }}>Remaining</th>
+                <th
+                  className="text-left px-4 py-2 font-medium"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
+                  Date
+                </th>
+                <th
+                  className="text-right px-4 py-2 font-medium"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
+                  Created
+                </th>
+                <th
+                  className="text-right px-4 py-2 font-medium"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
+                  Completed
+                </th>
+                <th
+                  className="text-right px-4 py-2 font-medium"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
+                  Remaining
+                </th>
               </tr>
             </thead>
             <tbody>
               {[...points].reverse().map((p) => (
-                <tr key={p.date} className="border-t" style={{ borderColor: 'var(--color-border)' }}>
-                  <td className="px-4 py-1.5" style={{ color: 'var(--color-text)' }}>{p.date}</td>
-                  <td className="px-4 py-1.5 text-right" style={{ color: p.created > 0 ? 'var(--color-primary)' : 'var(--color-text-secondary)' }}>
+                <tr
+                  key={p.date}
+                  className="border-t"
+                  style={{ borderColor: 'var(--color-border)' }}
+                >
+                  <td className="px-4 py-1.5" style={{ color: 'var(--color-text)' }}>
+                    {p.date}
+                  </td>
+                  <td
+                    className="px-4 py-1.5 text-right"
+                    style={{
+                      color: p.created > 0 ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+                    }}
+                  >
                     {p.created > 0 ? `+${p.created}` : ', '}
                   </td>
-                  <td className="px-4 py-1.5 text-right" style={{ color: p.completed > 0 ? 'var(--color-success)' : 'var(--color-text-secondary)' }}>
+                  <td
+                    className="px-4 py-1.5 text-right"
+                    style={{
+                      color:
+                        p.completed > 0 ? 'var(--color-success)' : 'var(--color-text-secondary)',
+                    }}
+                  >
                     {p.completed > 0 ? `+${p.completed}` : ', '}
                   </td>
-                  <td className="px-4 py-1.5 text-right font-medium" style={{ color: 'var(--color-text)' }}>{p.remaining}</td>
+                  <td
+                    className="px-4 py-1.5 text-right font-medium"
+                    style={{ color: 'var(--color-text)' }}
+                  >
+                    {p.remaining}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -196,8 +269,12 @@ function SummaryCard({ label, value, colour }: { label: string; value: number; c
       className="rounded-xl border p-4 text-center"
       style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
     >
-      <p className="text-2xl font-bold" style={{ color: colour }}>{value}</p>
-      <p className="text-xs mt-1" style={{ color: 'var(--color-text-secondary)' }}>{label}</p>
+      <p className="text-2xl font-bold" style={{ color: colour }}>
+        {value}
+      </p>
+      <p className="text-xs mt-1" style={{ color: 'var(--color-text-secondary)' }}>
+        {label}
+      </p>
     </div>
   );
 }

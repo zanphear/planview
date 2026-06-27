@@ -64,7 +64,12 @@ export function QuickSearch() {
         .filter((p) => p.name.toLowerCase().includes(lowerQ))
         .slice(0, 3)
         .forEach((p) => {
-          matched.push({ type: 'project', id: p.id, name: p.name, link: `/projects/${p.id}/board` });
+          matched.push({
+            type: 'project',
+            id: p.id,
+            name: p.name,
+            link: `/projects/${p.id}/board`,
+          });
         });
 
       // Search teams locally
@@ -79,10 +84,18 @@ export function QuickSearch() {
       try {
         const { data: memberData } = await membersApi.list(workspace.id);
         memberData
-          .filter((m) => m.name.toLowerCase().includes(lowerQ) || m.email?.toLowerCase().includes(lowerQ))
+          .filter(
+            (m) => m.name.toLowerCase().includes(lowerQ) || m.email?.toLowerCase().includes(lowerQ),
+          )
           .slice(0, 3)
           .forEach((m) => {
-            matched.push({ type: 'member', id: m.id, name: m.name, meta: m.email || undefined, link: '/settings' });
+            matched.push({
+              type: 'member',
+              id: m.id,
+              name: m.name,
+              meta: m.email || undefined,
+              link: '/settings',
+            });
           });
       } catch {
         // Ignore
@@ -107,7 +120,7 @@ export function QuickSearch() {
       setResults(matched);
       setSelectedIdx(0);
     },
-    [workspace, projects, teams]
+    [workspace, projects, teams],
   );
 
   useEffect(() => {
@@ -145,7 +158,10 @@ export function QuickSearch() {
         style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center gap-3 px-4 py-3 border-b" style={{ borderColor: 'var(--color-border)' }}>
+        <div
+          className="flex items-center gap-3 px-4 py-3 border-b"
+          style={{ borderColor: 'var(--color-border)' }}
+        >
           <Search size={18} style={{ color: 'var(--color-text-secondary)' }} />
           <input
             ref={inputRef}
@@ -156,7 +172,11 @@ export function QuickSearch() {
             className="flex-1 text-sm outline-none bg-transparent"
             style={{ color: 'var(--color-text)' }}
           />
-          <button onClick={() => setOpen(false)} style={{ color: 'var(--color-text-secondary)' }} className="hover:opacity-80">
+          <button
+            onClick={() => setOpen(false)}
+            style={{ color: 'var(--color-text-secondary)' }}
+            className="hover:opacity-80"
+          >
             <X size={16} />
           </button>
         </div>
@@ -172,11 +192,20 @@ export function QuickSearch() {
                   backgroundColor: idx === selectedIdx ? 'var(--color-primary-light)' : undefined,
                 }}
               >
-                <span className="text-[10px] font-medium uppercase w-14" style={{ color: 'var(--color-text-secondary)' }}>
+                <span
+                  className="text-[10px] font-medium uppercase w-14"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
                   {r.type}
                 </span>
-                <span className="flex-1 truncate" style={{ color: 'var(--color-text)' }}>{r.name}</span>
-                {r.meta && <span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>{r.meta}</span>}
+                <span className="flex-1 truncate" style={{ color: 'var(--color-text)' }}>
+                  {r.name}
+                </span>
+                {r.meta && (
+                  <span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                    {r.meta}
+                  </span>
+                )}
                 <ArrowRight size={14} style={{ color: 'var(--color-text-secondary)' }} />
               </button>
             ))}
@@ -184,13 +213,45 @@ export function QuickSearch() {
         )}
 
         {query && results.length === 0 && (
-          <div className="px-4 py-8 text-center text-sm" style={{ color: 'var(--color-text-secondary)' }}>No results found</div>
+          <div
+            className="px-4 py-8 text-center text-sm"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            No results found
+          </div>
         )}
 
-        <div className="px-4 py-2 border-t text-[11px] flex gap-4" style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}>
-          <span><kbd className="px-1 py-0.5 rounded text-[10px]" style={{ backgroundColor: 'var(--color-grey-2)' }}>↑↓</kbd> Navigate</span>
-          <span><kbd className="px-1 py-0.5 rounded text-[10px]" style={{ backgroundColor: 'var(--color-grey-2)' }}>↵</kbd> Select</span>
-          <span><kbd className="px-1 py-0.5 rounded text-[10px]" style={{ backgroundColor: 'var(--color-grey-2)' }}>Esc</kbd> Close</span>
+        <div
+          className="px-4 py-2 border-t text-[11px] flex gap-4"
+          style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}
+        >
+          <span>
+            <kbd
+              className="px-1 py-0.5 rounded text-[10px]"
+              style={{ backgroundColor: 'var(--color-grey-2)' }}
+            >
+              ↑↓
+            </kbd>{' '}
+            Navigate
+          </span>
+          <span>
+            <kbd
+              className="px-1 py-0.5 rounded text-[10px]"
+              style={{ backgroundColor: 'var(--color-grey-2)' }}
+            >
+              ↵
+            </kbd>{' '}
+            Select
+          </span>
+          <span>
+            <kbd
+              className="px-1 py-0.5 rounded text-[10px]"
+              style={{ backgroundColor: 'var(--color-grey-2)' }}
+            >
+              Esc
+            </kbd>{' '}
+            Close
+          </span>
         </div>
       </div>
     </div>

@@ -37,7 +37,10 @@ export function TagPicker({ projectId, selectedIds, onChange }: TagPickerProps) 
   const handleCreate = async () => {
     if (!workspace || !projectId || !newName.trim()) return;
     const colour = DEFAULT_COLOURS[tags.length % DEFAULT_COLOURS.length];
-    const { data } = await tagsApi.create(workspace.id, projectId, { name: newName.trim(), colour });
+    const { data } = await tagsApi.create(workspace.id, projectId, {
+      name: newName.trim(),
+      colour,
+    });
     setTags((prev) => [...prev, data]);
     onChange([...selectedIds, data.id]);
     setNewName('');
@@ -46,7 +49,10 @@ export function TagPicker({ projectId, selectedIds, onChange }: TagPickerProps) 
 
   return (
     <div>
-      <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>
+      <label
+        className="block text-xs font-medium mb-1"
+        style={{ color: 'var(--color-text-secondary)' }}
+      >
         Tags
       </label>
       <div className="flex flex-wrap gap-1.5">
@@ -77,12 +83,22 @@ export function TagPicker({ projectId, selectedIds, onChange }: TagPickerProps) 
               onChange={(e) => setNewName(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleCreate();
-                if (e.key === 'Escape') { setCreating(false); setNewName(''); }
+                if (e.key === 'Escape') {
+                  setCreating(false);
+                  setNewName('');
+                }
               }}
-              onBlur={() => { setCreating(false); setNewName(''); }}
+              onBlur={() => {
+                setCreating(false);
+                setNewName('');
+              }}
               placeholder="Tag name..."
               className="px-2 py-0.5 text-xs border rounded-full outline-none w-24"
-              style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+              style={{
+                borderColor: 'var(--color-border)',
+                backgroundColor: 'var(--color-surface)',
+                color: 'var(--color-text)',
+              }}
             />
           </div>
         ) : (

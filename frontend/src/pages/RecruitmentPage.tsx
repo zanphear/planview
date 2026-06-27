@@ -1,5 +1,18 @@
 import { useState, useEffect, useMemo } from 'react';
-import { UserPlus, Search, Filter, Plus, Mail, Phone, MapPin, ChevronRight, X, Users, TrendingUp, Award } from 'lucide-react';
+import {
+  UserPlus,
+  Search,
+  Filter,
+  Plus,
+  Mail,
+  Phone,
+  MapPin,
+  ChevronRight,
+  X,
+  Users,
+  TrendingUp,
+  Award,
+} from 'lucide-react';
 import { useWorkspaceStore } from '../stores/workspaceStore';
 import { useAuthStore } from '../stores/authStore';
 import { useLookupValues } from '../stores/lookupStore';
@@ -97,43 +110,64 @@ export function RecruitmentPage() {
   const lookupValues = useLookupValues(workspace?.id, 'candidate_source');
 
   const TERMINAL_STAGES = ['hired', 'rejected', 'withdrawn'];
-  const inPipeline = useMemo(() => candidates.filter((c) => !TERMINAL_STAGES.includes(c.status)).length, [candidates]);
-  const hiredCount = useMemo(() => candidates.filter((c) => c.status === 'hired').length, [candidates]);
-  const uniqueSources = useMemo(() => new Set(candidates.map((c) => c.source).filter(Boolean)).size, [candidates]);
+  const inPipeline = useMemo(
+    () => candidates.filter((c) => !TERMINAL_STAGES.includes(c.status)).length,
+    [candidates],
+  );
+  const hiredCount = useMemo(
+    () => candidates.filter((c) => c.status === 'hired').length,
+    [candidates],
+  );
+  const uniqueSources = useMemo(
+    () => new Set(candidates.map((c) => c.source).filter(Boolean)).size,
+    [candidates],
+  );
 
   useEffect(() => {
     if (!workspace) return;
     setLoading(true);
-    Promise.all([
-      candidatesApi.list(workspace.id),
-      membersApi.list(workspace.id),
-    ])
+    Promise.all([candidatesApi.list(workspace.id), membersApi.list(workspace.id)])
       .then(([candRes, membRes]) => {
         setCandidates(candRes.data);
         setMembers(membRes.data);
       })
-      .catch((err) => { console.error('Failed to load recruitment data:', err); Toast.show('Failed to load recruitment data'); })
+      .catch((err) => {
+        console.error('Failed to load recruitment data:', err);
+        Toast.show('Failed to load recruitment data');
+      })
       .finally(() => setLoading(false));
   }, [workspace]);
 
   // Escape key handlers for modals
   useEffect(() => {
     if (!showCreateModal) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') { setShowCreateModal(false); setCreateForm(emptyCandidate); } };
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowCreateModal(false);
+        setCreateForm(emptyCandidate);
+      }
+    };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [showCreateModal]);
 
   useEffect(() => {
     if (!showEventModal) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') { setShowEventModal(false); setEventForm(emptyEvent); } };
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowEventModal(false);
+        setEventForm(emptyEvent);
+      }
+    };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [showEventModal]);
 
   useEffect(() => {
     if (!showDeleteConfirm) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowDeleteConfirm(false); };
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowDeleteConfirm(false);
+    };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [showDeleteConfirm]);
@@ -146,7 +180,7 @@ export function RecruitmentPage() {
         (c) =>
           c.name.toLowerCase().includes(q) ||
           c.position_applied.toLowerCase().includes(q) ||
-          (c.email && c.email.toLowerCase().includes(q))
+          (c.email && c.email.toLowerCase().includes(q)),
       );
     }
     if (filterSource) {
@@ -242,7 +276,10 @@ export function RecruitmentPage() {
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: 'var(--color-primary)' }} />
+        <div
+          className="animate-spin rounded-full h-8 w-8 border-b-2"
+          style={{ borderColor: 'var(--color-primary)' }}
+        />
       </div>
     );
   }
@@ -277,12 +314,14 @@ export function RecruitmentPage() {
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search candidates..."
               className="pl-8 pr-3 py-1.5 text-sm border rounded-lg outline-none focus:ring-2 w-56"
-              style={{
-                borderColor: 'var(--color-border)',
-                backgroundColor: 'var(--color-surface)',
-                color: 'var(--color-text)',
-                '--tw-ring-color': 'var(--color-primary)',
-              } as React.CSSProperties}
+              style={
+                {
+                  borderColor: 'var(--color-border)',
+                  backgroundColor: 'var(--color-surface)',
+                  color: 'var(--color-text)',
+                  '--tw-ring-color': 'var(--color-primary)',
+                } as React.CSSProperties
+              }
             />
           </div>
 
@@ -310,17 +349,35 @@ export function RecruitmentPage() {
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6 px-6">
-        <StatCard label="Total Candidates" value={candidates.length} icon={<UserPlus size={20} />} colour={COLOURS.blue} />
-        <StatCard label="In Pipeline" value={inPipeline} icon={<Users size={20} />} colour={COLOURS.purple} />
-        <StatCard label="Hired" value={hiredCount} icon={<Award size={20} />} colour={COLOURS.green} />
-        <StatCard label="Sources" value={uniqueSources} icon={<TrendingUp size={20} />} colour={COLOURS.teal} />
+        <StatCard
+          label="Total Candidates"
+          value={candidates.length}
+          icon={<UserPlus size={20} />}
+          colour={COLOURS.blue}
+        />
+        <StatCard
+          label="In Pipeline"
+          value={inPipeline}
+          icon={<Users size={20} />}
+          colour={COLOURS.purple}
+        />
+        <StatCard
+          label="Hired"
+          value={hiredCount}
+          icon={<Award size={20} />}
+          colour={COLOURS.green}
+        />
+        <StatCard
+          label="Sources"
+          value={uniqueSources}
+          icon={<TrendingUp size={20} />}
+          colour={COLOURS.teal}
+        />
       </div>
 
       {/* Source filter bar */}
       {showFilters && (
-        <div
-          className="px-6 pb-3 flex items-center gap-2 flex-shrink-0"
-        >
+        <div className="px-6 pb-3 flex items-center gap-2 flex-shrink-0">
           <span className="text-xs font-medium" style={{ color: 'var(--color-text-secondary)' }}>
             Source:
           </span>
@@ -369,7 +426,10 @@ export function RecruitmentPage() {
                 {/* Column header */}
                 <div className="px-3 py-3 flex items-center justify-between flex-shrink-0">
                   <div className="flex items-center gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: col.colour }} />
+                    <div
+                      className="w-2.5 h-2.5 rounded-full"
+                      style={{ backgroundColor: col.colour }}
+                    />
                     <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
                       {col.label}
                     </span>
@@ -395,7 +455,10 @@ export function RecruitmentPage() {
                       }}
                     >
                       <div className="flex items-start justify-between">
-                        <p className="text-sm font-medium truncate" style={{ color: 'var(--color-text)' }}>
+                        <p
+                          className="text-sm font-medium truncate"
+                          style={{ color: 'var(--color-text)' }}
+                        >
                           {candidate.name}
                         </p>
                         <ChevronRight
@@ -404,32 +467,44 @@ export function RecruitmentPage() {
                           style={{ color: 'var(--color-text-secondary)' }}
                         />
                       </div>
-                      <p className="text-xs mt-1 truncate" style={{ color: 'var(--color-text-secondary)' }}>
+                      <p
+                        className="text-xs mt-1 truncate"
+                        style={{ color: 'var(--color-text-secondary)' }}
+                      >
                         {candidate.position_applied}
                       </p>
                       <div className="flex items-center justify-between mt-2">
-                        {candidate.source && (() => {
-                          const sourceColour = lookupValues.find((v) => v.value === candidate.source)?.colour || '#64748b';
-                          return (
-                            <span
-                              className="text-[10px] font-medium px-1.5 py-0.5 rounded-full capitalize"
-                              style={{
-                                backgroundColor: sourceColour + '18',
-                                color: sourceColour,
-                              }}
-                            >
-                              {candidate.source}
-                            </span>
-                          );
-                        })()}
-                        <span className="text-[10px]" style={{ color: 'var(--color-text-secondary)' }}>
+                        {candidate.source &&
+                          (() => {
+                            const sourceColour =
+                              lookupValues.find((v) => v.value === candidate.source)?.colour ||
+                              '#64748b';
+                            return (
+                              <span
+                                className="text-[10px] font-medium px-1.5 py-0.5 rounded-full capitalize"
+                                style={{
+                                  backgroundColor: sourceColour + '18',
+                                  color: sourceColour,
+                                }}
+                              >
+                                {candidate.source}
+                              </span>
+                            );
+                          })()}
+                        <span
+                          className="text-[10px]"
+                          style={{ color: 'var(--color-text-secondary)' }}
+                        >
                           {new Date(candidate.applied_date).toLocaleDateString()}
                         </span>
                       </div>
                     </button>
                   ))}
                   {colCandidates.length === 0 && (
-                    <p className="text-xs text-center py-4" style={{ color: 'var(--color-text-secondary)' }}>
+                    <p
+                      className="text-xs text-center py-4"
+                      style={{ color: 'var(--color-text-secondary)' }}
+                    >
                       No candidates
                     </p>
                   )}
@@ -454,7 +529,10 @@ export function RecruitmentPage() {
             {/* Panel header */}
             <div
               className="sticky top-0 z-10 px-5 py-4 flex items-center justify-between border-b"
-              style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+              style={{
+                backgroundColor: 'var(--color-surface)',
+                borderColor: 'var(--color-border)',
+              }}
             >
               <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>
                 Candidate Details
@@ -479,26 +557,41 @@ export function RecruitmentPage() {
                 </p>
                 <div className="mt-3 space-y-1.5">
                   {selectedCandidate.email && (
-                    <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                    <div
+                      className="flex items-center gap-2 text-sm"
+                      style={{ color: 'var(--color-text-secondary)' }}
+                    >
                       <Mail size={14} />
                       <span>{selectedCandidate.email}</span>
                     </div>
                   )}
                   {selectedCandidate.phone && (
-                    <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                    <div
+                      className="flex items-center gap-2 text-sm"
+                      style={{ color: 'var(--color-text-secondary)' }}
+                    >
                       <Phone size={14} />
                       <span>{selectedCandidate.phone}</span>
                     </div>
                   )}
                   {selectedCandidate.source && (
-                    <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                    <div
+                      className="flex items-center gap-2 text-sm"
+                      style={{ color: 'var(--color-text-secondary)' }}
+                    >
                       <MapPin size={14} />
                       <span className="capitalize">Source: {selectedCandidate.source}</span>
                     </div>
                   )}
                 </div>
                 {selectedCandidate.notes && (
-                  <p className="text-sm mt-3 p-2 rounded-lg" style={{ backgroundColor: 'var(--color-grey-1)', color: 'var(--color-text-secondary)' }}>
+                  <p
+                    className="text-sm mt-3 p-2 rounded-lg"
+                    style={{
+                      backgroundColor: 'var(--color-grey-1)',
+                      color: 'var(--color-text-secondary)',
+                    }}
+                  >
                     {selectedCandidate.notes}
                   </p>
                 )}
@@ -506,19 +599,24 @@ export function RecruitmentPage() {
 
               {/* Status dropdown */}
               <div>
-                <label className="text-xs font-medium" style={{ color: 'var(--color-text-secondary)' }}>
+                <label
+                  className="text-xs font-medium"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
                   Pipeline Status
                 </label>
                 <select
                   value={selectedCandidate.status}
                   onChange={(e) => handleUpdateStatus(selectedCandidate.id, e.target.value)}
                   className="mt-1 w-full px-3 py-2 text-sm border rounded-lg outline-none focus:ring-2"
-                  style={{
-                    borderColor: 'var(--color-border)',
-                    backgroundColor: 'var(--color-surface)',
-                    color: 'var(--color-text)',
-                    '--tw-ring-color': 'var(--color-primary)',
-                  } as React.CSSProperties}
+                  style={
+                    {
+                      borderColor: 'var(--color-border)',
+                      backgroundColor: 'var(--color-surface)',
+                      color: 'var(--color-text)',
+                      '--tw-ring-color': 'var(--color-primary)',
+                    } as React.CSSProperties
+                  }
                 >
                   {PIPELINE_COLUMNS.map((col) => (
                     <option key={col.key} value={col.key}>
@@ -531,7 +629,10 @@ export function RecruitmentPage() {
               {/* Actions */}
               <div className="flex gap-2">
                 <button
-                  onClick={() => { setEventForm({ ...emptyEvent, interviewer_id: user?.id ?? '' }); setShowEventModal(true); }}
+                  onClick={() => {
+                    setEventForm({ ...emptyEvent, interviewer_id: user?.id ?? '' });
+                    setShowEventModal(true);
+                  }}
                   className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-colors hover:bg-subtle"
                   style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
                 >
@@ -565,7 +666,10 @@ export function RecruitmentPage() {
                     />
                     <div className="space-y-4">
                       {[...selectedCandidate.events]
-                        .sort((a, b) => new Date(b.event_date).getTime() - new Date(a.event_date).getTime())
+                        .sort(
+                          (a, b) =>
+                            new Date(b.event_date).getTime() - new Date(a.event_date).getTime(),
+                        )
                         .map((evt) => (
                           <div key={evt.id} className="relative pl-5">
                             {/* Dot */}
@@ -575,27 +679,42 @@ export function RecruitmentPage() {
                             />
                             <div>
                               <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+                                <span
+                                  className="text-sm font-medium"
+                                  style={{ color: 'var(--color-text)' }}
+                                >
                                   {EVENT_TYPE_LABELS[evt.event_type] || evt.event_type}
                                 </span>
-                                <span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                                <span
+                                  className="text-xs"
+                                  style={{ color: 'var(--color-text-secondary)' }}
+                                >
                                   {new Date(evt.event_date).toLocaleDateString()}
                                 </span>
                               </div>
                               {getMemberName(evt.interviewer_id) && (
-                                <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-secondary)' }}>
+                                <p
+                                  className="text-xs mt-0.5"
+                                  style={{ color: 'var(--color-text-secondary)' }}
+                                >
                                   Interviewer: {getMemberName(evt.interviewer_id)}
                                 </p>
                               )}
                               {evt.outcome && (
-                                <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-secondary)' }}>
+                                <p
+                                  className="text-xs mt-0.5"
+                                  style={{ color: 'var(--color-text-secondary)' }}
+                                >
                                   Outcome: {evt.outcome}
                                 </p>
                               )}
                               {evt.notes && (
                                 <p
                                   className="text-xs mt-1 p-1.5 rounded"
-                                  style={{ backgroundColor: 'var(--color-grey-1)', color: 'var(--color-text-secondary)' }}
+                                  style={{
+                                    backgroundColor: 'var(--color-grey-1)',
+                                    color: 'var(--color-text-secondary)',
+                                  }}
                                 >
                                   {evt.notes}
                                 </p>
@@ -620,7 +739,8 @@ export function RecruitmentPage() {
                     Delete candidate?
                   </h3>
                   <p className="text-sm mt-2" style={{ color: 'var(--color-text-secondary)' }}>
-                    This will permanently remove {selectedCandidate.name} and all associated events. This cannot be undone.
+                    This will permanently remove {selectedCandidate.name} and all associated events.
+                    This cannot be undone.
                   </p>
                   <div className="flex gap-2 mt-4 justify-end">
                     <button
@@ -656,7 +776,10 @@ export function RecruitmentPage() {
                 Add Candidate
               </h3>
               <button
-                onClick={() => { setShowCreateModal(false); setCreateForm(emptyCandidate); }}
+                onClick={() => {
+                  setShowCreateModal(false);
+                  setCreateForm(emptyCandidate);
+                }}
                 className="p-1 rounded-lg hover:bg-muted transition-colors"
                 style={{ color: 'var(--color-text-secondary)' }}
               >
@@ -665,108 +788,155 @@ export function RecruitmentPage() {
             </div>
             <div className="space-y-3">
               <div>
-                <label className="text-xs font-medium" style={{ color: 'var(--color-text-secondary)' }}>Name *</label>
+                <label
+                  className="text-xs font-medium"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
+                  Name *
+                </label>
                 <input
                   type="text"
                   value={createForm.name}
                   onChange={(e) => setCreateForm((f) => ({ ...f, name: e.target.value }))}
                   className="mt-1 w-full px-3 py-2 text-sm border rounded-lg outline-none focus:ring-2"
-                  style={{
-                    borderColor: 'var(--color-border)',
-                    backgroundColor: 'var(--color-surface)',
-                    color: 'var(--color-text)',
-                    '--tw-ring-color': 'var(--color-primary)',
-                  } as React.CSSProperties}
+                  style={
+                    {
+                      borderColor: 'var(--color-border)',
+                      backgroundColor: 'var(--color-surface)',
+                      color: 'var(--color-text)',
+                      '--tw-ring-color': 'var(--color-primary)',
+                    } as React.CSSProperties
+                  }
                   placeholder="Full name"
                   autoFocus
                 />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-medium" style={{ color: 'var(--color-text-secondary)' }}>Email</label>
+                  <label
+                    className="text-xs font-medium"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                  >
+                    Email
+                  </label>
                   <input
                     type="email"
                     value={createForm.email}
                     onChange={(e) => setCreateForm((f) => ({ ...f, email: e.target.value }))}
                     className="mt-1 w-full px-3 py-2 text-sm border rounded-lg outline-none focus:ring-2"
-                    style={{
-                      borderColor: 'var(--color-border)',
-                      backgroundColor: 'var(--color-surface)',
-                      color: 'var(--color-text)',
-                      '--tw-ring-color': 'var(--color-primary)',
-                    } as React.CSSProperties}
+                    style={
+                      {
+                        borderColor: 'var(--color-border)',
+                        backgroundColor: 'var(--color-surface)',
+                        color: 'var(--color-text)',
+                        '--tw-ring-color': 'var(--color-primary)',
+                      } as React.CSSProperties
+                    }
                     placeholder="email@example.com"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-medium" style={{ color: 'var(--color-text-secondary)' }}>Phone</label>
+                  <label
+                    className="text-xs font-medium"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                  >
+                    Phone
+                  </label>
                   <input
                     type="tel"
                     value={createForm.phone}
                     onChange={(e) => setCreateForm((f) => ({ ...f, phone: e.target.value }))}
                     className="mt-1 w-full px-3 py-2 text-sm border rounded-lg outline-none focus:ring-2"
-                    style={{
-                      borderColor: 'var(--color-border)',
-                      backgroundColor: 'var(--color-surface)',
-                      color: 'var(--color-text)',
-                      '--tw-ring-color': 'var(--color-primary)',
-                    } as React.CSSProperties}
+                    style={
+                      {
+                        borderColor: 'var(--color-border)',
+                        backgroundColor: 'var(--color-surface)',
+                        color: 'var(--color-text)',
+                        '--tw-ring-color': 'var(--color-primary)',
+                      } as React.CSSProperties
+                    }
                     placeholder="+44..."
                   />
                 </div>
               </div>
               <div>
-                <label className="text-xs font-medium" style={{ color: 'var(--color-text-secondary)' }}>Position Applied *</label>
+                <label
+                  className="text-xs font-medium"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
+                  Position Applied *
+                </label>
                 <input
                   type="text"
                   value={createForm.position_applied}
-                  onChange={(e) => setCreateForm((f) => ({ ...f, position_applied: e.target.value }))}
+                  onChange={(e) =>
+                    setCreateForm((f) => ({ ...f, position_applied: e.target.value }))
+                  }
                   className="mt-1 w-full px-3 py-2 text-sm border rounded-lg outline-none focus:ring-2"
-                  style={{
-                    borderColor: 'var(--color-border)',
-                    backgroundColor: 'var(--color-surface)',
-                    color: 'var(--color-text)',
-                    '--tw-ring-color': 'var(--color-primary)',
-                  } as React.CSSProperties}
+                  style={
+                    {
+                      borderColor: 'var(--color-border)',
+                      backgroundColor: 'var(--color-surface)',
+                      color: 'var(--color-text)',
+                      '--tw-ring-color': 'var(--color-primary)',
+                    } as React.CSSProperties
+                  }
                   placeholder="e.g. Senior Engineer"
                 />
               </div>
               <div>
-                <label className="text-xs font-medium" style={{ color: 'var(--color-text-secondary)' }}>Source</label>
+                <label
+                  className="text-xs font-medium"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
+                  Source
+                </label>
                 <LookupSelect
                   category="candidate_source"
                   value={createForm.source}
                   onChange={(v) => setCreateForm((f) => ({ ...f, source: v }))}
                   placeholder="Select source..."
                   className="mt-1 w-full px-3 py-2 text-sm border rounded-lg outline-none focus:ring-2 capitalize"
-                  style={{
-                    borderColor: 'var(--color-border)',
-                    backgroundColor: 'var(--color-surface)',
-                    color: 'var(--color-text)',
-                    '--tw-ring-color': 'var(--color-primary)',
-                  } as React.CSSProperties}
+                  style={
+                    {
+                      borderColor: 'var(--color-border)',
+                      backgroundColor: 'var(--color-surface)',
+                      color: 'var(--color-text)',
+                      '--tw-ring-color': 'var(--color-primary)',
+                    } as React.CSSProperties
+                  }
                 />
               </div>
               <div>
-                <label className="text-xs font-medium" style={{ color: 'var(--color-text-secondary)' }}>Notes</label>
+                <label
+                  className="text-xs font-medium"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
+                  Notes
+                </label>
                 <textarea
                   value={createForm.notes}
                   onChange={(e) => setCreateForm((f) => ({ ...f, notes: e.target.value }))}
                   rows={3}
                   className="mt-1 w-full px-3 py-2 text-sm border rounded-lg outline-none focus:ring-2 resize-none"
-                  style={{
-                    borderColor: 'var(--color-border)',
-                    backgroundColor: 'var(--color-surface)',
-                    color: 'var(--color-text)',
-                    '--tw-ring-color': 'var(--color-primary)',
-                  } as React.CSSProperties}
+                  style={
+                    {
+                      borderColor: 'var(--color-border)',
+                      backgroundColor: 'var(--color-surface)',
+                      color: 'var(--color-text)',
+                      '--tw-ring-color': 'var(--color-primary)',
+                    } as React.CSSProperties
+                  }
                   placeholder="Any initial notes..."
                 />
               </div>
             </div>
             <div className="flex gap-2 mt-5 justify-end">
               <button
-                onClick={() => { setShowCreateModal(false); setCreateForm(emptyCandidate); }}
+                onClick={() => {
+                  setShowCreateModal(false);
+                  setCreateForm(emptyCandidate);
+                }}
                 className="px-4 py-2 text-sm rounded-lg border hover:bg-subtle transition-colors"
                 style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
               >
@@ -797,7 +967,10 @@ export function RecruitmentPage() {
                 Add Event
               </h3>
               <button
-                onClick={() => { setShowEventModal(false); setEventForm(emptyEvent); }}
+                onClick={() => {
+                  setShowEventModal(false);
+                  setEventForm(emptyEvent);
+                }}
                 className="p-1 rounded-lg hover:bg-muted transition-colors"
                 style={{ color: 'var(--color-text-secondary)' }}
               >
@@ -806,17 +979,24 @@ export function RecruitmentPage() {
             </div>
             <div className="space-y-3">
               <div>
-                <label className="text-xs font-medium" style={{ color: 'var(--color-text-secondary)' }}>Event Type *</label>
+                <label
+                  className="text-xs font-medium"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
+                  Event Type *
+                </label>
                 <select
                   value={eventForm.event_type}
                   onChange={(e) => setEventForm((f) => ({ ...f, event_type: e.target.value }))}
                   className="mt-1 w-full px-3 py-2 text-sm border rounded-lg outline-none focus:ring-2"
-                  style={{
-                    borderColor: 'var(--color-border)',
-                    backgroundColor: 'var(--color-surface)',
-                    color: 'var(--color-text)',
-                    '--tw-ring-color': 'var(--color-primary)',
-                  } as React.CSSProperties}
+                  style={
+                    {
+                      borderColor: 'var(--color-border)',
+                      backgroundColor: 'var(--color-surface)',
+                      color: 'var(--color-text)',
+                      '--tw-ring-color': 'var(--color-primary)',
+                    } as React.CSSProperties
+                  }
                 >
                   {EVENT_TYPE_OPTIONS.map((et) => (
                     <option key={et} value={et}>
@@ -826,32 +1006,46 @@ export function RecruitmentPage() {
                 </select>
               </div>
               <div>
-                <label className="text-xs font-medium" style={{ color: 'var(--color-text-secondary)' }}>Date</label>
+                <label
+                  className="text-xs font-medium"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
+                  Date
+                </label>
                 <input
                   type="date"
                   value={eventForm.event_date}
                   onChange={(e) => setEventForm((f) => ({ ...f, event_date: e.target.value }))}
                   className="mt-1 w-full px-3 py-2 text-sm border rounded-lg outline-none focus:ring-2"
-                  style={{
-                    borderColor: 'var(--color-border)',
-                    backgroundColor: 'var(--color-surface)',
-                    color: 'var(--color-text)',
-                    '--tw-ring-color': 'var(--color-primary)',
-                  } as React.CSSProperties}
+                  style={
+                    {
+                      borderColor: 'var(--color-border)',
+                      backgroundColor: 'var(--color-surface)',
+                      color: 'var(--color-text)',
+                      '--tw-ring-color': 'var(--color-primary)',
+                    } as React.CSSProperties
+                  }
                 />
               </div>
               <div>
-                <label className="text-xs font-medium" style={{ color: 'var(--color-text-secondary)' }}>Interviewer</label>
+                <label
+                  className="text-xs font-medium"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
+                  Interviewer
+                </label>
                 <select
                   value={eventForm.interviewer_id}
                   onChange={(e) => setEventForm((f) => ({ ...f, interviewer_id: e.target.value }))}
                   className="mt-1 w-full px-3 py-2 text-sm border rounded-lg outline-none focus:ring-2"
-                  style={{
-                    borderColor: 'var(--color-border)',
-                    backgroundColor: 'var(--color-surface)',
-                    color: 'var(--color-text)',
-                    '--tw-ring-color': 'var(--color-primary)',
-                  } as React.CSSProperties}
+                  style={
+                    {
+                      borderColor: 'var(--color-border)',
+                      backgroundColor: 'var(--color-surface)',
+                      color: 'var(--color-text)',
+                      '--tw-ring-color': 'var(--color-primary)',
+                    } as React.CSSProperties
+                  }
                 >
                   <option value="">None</option>
                   {members.map((m) => (
@@ -862,41 +1056,58 @@ export function RecruitmentPage() {
                 </select>
               </div>
               <div>
-                <label className="text-xs font-medium" style={{ color: 'var(--color-text-secondary)' }}>Outcome</label>
+                <label
+                  className="text-xs font-medium"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
+                  Outcome
+                </label>
                 <LookupSelect
                   category="event_outcome"
                   value={eventForm.outcome}
                   onChange={(v) => setEventForm((f) => ({ ...f, outcome: v }))}
                   placeholder="Select outcome..."
                   className="mt-1 w-full px-3 py-2 text-sm border rounded-lg outline-none focus:ring-2"
-                  style={{
-                    borderColor: 'var(--color-border)',
-                    backgroundColor: 'var(--color-surface)',
-                    color: 'var(--color-text)',
-                    '--tw-ring-color': 'var(--color-primary)',
-                  } as React.CSSProperties}
+                  style={
+                    {
+                      borderColor: 'var(--color-border)',
+                      backgroundColor: 'var(--color-surface)',
+                      color: 'var(--color-text)',
+                      '--tw-ring-color': 'var(--color-primary)',
+                    } as React.CSSProperties
+                  }
                 />
               </div>
               <div>
-                <label className="text-xs font-medium" style={{ color: 'var(--color-text-secondary)' }}>Notes</label>
+                <label
+                  className="text-xs font-medium"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
+                  Notes
+                </label>
                 <textarea
                   value={eventForm.notes}
                   onChange={(e) => setEventForm((f) => ({ ...f, notes: e.target.value }))}
                   rows={3}
                   className="mt-1 w-full px-3 py-2 text-sm border rounded-lg outline-none focus:ring-2 resize-none"
-                  style={{
-                    borderColor: 'var(--color-border)',
-                    backgroundColor: 'var(--color-surface)',
-                    color: 'var(--color-text)',
-                    '--tw-ring-color': 'var(--color-primary)',
-                  } as React.CSSProperties}
+                  style={
+                    {
+                      borderColor: 'var(--color-border)',
+                      backgroundColor: 'var(--color-surface)',
+                      color: 'var(--color-text)',
+                      '--tw-ring-color': 'var(--color-primary)',
+                    } as React.CSSProperties
+                  }
                   placeholder="Additional details..."
                 />
               </div>
             </div>
             <div className="flex gap-2 mt-5 justify-end">
               <button
-                onClick={() => { setShowEventModal(false); setEventForm(emptyEvent); }}
+                onClick={() => {
+                  setShowEventModal(false);
+                  setEventForm(emptyEvent);
+                }}
                 className="px-4 py-2 text-sm rounded-lg border hover:bg-subtle transition-colors"
                 style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
               >

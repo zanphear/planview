@@ -21,7 +21,9 @@ export function DependencyPicker({ taskId }: DependencyPickerProps) {
     try {
       const { data } = await dependenciesApi.list(workspace.id, taskId);
       setDeps(data);
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   };
 
   useEffect(() => {
@@ -58,24 +60,33 @@ export function DependencyPicker({ taskId }: DependencyPickerProps) {
     (t) =>
       t.id !== taskId &&
       !deps.some((d) => d.blocker_id === t.id || d.blocked_id === t.id) &&
-      t.name.toLowerCase().includes(search.toLowerCase())
+      t.name.toLowerCase().includes(search.toLowerCase()),
   );
 
   return (
     <div>
-      <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>
+      <label
+        className="block text-xs font-medium mb-1"
+        style={{ color: 'var(--color-text-secondary)' }}
+      >
         <Link size={12} className="inline mr-1" />
         Dependencies
       </label>
 
       {blockers.length > 0 && (
         <div className="mb-2">
-          <span className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--color-text-secondary)' }}>
+          <span
+            className="text-[10px] uppercase tracking-wider"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
             Blocked by
           </span>
           {blockers.map((d) => (
             <div key={d.id} className="flex items-center gap-2 mt-1">
-              <span className="text-sm flex-1 truncate" style={{ color: 'var(--color-danger, #ef4444)' }}>
+              <span
+                className="text-sm flex-1 truncate"
+                style={{ color: 'var(--color-danger, #ef4444)' }}
+              >
                 {taskName(d.blocker_id)}
               </span>
               <button onClick={() => handleRemove(d.id)} className="p-0.5 hover:opacity-60">
@@ -88,12 +99,18 @@ export function DependencyPicker({ taskId }: DependencyPickerProps) {
 
       {blocking.length > 0 && (
         <div className="mb-2">
-          <span className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--color-text-secondary)' }}>
+          <span
+            className="text-[10px] uppercase tracking-wider"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
             Blocking
           </span>
           {blocking.map((d) => (
             <div key={d.id} className="flex items-center gap-2 mt-1">
-              <span className="text-sm flex-1 truncate" style={{ color: 'var(--color-warning, #f59e0b)' }}>
+              <span
+                className="text-sm flex-1 truncate"
+                style={{ color: 'var(--color-warning, #f59e0b)' }}
+              >
                 {taskName(d.blocked_id)}
               </span>
               <button onClick={() => handleRemove(d.id)} className="p-0.5 hover:opacity-60">
@@ -135,14 +152,20 @@ export function DependencyPicker({ taskId }: DependencyPickerProps) {
                 <button
                   onClick={() => handleAdd(t.id, true)}
                   className="text-[10px] px-1.5 py-0.5 rounded border whitespace-nowrap"
-                  style={{ borderColor: 'var(--color-border)', color: 'var(--color-danger, #ef4444)' }}
+                  style={{
+                    borderColor: 'var(--color-border)',
+                    color: 'var(--color-danger, #ef4444)',
+                  }}
                 >
                   Blocked by
                 </button>
                 <button
                   onClick={() => handleAdd(t.id, false)}
                   className="text-[10px] px-1.5 py-0.5 rounded border whitespace-nowrap"
-                  style={{ borderColor: 'var(--color-border)', color: 'var(--color-warning, #f59e0b)' }}
+                  style={{
+                    borderColor: 'var(--color-border)',
+                    color: 'var(--color-warning, #f59e0b)',
+                  }}
                 >
                   Blocking
                 </button>

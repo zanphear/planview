@@ -97,7 +97,14 @@ export const peopleApi = {
       params: documentType ? { document_type: documentType } : undefined,
     }),
 
-  uploadDocument: (workspaceId: string, userId: string, file: File, documentType: string, expiryDate?: string, notes?: string) => {
+  uploadDocument: (
+    workspaceId: string,
+    userId: string,
+    file: File,
+    documentType: string,
+    expiryDate?: string,
+    notes?: string,
+  ) => {
     const form = new FormData();
     form.append('file', file);
     const params: Record<string, string> = { document_type: documentType };

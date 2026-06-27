@@ -1,5 +1,14 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { Paperclip, Upload, Trash2, Download, FileText, Image, File as FileIcon, Eye } from 'lucide-react';
+import {
+  Paperclip,
+  Upload,
+  Trash2,
+  Download,
+  FileText,
+  Image,
+  File as FileIcon,
+  Eye,
+} from 'lucide-react';
 import { attachmentsApi, type Attachment } from '../../api/attachments';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
 import { useAuthStore } from '../../stores/authStore';
@@ -51,18 +60,25 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
   };
 
   const getIcon = (mimeType: string) => {
-    if (mimeType.startsWith('image/')) return <Image size={16} style={{ color: 'var(--color-primary)' }} />;
-    if (mimeType.includes('pdf')) return <FileText size={16} style={{ color: 'var(--color-danger)' }} />;
+    if (mimeType.startsWith('image/'))
+      return <Image size={16} style={{ color: 'var(--color-primary)' }} />;
+    if (mimeType.includes('pdf'))
+      return <FileText size={16} style={{ color: 'var(--color-danger)' }} />;
     return <FileIcon size={16} style={{ color: 'var(--color-text-secondary)' }} />;
   };
 
   const canPreview = (mimeType: string) =>
-    mimeType.startsWith('image/') || mimeType === 'application/pdf' ||
-    mimeType.startsWith('video/') || mimeType.startsWith('audio/');
+    mimeType.startsWith('image/') ||
+    mimeType === 'application/pdf' ||
+    mimeType.startsWith('video/') ||
+    mimeType.startsWith('audio/');
 
   return (
     <div>
-      <label className="block text-xs font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
+      <label
+        className="block text-xs font-medium mb-2"
+        style={{ color: 'var(--color-text-secondary)' }}
+      >
         <Paperclip size={12} className="inline mr-1" />
         Attachments
       </label>
@@ -75,7 +91,10 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
           backgroundColor: dragOver ? 'var(--color-primary-light)' : undefined,
         }}
         onClick={() => fileInputRef.current?.click()}
-        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragOver(true);
+        }}
         onDragLeave={() => setDragOver(false)}
         onDrop={(e) => {
           e.preventDefault();
@@ -83,7 +102,11 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
           handleUpload(e.dataTransfer.files);
         }}
       >
-        <Upload size={16} className="mx-auto mb-1" style={{ color: 'var(--color-text-secondary)' }} />
+        <Upload
+          size={16}
+          className="mx-auto mb-1"
+          style={{ color: 'var(--color-text-secondary)' }}
+        />
         <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
           {uploading ? 'Uploading...' : 'Drop files here or click to upload'}
         </p>
@@ -105,8 +128,12 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
             style={{ backgroundColor: 'var(--color-grey-1)' }}
           >
             {getIcon(att.mime_type)}
-            <span className="flex-1 truncate" style={{ color: 'var(--color-text)' }}>{att.filename}</span>
-            <span className="text-xs shrink-0" style={{ color: 'var(--color-text-secondary)' }}>{formatSize(att.file_size)}</span>
+            <span className="flex-1 truncate" style={{ color: 'var(--color-text)' }}>
+              {att.filename}
+            </span>
+            <span className="text-xs shrink-0" style={{ color: 'var(--color-text-secondary)' }}>
+              {formatSize(att.file_size)}
+            </span>
             <div className="hidden group-hover:flex items-center gap-1">
               {canPreview(att.mime_type) && workspace && (
                 <button

@@ -103,16 +103,14 @@ const base = (ws: string) => `/workspaces/${ws}/early-talent`;
 
 export const earlyTalentApi = {
   // Programmes
-  listProgrammes: (ws: string) =>
-    api.get<EarlyTalentProgramme[]>(`${base(ws)}/programmes`),
+  listProgrammes: (ws: string) => api.get<EarlyTalentProgramme[]>(`${base(ws)}/programmes`),
   createProgramme: (ws: string, data: Partial<EarlyTalentProgramme>) =>
     api.post<EarlyTalentProgramme>(`${base(ws)}/programmes`, data),
   getProgramme: (ws: string, id: string) =>
     api.get<EarlyTalentProgramme>(`${base(ws)}/programmes/${id}`),
   updateProgramme: (ws: string, id: string, data: Partial<EarlyTalentProgramme>) =>
     api.put<EarlyTalentProgramme>(`${base(ws)}/programmes/${id}`, data),
-  deleteProgramme: (ws: string, id: string) =>
-    api.delete(`${base(ws)}/programmes/${id}`),
+  deleteProgramme: (ws: string, id: string) => api.delete(`${base(ws)}/programmes/${id}`),
 
   // Cohorts
   listCohorts: (ws: string, progId: string) =>
@@ -133,34 +131,57 @@ export const earlyTalentApi = {
     api.delete(`${base(ws)}/programmes/${progId}/rotations/${id}`),
 
   // Participants
-  listParticipants: (ws: string, params?: { programme_id?: string; cohort_id?: string; status?: string }) =>
-    api.get<EarlyTalentParticipant[]>(`${base(ws)}/participants`, { params }),
+  listParticipants: (
+    ws: string,
+    params?: { programme_id?: string; cohort_id?: string; status?: string },
+  ) => api.get<EarlyTalentParticipant[]>(`${base(ws)}/participants`, { params }),
   createParticipant: (ws: string, data: Partial<EarlyTalentParticipant>) =>
     api.post<EarlyTalentParticipant>(`${base(ws)}/participants`, data),
   getParticipant: (ws: string, id: string) =>
     api.get<EarlyTalentParticipant>(`${base(ws)}/participants/${id}`),
   updateParticipant: (ws: string, id: string, data: Partial<EarlyTalentParticipant>) =>
     api.put<EarlyTalentParticipant>(`${base(ws)}/participants/${id}`, data),
-  deleteParticipant: (ws: string, id: string) =>
-    api.delete(`${base(ws)}/participants/${id}`),
+  deleteParticipant: (ws: string, id: string) => api.delete(`${base(ws)}/participants/${id}`),
 
   // Rotation assignments
-  assignRotation: (ws: string, participantId: string, data: Partial<EarlyTalentRotationAssignment>) =>
-    api.post<EarlyTalentRotationAssignment>(`${base(ws)}/participants/${participantId}/rotations`, data),
-  updateRotationAssignment: (ws: string, participantId: string, id: string, data: Partial<EarlyTalentRotationAssignment>) =>
-    api.put<EarlyTalentRotationAssignment>(`${base(ws)}/participants/${participantId}/rotations/${id}`, data),
+  assignRotation: (
+    ws: string,
+    participantId: string,
+    data: Partial<EarlyTalentRotationAssignment>,
+  ) =>
+    api.post<EarlyTalentRotationAssignment>(
+      `${base(ws)}/participants/${participantId}/rotations`,
+      data,
+    ),
+  updateRotationAssignment: (
+    ws: string,
+    participantId: string,
+    id: string,
+    data: Partial<EarlyTalentRotationAssignment>,
+  ) =>
+    api.put<EarlyTalentRotationAssignment>(
+      `${base(ws)}/participants/${participantId}/rotations/${id}`,
+      data,
+    ),
   deleteRotationAssignment: (ws: string, participantId: string, id: string) =>
     api.delete(`${base(ws)}/participants/${participantId}/rotations/${id}`),
 
   // Milestones
   createMilestone: (ws: string, participantId: string, data: Partial<EarlyTalentMilestone>) =>
     api.post<EarlyTalentMilestone>(`${base(ws)}/participants/${participantId}/milestones`, data),
-  updateMilestone: (ws: string, participantId: string, id: string, data: Partial<EarlyTalentMilestone>) =>
-    api.put<EarlyTalentMilestone>(`${base(ws)}/participants/${participantId}/milestones/${id}`, data),
+  updateMilestone: (
+    ws: string,
+    participantId: string,
+    id: string,
+    data: Partial<EarlyTalentMilestone>,
+  ) =>
+    api.put<EarlyTalentMilestone>(
+      `${base(ws)}/participants/${participantId}/milestones/${id}`,
+      data,
+    ),
   deleteMilestone: (ws: string, participantId: string, id: string) =>
     api.delete(`${base(ws)}/participants/${participantId}/milestones/${id}`),
 
   // Stats
-  stats: (ws: string) =>
-    api.get<EarlyTalentDashboardStats>(`${base(ws)}/stats`),
+  stats: (ws: string) => api.get<EarlyTalentDashboardStats>(`${base(ws)}/stats`),
 };

@@ -32,26 +32,38 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
   }, [fetchComments]);
 
   // Real-time comment updates
-  useWSEvent('comment.created', (data) => {
-    if (data.task_id !== taskId) return;
-    const comment = data.comment as Comment;
-    setComments((prev) => {
-      if (prev.some((c) => c.id === comment.id)) return prev;
-      return [...prev, comment];
-    });
-    setTimeout(() => commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
-  }, [taskId]);
+  useWSEvent(
+    'comment.created',
+    (data) => {
+      if (data.task_id !== taskId) return;
+      const comment = data.comment as Comment;
+      setComments((prev) => {
+        if (prev.some((c) => c.id === comment.id)) return prev;
+        return [...prev, comment];
+      });
+      setTimeout(() => commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+    },
+    [taskId],
+  );
 
-  useWSEvent('comment.updated', (data) => {
-    if (data.task_id !== taskId) return;
-    const comment = data.comment as Comment;
-    setComments((prev) => prev.map((c) => (c.id === comment.id ? comment : c)));
-  }, [taskId]);
+  useWSEvent(
+    'comment.updated',
+    (data) => {
+      if (data.task_id !== taskId) return;
+      const comment = data.comment as Comment;
+      setComments((prev) => prev.map((c) => (c.id === comment.id ? comment : c)));
+    },
+    [taskId],
+  );
 
-  useWSEvent('comment.deleted', (data) => {
-    if (data.task_id !== taskId) return;
-    setComments((prev) => prev.filter((c) => c.id !== data.comment_id));
-  }, [taskId]);
+  useWSEvent(
+    'comment.deleted',
+    (data) => {
+      if (data.task_id !== taskId) return;
+      setComments((prev) => prev.filter((c) => c.id !== data.comment_id));
+    },
+    [taskId],
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,7 +104,12 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
 
   return (
     <div>
-      <label className="block text-xs font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>Comments</label>
+      <label
+        className="block text-xs font-medium mb-2"
+        style={{ color: 'var(--color-text-secondary)' }}
+      >
+        Comments
+      </label>
 
       {/* Comment list */}
       <div className="space-y-3 mb-3">
@@ -108,7 +125,9 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
                 <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
                   {comment.user?.name || 'Unknown'}
                 </span>
-                <span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>{formatTime(comment.created_at)}</span>
+                <span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                  {formatTime(comment.created_at)}
+                </span>
                 {comment.user_id === user?.id && (
                   <div className="hidden group-hover:flex items-center gap-1 ml-auto">
                     {editingId === comment.id ? (
@@ -131,7 +150,10 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
                     ) : (
                       <>
                         <button
-                          onClick={() => { setEditingId(comment.id); setEditBody(comment.body); }}
+                          onClick={() => {
+                            setEditingId(comment.id);
+                            setEditBody(comment.body);
+                          }}
                           className="p-0.5 hover:opacity-80"
                           style={{ color: 'var(--color-text-secondary)' }}
                         >
@@ -162,17 +184,31 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
                     if (e.key === 'Escape') setEditingId(null);
                   }}
                   className="w-full mt-1 px-2 py-1 text-sm border rounded resize-none outline-none focus:ring-1"
-                  style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
+                  style={
+                    {
+                      borderColor: 'var(--color-border)',
+                      backgroundColor: 'var(--color-surface)',
+                      color: 'var(--color-text)',
+                      '--tw-ring-color': 'var(--color-primary)',
+                    } as React.CSSProperties
+                  }
                   rows={2}
                 />
               ) : (
-                <p className="text-sm whitespace-pre-wrap mt-0.5" style={{ color: 'var(--color-text)' }}>{comment.body}</p>
+                <p
+                  className="text-sm whitespace-pre-wrap mt-0.5"
+                  style={{ color: 'var(--color-text)' }}
+                >
+                  {comment.body}
+                </p>
               )}
             </div>
           </div>
         ))}
         {comments.length === 0 && (
-          <p className="text-xs italic" style={{ color: 'var(--color-text-secondary)' }}>No comments yet</p>
+          <p className="text-xs italic" style={{ color: 'var(--color-text-secondary)' }}>
+            No comments yet
+          </p>
         )}
         <div ref={commentsEndRef} />
       </div>
@@ -184,7 +220,14 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
           onChange={(e) => setBody(e.target.value)}
           placeholder="Write a comment..."
           className="flex-1 px-3 py-1.5 text-sm border rounded-lg outline-none focus:ring-2"
-          style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
+          style={
+            {
+              borderColor: 'var(--color-border)',
+              backgroundColor: 'var(--color-surface)',
+              color: 'var(--color-text)',
+              '--tw-ring-color': 'var(--color-primary)',
+            } as React.CSSProperties
+          }
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault();

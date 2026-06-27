@@ -28,14 +28,10 @@ interface RollbackContext {
 // ── Queries ──────────────────────────────────────────────────────────────────
 
 /** All tasks for a project (the board's primary server data). */
-export function useProjectTasks(
-  workspaceId: string | undefined,
-  projectId: string | undefined
-) {
+export function useProjectTasks(workspaceId: string | undefined, projectId: string | undefined) {
   return useQuery({
     queryKey: taskKeys.byProject(workspaceId ?? '', projectId ?? ''),
-    queryFn: async () =>
-      (await tasksApi.list(workspaceId!, { project_id: projectId! })).data,
+    queryFn: async () => (await tasksApi.list(workspaceId!, { project_id: projectId! })).data,
     enabled: !!workspaceId && !!projectId,
   });
 }
@@ -43,15 +39,11 @@ export function useProjectTasks(
 // ── Mutations ────────────────────────────────────────────────────────────────
 
 /** Create a task, then append to the project list cache and revalidate. */
-export function useCreateTask(
-  workspaceId: string | undefined,
-  projectId: string | undefined
-) {
+export function useCreateTask(workspaceId: string | undefined, projectId: string | undefined) {
   const qc = useQueryClient();
   const key = taskKeys.byProject(workspaceId ?? '', projectId ?? '');
   return useMutation({
-    mutationFn: async (data: CreateTaskInput) =>
-      (await tasksApi.create(workspaceId!, data)).data,
+    mutationFn: async (data: CreateTaskInput) => (await tasksApi.create(workspaceId!, data)).data,
     onSuccess: (created) => {
       qc.setQueryData<Task[]>(key, (old) => (old ? [...old, created] : [created]));
     },
@@ -62,10 +54,7 @@ export function useCreateTask(
 }
 
 /** Update a single task; merge the server result into the list cache. */
-export function useUpdateTask(
-  workspaceId: string | undefined,
-  projectId: string | undefined
-) {
+export function useUpdateTask(workspaceId: string | undefined, projectId: string | undefined) {
   const qc = useQueryClient();
   const key = taskKeys.byProject(workspaceId ?? '', projectId ?? '');
   return useMutation({
@@ -73,17 +62,14 @@ export function useUpdateTask(
       (await tasksApi.update(workspaceId!, vars.taskId, vars.data)).data,
     onSuccess: (updated) => {
       qc.setQueryData<Task[]>(key, (old) =>
-        old ? old.map((t) => (t.id === updated.id ? updated : t)) : old
+        old ? old.map((t) => (t.id === updated.id ? updated : t)) : old,
       );
     },
   });
 }
 
 /** Bulk status / assignee change; merge every returned task into the cache. */
-export function useBulkUpdateTasks(
-  workspaceId: string | undefined,
-  projectId: string | undefined
-) {
+export function useBulkUpdateTasks(workspaceId: string | undefined, projectId: string | undefined) {
   const qc = useQueryClient();
   const key = taskKeys.byProject(workspaceId ?? '', projectId ?? '');
   return useMutation({
@@ -91,19 +77,14 @@ export function useBulkUpdateTasks(
       (await tasksApi.bulkUpdate(workspaceId!, data)).data,
     onSuccess: (updatedList) => {
       qc.setQueryData<Task[]>(key, (old) =>
-        old
-          ? old.map((t) => updatedList.find((u) => u.id === t.id) ?? t)
-          : old
+        old ? old.map((t) => updatedList.find((u) => u.id === t.id) ?? t) : old,
       );
     },
   });
 }
 
 /** Delete a task with an optimistic remove + rollback on error. */
-export function useDeleteTask(
-  workspaceId: string | undefined,
-  projectId: string | undefined
-) {
+export function useDeleteTask(workspaceId: string | undefined, projectId: string | undefined) {
   const qc = useQueryClient();
   const key = taskKeys.byProject(workspaceId ?? '', projectId ?? '');
   return useMutation({
@@ -114,9 +95,7 @@ export function useDeleteTask(
     onMutate: async (taskId): Promise<RollbackContext> => {
       await qc.cancelQueries({ queryKey: key });
       const previous = qc.getQueryData<Task[]>(key);
-      qc.setQueryData<Task[]>(key, (old) =>
-        old ? old.filter((t) => t.id !== taskId) : old
-      );
+      qc.setQueryData<Task[]>(key, (old) => (old ? old.filter((t) => t.id !== taskId) : old));
       return { previous };
     },
     onError: (_err, _taskId, ctx) => {
@@ -133,18 +112,11 @@ export function useDeleteTask(
  * patch the task in place on `onMutate`, ROLL BACK to the snapshot on error,
  * revalidate on settle. (ADR forbidden-6: optimistic moves must roll back.)
  */
-export function useMoveTask(
-  workspaceId: string | undefined,
-  projectId: string | undefined
-) {
+export function useMoveTask(workspaceId: string | undefined, projectId: string | undefined) {
   const qc = useQueryClient();
   const key = taskKeys.byProject(workspaceId ?? '', projectId ?? '');
   return useMutation({
-    mutationFn: async (vars: {
-      taskId: string;
-      status: string;
-      sort_order: number;
-    }) =>
+    mutationFn: async (vars: { taskId: string; status: string; sort_order: number }) =>
       (
         await tasksApi.update(workspaceId!, vars.taskId, {
           status: vars.status,
@@ -157,11 +129,9 @@ export function useMoveTask(
       qc.setQueryData<Task[]>(key, (old) =>
         old
           ? old.map((t) =>
-              t.id === vars.taskId
-                ? { ...t, status: vars.status, sort_order: vars.sort_order }
-                : t
+              t.id === vars.taskId ? { ...t, status: vars.status, sort_order: vars.sort_order } : t,
             )
-          : old
+          : old,
       );
       return { previous };
     },
@@ -178,15 +148,11 @@ export function useMoveTask(
  * Reorder tasks within a column. OPTIMISTIC: patch every affected sort_order in
  * the cache, ROLL BACK the whole snapshot on error, revalidate on settle.
  */
-export function useReorderTasks(
-  workspaceId: string | undefined,
-  projectId: string | undefined
-) {
+export function useReorderTasks(workspaceId: string | undefined, projectId: string | undefined) {
   const qc = useQueryClient();
   const key = taskKeys.byProject(workspaceId ?? '', projectId ?? '');
   return useMutation({
-    mutationFn: async (items: ReorderItems) =>
-      (await tasksApi.reorder(workspaceId!, items)).data,
+    mutationFn: async (items: ReorderItems) => (await tasksApi.reorder(workspaceId!, items)).data,
     onMutate: async (items): Promise<RollbackContext> => {
       await qc.cancelQueries({ queryKey: key });
       const previous = qc.getQueryData<Task[]>(key);
@@ -196,7 +162,7 @@ export function useReorderTasks(
               const item = items.find((i) => i.id === t.id);
               return item ? { ...t, sort_order: item.sort_order } : t;
             })
-          : old
+          : old,
       );
       return { previous };
     },

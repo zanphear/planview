@@ -14,8 +14,7 @@ export interface Project {
 }
 
 export const projectsApi = {
-  list: (workspaceId: string) =>
-    api.get<Project[]>(`/workspaces/${workspaceId}/projects`),
+  list: (workspaceId: string) => api.get<Project[]>(`/workspaces/${workspaceId}/projects`),
 
   create: (workspaceId: string, data: { name: string; colour?: string; client_id?: string }) =>
     api.post<Project>(`/workspaces/${workspaceId}/projects`, data),

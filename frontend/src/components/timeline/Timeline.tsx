@@ -31,20 +31,39 @@ interface TimelineProps {
   zoom: ZoomLevel;
   onZoomChange: (level: ZoomLevel) => void;
   onTaskClick: (task: Task) => void;
-  onTaskUpdate?: (taskId: string, updates: { date_from?: string; date_to?: string; laneId?: string }) => void;
+  onTaskUpdate?: (
+    taskId: string,
+    updates: { date_from?: string; date_to?: string; laneId?: string },
+  ) => void;
   onCreateTask?: (laneId: string, date: string) => void;
   onContextAction?: (action: string, task: Task) => void;
 }
 
-export function Timeline({ swimlanes, milestones = [], startDate, zoom, onZoomChange, onTaskClick, onTaskUpdate, onCreateTask, onContextAction }: TimelineProps) {
+export function Timeline({
+  swimlanes,
+  milestones = [],
+  startDate,
+  zoom,
+  onZoomChange,
+  onTaskClick,
+  onTaskUpdate,
+  onCreateTask,
+  onContextAction,
+}: TimelineProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const ghostRef = useRef<HTMLDivElement>(null);
   const config = ZOOM_CONFIGS[zoom];
-  const dates = useMemo(() => generateDateRange(startDate, config.daysVisible), [startDate, config.daysVisible]);
+  const dates = useMemo(
+    () => generateDateRange(startDate, config.daysVisible),
+    [startDate, config.daysVisible],
+  );
 
-  const handleDragComplete = useCallback((taskId: string, updates: { date_from?: string; date_to?: string; laneId?: string }) => {
-    onTaskUpdate?.(taskId, updates);
-  }, [onTaskUpdate]);
+  const handleDragComplete = useCallback(
+    (taskId: string, updates: { date_from?: string; date_to?: string; laneId?: string }) => {
+      onTaskUpdate?.(taskId, updates);
+    },
+    [onTaskUpdate],
+  );
 
   const { dragState, startDrag } = useTimelineDrag(
     config.columnWidth,
@@ -66,7 +85,8 @@ export function Timeline({ swimlanes, milestones = [], startDate, zoom, onZoomCh
 
   const totalWidth = dates.length * config.columnWidth + 192; // 192 = label column
   const todayOffset = getDateOffset(new Date(), startDate);
-  const todayLeft = todayOffset >= 0 ? 192 + todayOffset * config.columnWidth + config.columnWidth / 2 : -1;
+  const todayLeft =
+    todayOffset >= 0 ? 192 + todayOffset * config.columnWidth + config.columnWidth / 2 : -1;
 
   // Collect all tasks for dependency arrows
   const allTasks = useMemo(() => swimlanes.flatMap((lane) => lane.tasks), [swimlanes]);
@@ -124,7 +144,8 @@ export function Timeline({ swimlanes, milestones = [], startDate, zoom, onZoomCh
             {/* Milestone markers */}
             {milestones.map((m) => {
               const offset = getDateOffset(new Date(m.date), startDate);
-              const left = offset >= 0 ? 192 + offset * config.columnWidth + config.columnWidth / 2 : -1;
+              const left =
+                offset >= 0 ? 192 + offset * config.columnWidth + config.columnWidth / 2 : -1;
               return (
                 <MilestoneMarker
                   key={m.id}
@@ -163,7 +184,10 @@ export function Timeline({ swimlanes, milestones = [], startDate, zoom, onZoomCh
             />
 
             {swimlanes.length === 0 && (
-              <div className="flex items-center justify-center h-40 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+              <div
+                className="flex items-center justify-center h-40 text-sm"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
                 No tasks to display
               </div>
             )}

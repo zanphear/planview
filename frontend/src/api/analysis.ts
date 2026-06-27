@@ -35,7 +35,9 @@ export const analysisApi = {
     api.get<AnalysisType[]>(`/workspaces/${workspaceId}/analysis/types`),
 
   generate: (workspaceId: string, reportType: string) =>
-    api.post<AnalysisReport>(`/workspaces/${workspaceId}/analysis/generate`, { report_type: reportType }),
+    api.post<AnalysisReport>(`/workspaces/${workspaceId}/analysis/generate`, {
+      report_type: reportType,
+    }),
 
   list: (workspaceId: string) =>
     api.get<AnalysisReportListItem[]>(`/workspaces/${workspaceId}/analysis/reports`),

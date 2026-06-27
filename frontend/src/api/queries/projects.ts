@@ -29,10 +29,7 @@ export function useProjects(workspaceId: string | undefined) {
  * A single project, selected out of the workspace list query so it shares the
  * same cache entry (no extra request). The API has no get-by-id endpoint.
  */
-export function useProject(
-  workspaceId: string | undefined,
-  projectId: string | undefined
-) {
+export function useProject(workspaceId: string | undefined, projectId: string | undefined) {
   return useQuery({
     queryKey: projectKeys.list(workspaceId ?? ''),
     queryFn: async () => (await projectsApi.list(workspaceId!)).data,
@@ -61,7 +58,7 @@ export function useUpdateProject(workspaceId: string | undefined) {
       (await projectsApi.update(workspaceId!, vars.projectId, vars.data)).data,
     onSuccess: (updated) => {
       qc.setQueryData<Project[]>(projectKeys.list(workspaceId ?? ''), (old) =>
-        old ? old.map((p) => (p.id === updated.id ? updated : p)) : old
+        old ? old.map((p) => (p.id === updated.id ? updated : p)) : old,
       );
     },
   });
@@ -76,7 +73,7 @@ export function useDeleteProject(workspaceId: string | undefined) {
     },
     onSuccess: (projectId) => {
       qc.setQueryData<Project[]>(projectKeys.list(workspaceId ?? ''), (old) =>
-        old ? old.filter((p) => p.id !== projectId) : old
+        old ? old.filter((p) => p.id !== projectId) : old,
       );
     },
   });

@@ -7,7 +7,9 @@ type WSEvent = {
 
 type EventHandler = (data: Record<string, unknown>) => void;
 
-const WS_BASE = import.meta.env.VITE_WS_URL || `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`;
+const WS_BASE =
+  import.meta.env.VITE_WS_URL ||
+  `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`;
 
 function getAccessToken(): string {
   return localStorage.getItem('access_token') || '';

@@ -61,7 +61,18 @@ export function LeavePage() {
     [allowances],
   );
 
-  const COLOUR_CYCLE = [COLOURS.green, COLOURS.blue, COLOURS.purple, COLOURS.amber, COLOURS.red, COLOURS.teal, COLOURS.pink, COLOURS.indigo, COLOURS.cyan, COLOURS.slate];
+  const COLOUR_CYCLE = [
+    COLOURS.green,
+    COLOURS.blue,
+    COLOURS.purple,
+    COLOURS.amber,
+    COLOURS.red,
+    COLOURS.teal,
+    COLOURS.pink,
+    COLOURS.indigo,
+    COLOURS.cyan,
+    COLOURS.slate,
+  ];
 
   const getLeaveTypeColour = (type: string): string => {
     const lookup = lookupValues.find((v) => v.value === type);
@@ -180,7 +191,8 @@ export function LeavePage() {
               onClick={() => setActiveTab('requests')}
               className="px-3 py-1.5 text-sm font-medium rounded-l-lg transition-colors"
               style={{
-                backgroundColor: activeTab === 'requests' ? 'var(--color-primary)' : 'var(--color-surface)',
+                backgroundColor:
+                  activeTab === 'requests' ? 'var(--color-primary)' : 'var(--color-surface)',
                 color: activeTab === 'requests' ? '#fff' : 'var(--color-text-secondary)',
               }}
             >
@@ -190,7 +202,8 @@ export function LeavePage() {
               onClick={() => setActiveTab('allowances')}
               className="px-3 py-1.5 text-sm font-medium rounded-r-lg transition-colors"
               style={{
-                backgroundColor: activeTab === 'allowances' ? 'var(--color-primary)' : 'var(--color-surface)',
+                backgroundColor:
+                  activeTab === 'allowances' ? 'var(--color-primary)' : 'var(--color-surface)',
                 color: activeTab === 'allowances' ? '#fff' : 'var(--color-text-secondary)',
               }}
             >
@@ -224,17 +237,47 @@ export function LeavePage() {
 
       {/* Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard label="Total Requests" value={totalRequests} icon={<Calendar size={20} />} colour={COLOURS.blue} />
-        <StatCard label="Pending Approvals" value={pendingCount} icon={<Clock size={20} />} colour={COLOURS.amber} />
-        <StatCard label="Days Used" value={daysUsed} icon={<CheckCircle size={20} />} colour={COLOURS.green} />
-        <StatCard label="Days Remaining" value={daysRemaining} icon={<AlertTriangle size={20} />} colour={COLOURS.teal} />
+        <StatCard
+          label="Total Requests"
+          value={totalRequests}
+          icon={<Calendar size={20} />}
+          colour={COLOURS.blue}
+        />
+        <StatCard
+          label="Pending Approvals"
+          value={pendingCount}
+          icon={<Clock size={20} />}
+          colour={COLOURS.amber}
+        />
+        <StatCard
+          label="Days Used"
+          value={daysUsed}
+          icon={<CheckCircle size={20} />}
+          colour={COLOURS.green}
+        />
+        <StatCard
+          label="Days Remaining"
+          value={daysRemaining}
+          icon={<AlertTriangle size={20} />}
+          colour={COLOURS.teal}
+        />
       </div>
 
       {/* Leave by Type Chart */}
       {requests.length > 0 && (
-        <div className="rounded-xl border p-5 mb-6" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
-          <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-text)' }}>Leave by Type</h3>
-          <DonutChart segments={leaveTypeSegments} size={120} centerValue={requests.length} centerLabel="requests" />
+        <div
+          className="rounded-xl border p-5 mb-6"
+          style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+        >
+          <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-text)' }}>
+            Leave by Type
+          </h3>
+          <DonutChart
+            segments={leaveTypeSegments}
+            size={120}
+            centerValue={requests.length}
+            centerLabel="requests"
+          />
         </div>
       )}
 
@@ -247,7 +290,11 @@ export function LeavePage() {
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="text-sm px-2 py-1.5 rounded-lg border"
-              style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+              style={{
+                borderColor: 'var(--color-border)',
+                backgroundColor: 'var(--color-surface)',
+                color: 'var(--color-text)',
+              }}
             >
               <option value="">All Statuses</option>
               <option value="pending">Pending</option>
@@ -259,11 +306,17 @@ export function LeavePage() {
               value={userFilter}
               onChange={(e) => setUserFilter(e.target.value)}
               className="text-sm px-2 py-1.5 rounded-lg border"
-              style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+              style={{
+                borderColor: 'var(--color-border)',
+                backgroundColor: 'var(--color-surface)',
+                color: 'var(--color-text)',
+              }}
             >
               <option value="">All People</option>
               {members.map((m) => (
-                <option key={m.id} value={m.id}>{m.name}</option>
+                <option key={m.id} value={m.id}>
+                  {m.name}
+                </option>
               ))}
             </select>
           </div>
@@ -272,7 +325,11 @@ export function LeavePage() {
           {filteredRequests.length === 0 ? (
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
-                <Calendar size={48} className="mx-auto mb-3 opacity-30" style={{ color: 'var(--color-text-secondary)' }} />
+                <Calendar
+                  size={48}
+                  className="mx-auto mb-3 opacity-30"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                />
                 <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
                   No leave requests found.
                 </p>
@@ -283,7 +340,10 @@ export function LeavePage() {
               {filteredRequests.map((req) => {
                 const member = getMember(req.user_id);
                 const lookupMatch = lookupValues.find((v) => v.value === req.leave_type);
-                const fallback = LEAVE_TYPE_LABELS[req.leave_type as LeaveType] || { label: req.leave_type, colour: '#6b7280' };
+                const fallback = LEAVE_TYPE_LABELS[req.leave_type as LeaveType] || {
+                  label: req.leave_type,
+                  colour: '#6b7280',
+                };
                 const leaveType = {
                   label: lookupMatch?.label || fallback.label,
                   colour: lookupMatch?.colour || fallback.colour,
@@ -311,7 +371,10 @@ export function LeavePage() {
                       >
                         {member?.initials || member?.name?.charAt(0) || '?'}
                       </div>
-                      <span className="text-sm font-medium truncate" style={{ color: 'var(--color-text)' }}>
+                      <span
+                        className="text-sm font-medium truncate"
+                        style={{ color: 'var(--color-text)' }}
+                      >
                         {getMemberName(req.user_id)}
                       </span>
                     </div>
@@ -325,20 +388,33 @@ export function LeavePage() {
                     </span>
 
                     {/* Date range */}
-                    <div className="flex items-center gap-1.5 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                    <div
+                      className="flex items-center gap-1.5 text-sm"
+                      style={{ color: 'var(--color-text-secondary)' }}
+                    >
                       <Calendar size={14} />
-                      <span>{req.start_date}, {req.end_date}</span>
+                      <span>
+                        {req.start_date}, {req.end_date}
+                      </span>
                     </div>
 
                     {/* Days count */}
-                    <div className="flex items-center gap-1 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                    <div
+                      className="flex items-center gap-1 text-sm"
+                      style={{ color: 'var(--color-text-secondary)' }}
+                    >
                       <Clock size={14} />
-                      <span>{req.days} day{req.days !== 1 ? 's' : ''}</span>
+                      <span>
+                        {req.days} day{req.days !== 1 ? 's' : ''}
+                      </span>
                     </div>
 
                     {/* Notes */}
                     {req.notes && (
-                      <span className="text-xs italic truncate max-w-[200px]" style={{ color: 'var(--color-text-secondary)' }}>
+                      <span
+                        className="text-xs italic truncate max-w-[200px]"
+                        style={{ color: 'var(--color-text-secondary)' }}
+                      >
                         {req.notes}
                       </span>
                     )}
@@ -391,10 +467,16 @@ export function LeavePage() {
               value={allowanceYear}
               onChange={(e) => setAllowanceYear(Number(e.target.value))}
               className="text-sm px-2 py-1.5 rounded-lg border"
-              style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+              style={{
+                borderColor: 'var(--color-border)',
+                backgroundColor: 'var(--color-surface)',
+                color: 'var(--color-text)',
+              }}
             >
               {[allowanceYear - 1, allowanceYear, allowanceYear + 1].map((y) => (
-                <option key={y} value={y}>{y}</option>
+                <option key={y} value={y}>
+                  {y}
+                </option>
               ))}
             </select>
           </div>
@@ -403,7 +485,11 @@ export function LeavePage() {
           {allowances.length === 0 ? (
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
-                <Calendar size={48} className="mx-auto mb-3 opacity-30" style={{ color: 'var(--color-text-secondary)' }} />
+                <Calendar
+                  size={48}
+                  className="mx-auto mb-3 opacity-30"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                />
                 <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
                   No allowances configured for {allowanceYear}.
                 </p>
@@ -414,21 +500,56 @@ export function LeavePage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b" style={{ borderColor: 'var(--color-border)' }}>
-                    <th className="text-left px-3 py-2 font-medium" style={{ color: 'var(--color-text-secondary)' }}>Person</th>
-                    <th className="text-right px-3 py-2 font-medium" style={{ color: 'var(--color-text-secondary)' }}>Entitlement</th>
-                    <th className="text-right px-3 py-2 font-medium" style={{ color: 'var(--color-text-secondary)' }}>Carried Forward</th>
-                    <th className="text-right px-3 py-2 font-medium" style={{ color: 'var(--color-text-secondary)' }}>Used</th>
-                    <th className="text-right px-3 py-2 font-medium" style={{ color: 'var(--color-text-secondary)' }}>Booked</th>
-                    <th className="text-right px-3 py-2 font-medium" style={{ color: 'var(--color-text-secondary)' }}>Remaining</th>
+                    <th
+                      className="text-left px-3 py-2 font-medium"
+                      style={{ color: 'var(--color-text-secondary)' }}
+                    >
+                      Person
+                    </th>
+                    <th
+                      className="text-right px-3 py-2 font-medium"
+                      style={{ color: 'var(--color-text-secondary)' }}
+                    >
+                      Entitlement
+                    </th>
+                    <th
+                      className="text-right px-3 py-2 font-medium"
+                      style={{ color: 'var(--color-text-secondary)' }}
+                    >
+                      Carried Forward
+                    </th>
+                    <th
+                      className="text-right px-3 py-2 font-medium"
+                      style={{ color: 'var(--color-text-secondary)' }}
+                    >
+                      Used
+                    </th>
+                    <th
+                      className="text-right px-3 py-2 font-medium"
+                      style={{ color: 'var(--color-text-secondary)' }}
+                    >
+                      Booked
+                    </th>
+                    <th
+                      className="text-right px-3 py-2 font-medium"
+                      style={{ color: 'var(--color-text-secondary)' }}
+                    >
+                      Remaining
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {allowances.map((a) => {
                     const member = getMember(a.user_id);
-                    const remainingColour = a.remaining <= 0 ? '#dc2626' : a.remaining <= 5 ? '#f59e0b' : '#16a34a';
+                    const remainingColour =
+                      a.remaining <= 0 ? '#dc2626' : a.remaining <= 5 ? '#f59e0b' : '#16a34a';
 
                     return (
-                      <tr key={a.id} className="border-b last:border-b-0" style={{ borderColor: 'var(--color-border)' }}>
+                      <tr
+                        key={a.id}
+                        className="border-b last:border-b-0"
+                        style={{ borderColor: 'var(--color-border)' }}
+                      >
                         <td className="px-3 py-2.5">
                           <div className="flex items-center gap-2">
                             <div
@@ -437,14 +558,39 @@ export function LeavePage() {
                             >
                               {member?.initials || member?.name?.charAt(0) || '?'}
                             </div>
-                            <span style={{ color: 'var(--color-text)' }}>{getMemberName(a.user_id)}</span>
+                            <span style={{ color: 'var(--color-text)' }}>
+                              {getMemberName(a.user_id)}
+                            </span>
                           </div>
                         </td>
-                        <td className="text-right px-3 py-2.5" style={{ color: 'var(--color-text)' }}>{a.entitlement_days}</td>
-                        <td className="text-right px-3 py-2.5" style={{ color: 'var(--color-text)' }}>{a.carried_forward}</td>
-                        <td className="text-right px-3 py-2.5" style={{ color: 'var(--color-text)' }}>{a.used_days}</td>
-                        <td className="text-right px-3 py-2.5" style={{ color: 'var(--color-text)' }}>{a.booked_days}</td>
-                        <td className="text-right px-3 py-2.5 font-semibold" style={{ color: remainingColour }}>
+                        <td
+                          className="text-right px-3 py-2.5"
+                          style={{ color: 'var(--color-text)' }}
+                        >
+                          {a.entitlement_days}
+                        </td>
+                        <td
+                          className="text-right px-3 py-2.5"
+                          style={{ color: 'var(--color-text)' }}
+                        >
+                          {a.carried_forward}
+                        </td>
+                        <td
+                          className="text-right px-3 py-2.5"
+                          style={{ color: 'var(--color-text)' }}
+                        >
+                          {a.used_days}
+                        </td>
+                        <td
+                          className="text-right px-3 py-2.5"
+                          style={{ color: 'var(--color-text)' }}
+                        >
+                          {a.booked_days}
+                        </td>
+                        <td
+                          className="text-right px-3 py-2.5 font-semibold"
+                          style={{ color: remainingColour }}
+                        >
                           {a.remaining}
                         </td>
                       </tr>
@@ -462,7 +608,10 @@ export function LeavePage() {
         <CreateRequestModal
           workspaceId={workspace.id}
           onClose={() => setShowRequestModal(false)}
-          onCreated={() => { setShowRequestModal(false); loadData(); }}
+          onCreated={() => {
+            setShowRequestModal(false);
+            loadData();
+          }}
         />
       )}
 
@@ -473,18 +622,22 @@ export function LeavePage() {
           members={members}
           year={allowanceYear}
           onClose={() => setShowAllowanceModal(false)}
-          onCreated={() => { setShowAllowanceModal(false); loadAllowances(); }}
+          onCreated={() => {
+            setShowAllowanceModal(false);
+            loadAllowances();
+          }}
         />
       )}
     </div>
   );
 }
 
-
 // --- Create Request Modal ---
 
 function CreateRequestModal({
-  workspaceId, onClose, onCreated,
+  workspaceId,
+  onClose,
+  onCreated,
 }: {
   workspaceId: string;
   onClose: () => void;
@@ -498,7 +651,9 @@ function CreateRequestModal({
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
@@ -524,59 +679,100 @@ function CreateRequestModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      onClick={onClose}
+    >
       <div
         className="w-full max-w-md rounded-xl shadow-2xl p-6"
         style={{ backgroundColor: 'var(--color-surface)' }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold" style={{ color: 'var(--color-text)' }}>Request Leave</h3>
-          <button onClick={onClose} className="p-1 rounded hover:bg-subtle" style={{ color: 'var(--color-text-secondary)' }}>
+          <h3 className="text-lg font-bold" style={{ color: 'var(--color-text)' }}>
+            Request Leave
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-1 rounded hover:bg-subtle"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
             <X size={18} />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Leave Type</label>
+            <label
+              className="block text-sm font-medium mb-1"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
+              Leave Type
+            </label>
             <LookupSelect
               category="leave_type"
               value={leaveType}
               onChange={(v) => setLeaveType(v as LeaveType)}
               placeholder="Select leave type..."
               className="w-full px-3 py-2 text-sm rounded-lg border"
-              style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+              style={{
+                borderColor: 'var(--color-border)',
+                backgroundColor: 'var(--color-surface)',
+                color: 'var(--color-text)',
+              }}
             />
           </div>
 
           <div className="flex gap-3">
             <div className="flex-1">
-              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Start Date</label>
+              <label
+                className="block text-sm font-medium mb-1"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
+                Start Date
+              </label>
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 required
                 className="w-full px-3 py-2 text-sm rounded-lg border"
-                style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+                style={{
+                  borderColor: 'var(--color-border)',
+                  backgroundColor: 'var(--color-surface)',
+                  color: 'var(--color-text)',
+                }}
               />
             </div>
             <div className="flex-1">
-              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>End Date</label>
+              <label
+                className="block text-sm font-medium mb-1"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
+                End Date
+              </label>
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 required
                 className="w-full px-3 py-2 text-sm rounded-lg border"
-                style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+                style={{
+                  borderColor: 'var(--color-border)',
+                  backgroundColor: 'var(--color-surface)',
+                  color: 'var(--color-text)',
+                }}
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Days</label>
+            <label
+              className="block text-sm font-medium mb-1"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
+              Days
+            </label>
             <input
               type="number"
               value={days}
@@ -585,19 +781,32 @@ function CreateRequestModal({
               step={0.5}
               required
               className="w-full px-3 py-2 text-sm rounded-lg border"
-              style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+              style={{
+                borderColor: 'var(--color-border)',
+                backgroundColor: 'var(--color-surface)',
+                color: 'var(--color-text)',
+              }}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Notes</label>
+            <label
+              className="block text-sm font-medium mb-1"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
+              Notes
+            </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Optional"
               rows={2}
               className="w-full px-3 py-2 text-sm rounded-lg border resize-none"
-              style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+              style={{
+                borderColor: 'var(--color-border)',
+                backgroundColor: 'var(--color-surface)',
+                color: 'var(--color-text)',
+              }}
             />
           </div>
 
@@ -625,11 +834,14 @@ function CreateRequestModal({
   );
 }
 
-
 // --- Create Allowance Modal ---
 
 function CreateAllowanceModal({
-  workspaceId, members, year, onClose, onCreated,
+  workspaceId,
+  members,
+  year,
+  onClose,
+  onCreated,
 }: {
   workspaceId: string;
   members: User[];
@@ -643,7 +855,9 @@ function CreateAllowanceModal({
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
@@ -669,38 +883,63 @@ function CreateAllowanceModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      onClick={onClose}
+    >
       <div
         className="w-full max-w-md rounded-xl shadow-2xl p-6"
         style={{ backgroundColor: 'var(--color-surface)' }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold" style={{ color: 'var(--color-text)' }}>Set Allowance, {year}</h3>
-          <button onClick={onClose} className="p-1 rounded hover:bg-subtle" style={{ color: 'var(--color-text-secondary)' }}>
+          <h3 className="text-lg font-bold" style={{ color: 'var(--color-text)' }}>
+            Set Allowance, {year}
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-1 rounded hover:bg-subtle"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
             <X size={18} />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Person</label>
+            <label
+              className="block text-sm font-medium mb-1"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
+              Person
+            </label>
             <select
               value={userId}
               onChange={(e) => setUserId(e.target.value)}
               required
               className="w-full px-3 py-2 text-sm rounded-lg border"
-              style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+              style={{
+                borderColor: 'var(--color-border)',
+                backgroundColor: 'var(--color-surface)',
+                color: 'var(--color-text)',
+              }}
             >
               <option value="">Select person...</option>
               {members.map((m) => (
-                <option key={m.id} value={m.id}>{m.name}</option>
+                <option key={m.id} value={m.id}>
+                  {m.name}
+                </option>
               ))}
             </select>
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Entitlement Days</label>
+            <label
+              className="block text-sm font-medium mb-1"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
+              Entitlement Days
+            </label>
             <input
               type="number"
               value={entitlementDays}
@@ -708,12 +947,21 @@ function CreateAllowanceModal({
               min={0}
               required
               className="w-full px-3 py-2 text-sm rounded-lg border"
-              style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+              style={{
+                borderColor: 'var(--color-border)',
+                backgroundColor: 'var(--color-surface)',
+                color: 'var(--color-text)',
+              }}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Carried Forward</label>
+            <label
+              className="block text-sm font-medium mb-1"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
+              Carried Forward
+            </label>
             <input
               type="number"
               value={carriedForward}
@@ -721,7 +969,11 @@ function CreateAllowanceModal({
               min={0}
               required
               className="w-full px-3 py-2 text-sm rounded-lg border"
-              style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+              style={{
+                borderColor: 'var(--color-border)',
+                backgroundColor: 'var(--color-surface)',
+                color: 'var(--color-text)',
+              }}
             />
           </div>
 

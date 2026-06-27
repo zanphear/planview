@@ -35,7 +35,10 @@ export function Taskbox() {
     if (taskboxOpen) {
       fetchUnscheduled();
       if (workspace) {
-        templatesApi.list(workspace.id).then((res) => setTemplates(res.data)).catch(() => {});
+        templatesApi
+          .list(workspace.id)
+          .then((res) => setTemplates(res.data))
+          .catch(() => {});
       }
     }
   }, [taskboxOpen, fetchUnscheduled, workspace]);
@@ -75,9 +78,14 @@ export function Taskbox() {
         style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
       >
         <Inbox size={16} style={{ color: 'var(--color-primary)' }} />
-        <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>Taskbox</span>
+        <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+          Taskbox
+        </span>
         {tasks.length > 0 && (
-          <span className="text-xs px-1.5 py-0.5 rounded-full font-medium" style={{ backgroundColor: 'var(--color-primary-light)', color: 'var(--color-primary)' }}>
+          <span
+            className="text-xs px-1.5 py-0.5 rounded-full font-medium"
+            style={{ backgroundColor: 'var(--color-primary-light)', color: 'var(--color-primary)' }}
+          >
             {tasks.length}
           </span>
         )}
@@ -89,7 +97,11 @@ export function Taskbox() {
   return (
     <div
       className="fixed bottom-4 right-4 z-30 w-80 rounded-xl shadow-xl border flex flex-col overflow-hidden"
-      style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', maxHeight: '50vh' }}
+      style={{
+        backgroundColor: 'var(--color-surface)',
+        borderColor: 'var(--color-border)',
+        maxHeight: '50vh',
+      }}
     >
       {/* Header */}
       <div
@@ -99,8 +111,13 @@ export function Taskbox() {
       >
         <div className="flex items-center gap-2">
           <Inbox size={16} style={{ color: 'var(--color-primary)' }} />
-          <span className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>Taskbox</span>
-          <span className="text-xs px-1.5 py-0.5 rounded-full font-medium" style={{ backgroundColor: 'var(--color-primary-light)', color: 'var(--color-primary)' }}>
+          <span className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
+            Taskbox
+          </span>
+          <span
+            className="text-xs px-1.5 py-0.5 rounded-full font-medium"
+            style={{ backgroundColor: 'var(--color-primary-light)', color: 'var(--color-primary)' }}
+          >
             {tasks.length}
           </span>
         </div>
@@ -110,7 +127,9 @@ export function Taskbox() {
       {/* Task list */}
       <div className="flex-1 overflow-y-auto px-2 py-2 space-y-1">
         {loading && tasks.length === 0 && (
-          <p className="text-xs text-center py-4" style={{ color: 'var(--color-text-secondary)' }}>Loading...</p>
+          <p className="text-xs text-center py-4" style={{ color: 'var(--color-text-secondary)' }}>
+            Loading...
+          </p>
         )}
         {!loading && tasks.length === 0 && (
           <p className="text-xs text-center py-4" style={{ color: 'var(--color-text-secondary)' }}>
@@ -122,10 +141,16 @@ export function Taskbox() {
             key={task.id}
             className="flex items-center gap-2 px-2 py-1.5 rounded-lg group hover:bg-subtle transition-colors"
           >
-            <GripVertical size={12} className="opacity-0 group-hover:opacity-60 cursor-grab shrink-0" style={{ color: 'var(--color-text-secondary)' }} />
+            <GripVertical
+              size={12}
+              className="opacity-0 group-hover:opacity-60 cursor-grab shrink-0"
+              style={{ color: 'var(--color-text-secondary)' }}
+            />
             <div
               className="w-2 h-2 rounded-full shrink-0"
-              style={{ backgroundColor: task.colour || task.project?.colour || 'var(--color-primary)' }}
+              style={{
+                backgroundColor: task.colour || task.project?.colour || 'var(--color-primary)',
+              }}
             />
             <span className="flex-1 text-sm truncate" style={{ color: 'var(--color-text)' }}>
               {task.name}
@@ -143,8 +168,14 @@ export function Taskbox() {
 
       {/* Templates dropdown */}
       {showTemplates && templates.length > 0 && (
-        <div className="px-3 py-2 border-t space-y-1 max-h-40 overflow-y-auto" style={{ borderColor: 'var(--color-border)' }}>
-          <p className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--color-text-secondary)' }}>
+        <div
+          className="px-3 py-2 border-t space-y-1 max-h-40 overflow-y-auto"
+          style={{ borderColor: 'var(--color-border)' }}
+        >
+          <p
+            className="text-[10px] uppercase tracking-wider"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
             Create from template
           </p>
           {templates.map((tpl) => (
@@ -166,7 +197,12 @@ export function Taskbox() {
               className="w-full text-left px-2 py-1.5 text-sm rounded-lg hover:bg-subtle transition-colors truncate"
               style={{ color: 'var(--color-text)' }}
             >
-              {tpl.colour && <span className="inline-block w-2 h-2 rounded-full mr-1.5" style={{ backgroundColor: tpl.colour }} />}
+              {tpl.colour && (
+                <span
+                  className="inline-block w-2 h-2 rounded-full mr-1.5"
+                  style={{ backgroundColor: tpl.colour }}
+                />
+              )}
               {tpl.name}
             </button>
           ))}
@@ -183,13 +219,22 @@ export function Taskbox() {
             onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
             placeholder="Add a task..."
             className="flex-1 text-sm px-2 py-1.5 border rounded-lg outline-none focus:ring-1"
-            style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
+            style={
+              {
+                borderColor: 'var(--color-border)',
+                backgroundColor: 'var(--color-surface)',
+                color: 'var(--color-text)',
+                '--tw-ring-color': 'var(--color-primary)',
+              } as React.CSSProperties
+            }
           />
           {templates.length > 0 && (
             <button
               onClick={() => setShowTemplates((s) => !s)}
               className="p-1.5 rounded-lg hover:bg-subtle"
-              style={{ color: showTemplates ? 'var(--color-primary)' : 'var(--color-text-secondary)' }}
+              style={{
+                color: showTemplates ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+              }}
               title="Create from template"
             >
               <FileText size={14} />
