@@ -1,4 +1,4 @@
-# Planview — Design Specification
+# Planview: Design Specification
 
 **A Self-Hosted Visual Planning & Scheduling Tool**
 *Reverse-engineered from Toggl Plan (formerly Teamweek)*
@@ -13,7 +13,7 @@
 
 ## 1. Executive Summary
 
-Planview is a self-hosted, lightweight visual planning and scheduling application modelled after Toggl Plan (formerly Teamweek). It provides drag-and-drop timeline-based project planning, team workload management, and Kanban board views — designed for home/personal use and small team coordination.
+Planview is a self-hosted, lightweight visual planning and scheduling application modelled after Toggl Plan (formerly Teamweek). It provides drag-and-drop timeline-based project planning, team workload management, and Kanban board views, designed for home/personal use and small team coordination.
 
 The core philosophy is **visual simplicity**: colour-coded tasks on a horizontal timeline with swimlanes per person or project segment. Everything is click-and-drag, with minimal setup friction.
 
@@ -147,7 +147,7 @@ The fundamental unit of work. Appears on timelines and boards.
 | end_time | time | Intra-day end time (nullable) |
 | time_estimate_minutes | integer | Total or per-day estimate (nullable) |
 | time_estimate_mode | enum | `total`, `per_day` |
-| project_id | UUID | FK to project (nullable — unassigned tasks allowed) |
+| project_id | UUID | FK to project (nullable, unassigned tasks allowed) |
 | segment_id | UUID | FK to segment (nullable) |
 | workspace_id | UUID | FK to workspace |
 | is_recurring | boolean | Whether task recurs |
@@ -156,7 +156,7 @@ The fundamental unit of work. Appears on timelines and boards.
 | updated_at | timestamp | |
 
 **Relations:**
-- `task_assignees` (join table: task_id, user_id) — supports multi-assign
+- `task_assignees` (join table: task_id, user_id), supports multi-assign
 - `task_tags` (join table: task_id, tag_id)
 
 #### Checklist
@@ -222,7 +222,7 @@ The defining feature. A horizontal Gantt-style timeline where:
 - **X-axis:** Calendar dates (scrollable left/right)
 - **Task bars:** Coloured rectangles spanning date_from → date_to
 - **Colour:** Inherited from project (each project = distinct colour)
-- **Zoom levels:** Weekly (W), Monthly (M), Quarterly (Q), Annual (A) — keyboard shortcuts
+- **Zoom levels:** Weekly (W), Monthly (M), Quarterly (Q), Annual (A), keyboard shortcuts
 
 **Visual indicators on task bars:**
 - Assignee avatar on right side of bar
@@ -304,7 +304,7 @@ Opened when clicking a task. Contains all task properties and sections:
 - Colour picker
 - Status dropdown (with emoji)
 - Date range (from / to) with calendar picker
-- Assignee(s) — avatar picker with multi-select
+- Assignee(s), avatar picker with multi-select
 - Project selector
 
 **Toggle-on properties (hidden when unused):**
@@ -392,10 +392,10 @@ Colours are central to the visual language. Each project has a designated colour
 
 | Source | Target | Action |
 |--------|--------|--------|
-| Timeline empty area | — | Create task at clicked date(s) |
+| Timeline empty area |, | Create task at clicked date(s) |
 | Task bar (body) | Same swimlane | Reschedule (change dates) |
 | Task bar (body) | Different swimlane | Reassign (team view) or change segment (project view) |
-| Task bar (edge) | — | Resize (extend/shorten duration) |
+| Task bar (edge) |, | Resize (extend/shorten duration) |
 | Task bar + Cmd | Any | Duplicate task |
 | Board card | Different column | Change status |
 | Board card | Same column | Reorder |
@@ -632,7 +632,7 @@ Key indexes for performance:
 ### 11.2 User Profile Settings
 
 - Name, email, initials, avatar
-- "Pin Me On Top" — always show yourself first in team views
+- "Pin Me On Top", always show yourself first in team views
 - Default task properties on new tasks (which sections show by default)
 - Notification preferences (in-app, email frequency)
 - Theme: light / dark / system
