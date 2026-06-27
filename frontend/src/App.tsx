@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { Suspense, lazy, useEffect, useMemo, useState } from 'react';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from './lib/queryClient';
 import { useAuthStore } from './stores/authStore';
 import { useWorkspaceStore } from './stores/workspaceStore';
 import { useTeamStore } from './stores/teamStore';
@@ -131,6 +133,7 @@ export default function App() {
   const currentWorkspace = useWorkspaceStore((s) => s.currentWorkspace);
 
   return (
+    <QueryClientProvider client={queryClient}>
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Suspense fallback={<LoadingSpinner fullPage />}><LoginPage /></Suspense>} />
@@ -173,5 +176,6 @@ export default function App() {
         </Route>
       </Routes>
     </BrowserRouter>
+    </QueryClientProvider>
   );
 }
