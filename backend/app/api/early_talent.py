@@ -42,8 +42,40 @@ from app.utils.auth import get_workspace_user
 router = APIRouter(prefix="/workspaces/{workspace_id}/early-talent", tags=["early-talent"])
 
 
+async def _programme_in_workspace(
+    db: AsyncSession, workspace_id: uuid.UUID, programme_id: uuid.UUID
+) -> EarlyTalentProgramme:
+    """Guard against cross-tenant access via a child resource's parent programme."""
+    res = await db.execute(
+        select(EarlyTalentProgramme).where(
+            EarlyTalentProgramme.id == programme_id,
+            EarlyTalentProgramme.workspace_id == workspace_id,
+        )
+    )
+    programme = res.scalar_one_or_none()
+    if not programme:
+        raise HTTPException(status_code=404, detail="Programme not found")
+    return programme
+
+
+async def _participant_in_workspace(
+    db: AsyncSession, workspace_id: uuid.UUID, participant_id: uuid.UUID
+) -> EarlyTalentParticipant:
+    """Guard against cross-tenant access via a child resource's parent participant."""
+    res = await db.execute(
+        select(EarlyTalentParticipant).where(
+            EarlyTalentParticipant.id == participant_id,
+            EarlyTalentParticipant.workspace_id == workspace_id,
+        )
+    )
+    participant = res.scalar_one_or_none()
+    if not participant:
+        raise HTTPException(status_code=404, detail="Participant not found")
+    return participant
+
+
 # ---------------------------------------------------------------------------
-# Stats — MUST be before /{id} routes
+# Stats, MUST be before /{id} routes
 # ---------------------------------------------------------------------------
 
 @router.get("/stats", response_model=EarlyTalentDashboardStats)
@@ -152,7 +184,7 @@ async def get_early_talent_stats(
 
 
 # ---------------------------------------------------------------------------
-# Programmes CRUD — static routes before /{programme_id}
+# Programmes CRUD, static routes before /{programme_id}
 # ---------------------------------------------------------------------------
 
 @router.get("/programmes", response_model=list[EarlyTalentProgrammeResponse])
@@ -201,7 +233,10 @@ async def get_programme(
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
-        select(EarlyTalentProgramme).where(EarlyTalentProgramme.id == programme_id)
+        select(EarlyTalentProgramme).where(
+            EarlyTalentProgramme.id == programme_id,
+            EarlyTalentProgramme.workspace_id == workspace_id,
+        )
     )
     programme = result.scalar_one_or_none()
     if not programme:
@@ -218,7 +253,10 @@ async def update_programme(
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
-        select(EarlyTalentProgramme).where(EarlyTalentProgramme.id == programme_id)
+        select(EarlyTalentProgramme).where(
+            EarlyTalentProgramme.id == programme_id,
+            EarlyTalentProgramme.workspace_id == workspace_id,
+        )
     )
     programme = result.scalar_one_or_none()
     if not programme:
@@ -238,7 +276,10 @@ async def delete_programme(
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
-        select(EarlyTalentProgramme).where(EarlyTalentProgramme.id == programme_id)
+        select(EarlyTalentProgramme).where(
+            EarlyTalentProgramme.id == programme_id,
+            EarlyTalentProgramme.workspace_id == workspace_id,
+        )
     )
     programme = result.scalar_one_or_none()
     if not programme:
@@ -248,7 +289,7 @@ async def delete_programme(
 
 
 # ---------------------------------------------------------------------------
-# Cohorts — under /programmes/{programme_id}/cohorts
+# Cohorts, under /programmes/{programme_id}/cohorts
 # ---------------------------------------------------------------------------
 
 @router.get("/programmes/{programme_id}/cohorts", response_model=list[EarlyTalentCohortResponse])
@@ -258,6 +299,7 @@ async def list_cohorts(
     current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
+    await _programme_in_workspace(db, workspace_id, programme_id)
     result = await db.execute(
         select(EarlyTalentCohort)
         .where(EarlyTalentCohort.programme_id == programme_id)
@@ -274,6 +316,7 @@ async def create_cohort(
     current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
+    await _programme_in_workspace(db, workspace_id, programme_id)
     cohort = EarlyTalentCohort(
         programme_id=programme_id,
         **data.model_dump(),
@@ -293,7 +336,12 @@ async def update_cohort(
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
-        select(EarlyTalentCohort).where(EarlyTalentCohort.id == cohort_id)
+        select(EarlyTalentCohort)
+        .join(EarlyTalentProgramme, EarlyTalentCohort.programme_id == EarlyTalentProgramme.id)
+        .where(
+            EarlyTalentCohort.id == cohort_id,
+            EarlyTalentProgramme.workspace_id == workspace_id,
+        )
     )
     cohort = result.scalar_one_or_none()
     if not cohort:
@@ -306,7 +354,7 @@ async def update_cohort(
 
 
 # ---------------------------------------------------------------------------
-# Rotations — under /programmes/{programme_id}/rotations
+# Rotations, under /programmes/{programme_id}/rotations
 # ---------------------------------------------------------------------------
 
 @router.get("/programmes/{programme_id}/rotations", response_model=list[EarlyTalentRotationResponse])
@@ -316,6 +364,7 @@ async def list_rotations(
     current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
+    await _programme_in_workspace(db, workspace_id, programme_id)
     result = await db.execute(
         select(EarlyTalentRotation)
         .where(EarlyTalentRotation.programme_id == programme_id)
@@ -332,6 +381,7 @@ async def create_rotation(
     current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
+    await _programme_in_workspace(db, workspace_id, programme_id)
     rotation = EarlyTalentRotation(
         programme_id=programme_id,
         **data.model_dump(),
@@ -351,7 +401,12 @@ async def update_rotation(
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
-        select(EarlyTalentRotation).where(EarlyTalentRotation.id == rotation_id)
+        select(EarlyTalentRotation)
+        .join(EarlyTalentProgramme, EarlyTalentRotation.programme_id == EarlyTalentProgramme.id)
+        .where(
+            EarlyTalentRotation.id == rotation_id,
+            EarlyTalentProgramme.workspace_id == workspace_id,
+        )
     )
     rotation = result.scalar_one_or_none()
     if not rotation:
@@ -371,7 +426,12 @@ async def delete_rotation(
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
-        select(EarlyTalentRotation).where(EarlyTalentRotation.id == rotation_id)
+        select(EarlyTalentRotation)
+        .join(EarlyTalentProgramme, EarlyTalentRotation.programme_id == EarlyTalentProgramme.id)
+        .where(
+            EarlyTalentRotation.id == rotation_id,
+            EarlyTalentProgramme.workspace_id == workspace_id,
+        )
     )
     rotation = result.scalar_one_or_none()
     if not rotation:
@@ -381,7 +441,7 @@ async def delete_rotation(
 
 
 # ---------------------------------------------------------------------------
-# Participants — static routes first
+# Participants, static routes first
 # ---------------------------------------------------------------------------
 
 @router.get("/participants", response_model=list[EarlyTalentParticipantResponse])
@@ -434,7 +494,10 @@ async def get_participant(
 ):
     result = await db.execute(
         select(EarlyTalentParticipant)
-        .where(EarlyTalentParticipant.id == participant_id)
+        .where(
+            EarlyTalentParticipant.id == participant_id,
+            EarlyTalentParticipant.workspace_id == workspace_id,
+        )
         .options(
             selectinload(EarlyTalentParticipant.milestones),
             selectinload(EarlyTalentParticipant.rotation_assignments),
@@ -455,7 +518,10 @@ async def update_participant(
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
-        select(EarlyTalentParticipant).where(EarlyTalentParticipant.id == participant_id)
+        select(EarlyTalentParticipant).where(
+            EarlyTalentParticipant.id == participant_id,
+            EarlyTalentParticipant.workspace_id == workspace_id,
+        )
     )
     participant = result.scalar_one_or_none()
     if not participant:
@@ -475,7 +541,10 @@ async def delete_participant(
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
-        select(EarlyTalentParticipant).where(EarlyTalentParticipant.id == participant_id)
+        select(EarlyTalentParticipant).where(
+            EarlyTalentParticipant.id == participant_id,
+            EarlyTalentParticipant.workspace_id == workspace_id,
+        )
     )
     participant = result.scalar_one_or_none()
     if not participant:
@@ -485,7 +554,7 @@ async def delete_participant(
 
 
 # ---------------------------------------------------------------------------
-# Rotation Assignments — under /participants/{participant_id}/rotations
+# Rotation Assignments, under /participants/{participant_id}/rotations
 # ---------------------------------------------------------------------------
 
 @router.post(
@@ -500,6 +569,7 @@ async def create_rotation_assignment(
     current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
+    await _participant_in_workspace(db, workspace_id, participant_id)
     assignment = EarlyTalentRotationAssignment(
         participant_id=participant_id,
         **data.model_dump(),
@@ -523,7 +593,12 @@ async def update_rotation_assignment(
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
-        select(EarlyTalentRotationAssignment).where(EarlyTalentRotationAssignment.id == assignment_id)
+        select(EarlyTalentRotationAssignment)
+        .join(EarlyTalentParticipant, EarlyTalentRotationAssignment.participant_id == EarlyTalentParticipant.id)
+        .where(
+            EarlyTalentRotationAssignment.id == assignment_id,
+            EarlyTalentParticipant.workspace_id == workspace_id,
+        )
     )
     assignment = result.scalar_one_or_none()
     if not assignment:
@@ -544,7 +619,12 @@ async def delete_rotation_assignment(
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
-        select(EarlyTalentRotationAssignment).where(EarlyTalentRotationAssignment.id == assignment_id)
+        select(EarlyTalentRotationAssignment)
+        .join(EarlyTalentParticipant, EarlyTalentRotationAssignment.participant_id == EarlyTalentParticipant.id)
+        .where(
+            EarlyTalentRotationAssignment.id == assignment_id,
+            EarlyTalentParticipant.workspace_id == workspace_id,
+        )
     )
     assignment = result.scalar_one_or_none()
     if not assignment:
@@ -554,7 +634,7 @@ async def delete_rotation_assignment(
 
 
 # ---------------------------------------------------------------------------
-# Milestones — under /participants/{participant_id}/milestones
+# Milestones, under /participants/{participant_id}/milestones
 # ---------------------------------------------------------------------------
 
 @router.post(
@@ -569,6 +649,7 @@ async def create_milestone(
     current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
+    await _participant_in_workspace(db, workspace_id, participant_id)
     milestone = EarlyTalentMilestone(
         participant_id=participant_id,
         **data.model_dump(),
@@ -592,7 +673,12 @@ async def update_milestone(
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
-        select(EarlyTalentMilestone).where(EarlyTalentMilestone.id == milestone_id)
+        select(EarlyTalentMilestone)
+        .join(EarlyTalentParticipant, EarlyTalentMilestone.participant_id == EarlyTalentParticipant.id)
+        .where(
+            EarlyTalentMilestone.id == milestone_id,
+            EarlyTalentParticipant.workspace_id == workspace_id,
+        )
     )
     milestone = result.scalar_one_or_none()
     if not milestone:
@@ -613,7 +699,12 @@ async def delete_milestone(
     db: AsyncSession = Depends(get_db),
 ):
     result = await db.execute(
-        select(EarlyTalentMilestone).where(EarlyTalentMilestone.id == milestone_id)
+        select(EarlyTalentMilestone)
+        .join(EarlyTalentParticipant, EarlyTalentMilestone.participant_id == EarlyTalentParticipant.id)
+        .where(
+            EarlyTalentMilestone.id == milestone_id,
+            EarlyTalentParticipant.workspace_id == workspace_id,
+        )
     )
     milestone = result.scalar_one_or_none()
     if not milestone:
