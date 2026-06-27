@@ -8,18 +8,6 @@ import { useUIStore } from './stores/uiStore';
 import { useNotificationStore } from './stores/notificationStore';
 import { WebSocketProvider, useWSEvent } from './hooks/WebSocketContext';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
-import { LoginPage } from './pages/LoginPage';
-import { ProjectBoardPage } from './pages/ProjectBoardPage';
-import { TeamTimelinePage } from './pages/TeamTimelinePage';
-import { ProjectTimelinePage } from './pages/ProjectTimelinePage';
-import { MyWorkPage } from './pages/MyWorkPage';
-import { SettingsPage } from './pages/SettingsPage';
-import { SharedTimelinePage } from './pages/SharedTimelinePage';
-import { DashboardPage } from './pages/DashboardPage';
-import { ActivityPage } from './pages/ActivityPage';
-import { CalendarPage } from './pages/CalendarPage';
-import { BurndownPage } from './pages/BurndownPage';
-import { RotaPage } from './pages/RotaPage';
 import { Sidebar } from './components/layout/Sidebar';
 import { TopBar } from './components/layout/TopBar';
 import { QuickSearch } from './components/layout/QuickSearch';
@@ -29,7 +17,19 @@ import { Toast } from './components/shared/Toast';
 import { ErrorBoundary } from './components/shared/ErrorBoundary';
 import { LoadingSpinner } from './components/shared/LoadingSpinner';
 
-// Lazy-loaded people management pages
+// Every route is lazy-loaded (forbidden-27: no eager page imports in the router).
+const LoginPage = lazy(() => import('./pages/LoginPage').then(m => ({ default: m.LoginPage })));
+const ProjectBoardPage = lazy(() => import('./pages/ProjectBoardPage').then(m => ({ default: m.ProjectBoardPage })));
+const TeamTimelinePage = lazy(() => import('./pages/TeamTimelinePage').then(m => ({ default: m.TeamTimelinePage })));
+const ProjectTimelinePage = lazy(() => import('./pages/ProjectTimelinePage').then(m => ({ default: m.ProjectTimelinePage })));
+const MyWorkPage = lazy(() => import('./pages/MyWorkPage').then(m => ({ default: m.MyWorkPage })));
+const SettingsPage = lazy(() => import('./pages/SettingsPage').then(m => ({ default: m.SettingsPage })));
+const SharedTimelinePage = lazy(() => import('./pages/SharedTimelinePage').then(m => ({ default: m.SharedTimelinePage })));
+const DashboardPage = lazy(() => import('./pages/DashboardPage').then(m => ({ default: m.DashboardPage })));
+const ActivityPage = lazy(() => import('./pages/ActivityPage').then(m => ({ default: m.ActivityPage })));
+const CalendarPage = lazy(() => import('./pages/CalendarPage').then(m => ({ default: m.CalendarPage })));
+const BurndownPage = lazy(() => import('./pages/BurndownPage').then(m => ({ default: m.BurndownPage })));
+const RotaPage = lazy(() => import('./pages/RotaPage').then(m => ({ default: m.RotaPage })));
 const PeoplePage = lazy(() => import('./pages/PeoplePage').then(m => ({ default: m.PeoplePage })));
 const OneToOnesPage = lazy(() => import('./pages/OneToOnesPage').then(m => ({ default: m.OneToOnesPage })));
 const ObjectivesPage = lazy(() => import('./pages/ObjectivesPage').then(m => ({ default: m.ObjectivesPage })));
@@ -133,9 +133,9 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<LoginPage />} />
+        <Route path="/login" element={<Suspense fallback={<LoadingSpinner fullPage />}><LoginPage /></Suspense>} />
         <Route path="/auth/oidc/callback" element={<Suspense fallback={<LoadingSpinner fullPage />}><OIDCCallbackPage /></Suspense>} />
-        <Route path="/shared/:token" element={<SharedTimelinePage />} />
+        <Route path="/shared/:token" element={<Suspense fallback={<LoadingSpinner fullPage />}><SharedTimelinePage /></Suspense>} />
         <Route path="/" element={
           <WebSocketProvider workspaceId={currentWorkspace?.id}>
             <ProtectedLayout />
