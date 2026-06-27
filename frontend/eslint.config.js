@@ -19,5 +19,18 @@ export default defineConfig([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      // react-hooks v7 ships the React Compiler lints as errors. The project does
+      // not run the React Compiler yet, and set-state-in-effect flags the legacy
+      // fetch-into-useState pattern that the TanStack Query migration removes
+      // (ADR 0003). Keep them visible as warnings; promote back to error once the
+      // compiler is enabled and the migration is complete. Real correctness rules
+      // (rules-of-hooks, exhaustive-deps, the TS rules) stay as their defaults.
+      'react-hooks/set-state-in-effect': 'warn',
+      'react-hooks/immutability': 'warn',
+      'react-hooks/purity': 'warn',
+      'react-hooks/refs': 'warn',
+      'react-refresh/only-export-components': 'warn',
+    },
   },
 ])

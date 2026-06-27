@@ -20,21 +20,11 @@ export function SharedTimelinePage() {
     const since = startDate.toISOString().slice(0, 10);
     const until = addDays(startDate, config.daysVisible).toISOString().slice(0, 10);
 
-    api.get(`/shared/${token}/tasks`, { params: { since, until } })
+    api
+      .get(`/shared/${token}/tasks`, { params: { since, until } })
       .then((res) => setTasks(res.data))
       .catch(() => setError('This shared timeline is not available.'));
   }, [token, zoom, startDate]);
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--color-bg)' }}>
-        <div className="text-center">
-          <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--color-text)' }}>Not Found</h1>
-          <p style={{ color: 'var(--color-text-secondary)' }}>{error}</p>
-        </div>
-      </div>
-    );
-  }
 
   const swimlanes: Swimlane[] = useMemo(() => {
     const userMap = new Map<string, Swimlane>();
@@ -60,12 +50,36 @@ export function SharedTimelinePage() {
     return lanes;
   }, [tasks]);
 
+  if (error) {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ backgroundColor: 'var(--color-bg)' }}
+      >
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-2" style={{ color: 'var(--color-text)' }}>
+            Not Found
+          </h1>
+          <p style={{ color: 'var(--color-text-secondary)' }}>{error}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-screen flex flex-col" style={{ backgroundColor: 'var(--color-bg)' }}>
-      <header className="px-6 py-3 border-b flex items-center justify-between shrink-0" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
+      <header
+        className="px-6 py-3 border-b flex items-center justify-between shrink-0"
+        style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+      >
         <div className="flex items-center gap-3">
-          <h1 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>Planview</h1>
-          <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: '#dbeafe', color: '#2563eb' }}>
+          <h1 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>
+            Planview
+          </h1>
+          <span
+            className="text-xs px-2 py-0.5 rounded-full font-medium"
+            style={{ backgroundColor: '#dbeafe', color: '#2563eb' }}
+          >
             Shared View
           </span>
         </div>

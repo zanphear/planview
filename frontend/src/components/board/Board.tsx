@@ -32,9 +32,7 @@ export function Board({ tasks, onTaskClick, selectedIds, onToggleSelect }: Board
   const updateTaskInStore = useTaskStore((s) => s.updateTask);
   const setTasks = useTaskStore((s) => s.setTasks);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
-  );
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   // Sort tasks by sort_order within each status column
   const tasksByStatus = DEFAULT_STATUSES.reduce(
@@ -44,26 +42,35 @@ export function Board({ tasks, onTaskClick, selectedIds, onToggleSelect }: Board
         .sort((a, b) => a.sort_order - b.sort_order);
       return acc;
     },
-    {} as Record<string, Task[]>
+    {} as Record<string, Task[]>,
   );
 
-  const handleDragStart = useCallback((event: DragStartEvent) => {
-    const task = tasks.find((t) => t.id === event.active.id);
-    setActiveTask(task || null);
-  }, [tasks]);
+  const handleDragStart = useCallback(
+    (event: DragStartEvent) => {
+      const task = tasks.find((t) => t.id === event.active.id);
+      setActiveTask(task || null);
+    },
+    [tasks],
+  );
 
-  const handleDragOver = useCallback((event: DragOverEvent) => {
-    const { over } = event;
-    if (!over) { setOverColumnId(null); return; }
-    // Determine which column we're over
-    const isColumn = DEFAULT_STATUSES.some((s) => s.id === over.id);
-    if (isColumn) {
-      setOverColumnId(over.id as string);
-    } else {
-      const overTask = tasks.find((t) => t.id === over.id);
-      if (overTask) setOverColumnId(overTask.status);
-    }
-  }, [tasks]);
+  const handleDragOver = useCallback(
+    (event: DragOverEvent) => {
+      const { over } = event;
+      if (!over) {
+        setOverColumnId(null);
+        return;
+      }
+      // Determine which column we're over
+      const isColumn = DEFAULT_STATUSES.some((s) => s.id === over.id);
+      if (isColumn) {
+        setOverColumnId(over.id as string);
+      } else {
+        const overTask = tasks.find((t) => t.id === over.id);
+        if (overTask) setOverColumnId(overTask.status);
+      }
+    },
+    [tasks],
+  );
 
   const handleDragEnd = useCallback(
     async (event: DragEndEvent) => {
@@ -92,7 +99,7 @@ export function Board({ tasks, onTaskClick, selectedIds, onToggleSelect }: Board
       if (task.status === targetStatus) {
         // Reorder within same column
         const oldIndex = columnTasks.findIndex((t) => t.id === task.id);
-        let newIndex = targetTaskId
+        const newIndex = targetTaskId
           ? columnTasks.findIndex((t) => t.id === targetTaskId)
           : columnTasks.length;
 
@@ -133,7 +140,7 @@ export function Board({ tasks, onTaskClick, selectedIds, onToggleSelect }: Board
         }
       }
     },
-    [tasks, tasksByStatus, workspace, updateTaskInStore, setTasks]
+    [tasks, tasksByStatus, workspace, updateTaskInStore, setTasks],
   );
 
   return (
@@ -158,9 +165,7 @@ export function Board({ tasks, onTaskClick, selectedIds, onToggleSelect }: Board
         ))}
       </div>
 
-      <DragOverlay>
-        {activeTask && <BoardCard task={activeTask} onClick={() => {}} />}
-      </DragOverlay>
+      <DragOverlay>{activeTask && <BoardCard task={activeTask} onClick={() => {}} />}</DragOverlay>
     </DndContext>
   );
 }
