@@ -44,3 +44,4 @@ planview-build-prompt.md
 deploy/.env.production
 .env.production
 *.env.production
+backend/openapi.json

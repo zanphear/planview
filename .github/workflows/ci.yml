@@ -108,10 +108,9 @@ jobs:
         run: python scripts/dump_openapi.py
       - name: Generate TS types from the schema (ADR 0006)
         working-directory: frontend
-        run: npx --yes openapi-typescript ../backend/openapi.json -o src/api/schema.ts
-      - name: Schema is non-trivial
-        working-directory: frontend
-        run: test "$(wc -l < src/api/schema.ts)" -gt 50
+        run: npm run gen:api
+      - name: Fail on schema drift (committed schema.ts is stale)
+        run: git diff --exit-code frontend/src/api/schema.ts
 
   docker-build:
     needs: [repo-hygiene, backend-lint, backend-test, frontend-checks, openapi-types]

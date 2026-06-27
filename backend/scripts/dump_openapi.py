@@ -11,10 +11,13 @@ injected if one is not set, so the import-time secret check does not abort the d
 import json
 import os
 import pathlib
+import sys
 
+# Make `app` importable when run as `python scripts/dump_openapi.py` from backend/.
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 os.environ.setdefault("JWT_SECRET_KEY", "openapi-dump-throwaway-secret-not-for-runtime-use")
 
-from app.main import app  # noqa: E402  (import after env default is set)
+from app.main import app  # noqa: E402  (import after sys.path + env are set)
 
 OUT = pathlib.Path(__file__).resolve().parent.parent / "openapi.json"
 
