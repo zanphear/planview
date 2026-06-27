@@ -6,6 +6,7 @@ from sqlalchemy import case, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
+from app.logging_config import get_logger
 from app.models.candidate import Candidate
 from app.models.competency import Competency, UserCompetency
 from app.models.compliance import ComplianceItem
@@ -24,6 +25,7 @@ from app.models.wellbeing import Kudos, PulseResponse, PulseSurvey
 from app.utils.auth import get_workspace_user
 
 router = APIRouter(prefix="/workspaces/{workspace_id}", tags=["people-stats"])
+log = get_logger("planview.people_stats")
 
 
 @router.get("/people-stats")
@@ -52,6 +54,7 @@ async def get_people_stats(
         )
         by_department = {row[0]: row[1] for row in result.all()}
     except Exception:
+        log.warning("people_stats_section_failed", exc_info=True)
         people_total = 0
         by_department = {}
 
@@ -86,6 +89,7 @@ async def get_people_stats(
         meetings_total = result.scalar() or 0
         completion_rate = round(meetings_completed / meetings_total * 100, 1) if meetings_total > 0 else 0.0
     except Exception:
+        log.warning("people_stats_section_failed", exc_info=True)
         meetings_this_month = 0
         meetings_completed = 0
         meetings_upcoming = 0
@@ -113,6 +117,7 @@ async def get_people_stats(
         avg_progress = result.scalar()
         avg_progress = round(float(avg_progress), 1) if avg_progress is not None else 0.0
     except Exception:
+        log.warning("people_stats_section_failed", exc_info=True)
         objectives_total = 0
         objectives_by_status = {}
         avg_progress = 0.0
@@ -139,6 +144,7 @@ async def get_people_stats(
         )
         compliance_by_type = {row[0]: row[1] for row in result.all()}
     except Exception:
+        log.warning("people_stats_section_failed", exc_info=True)
         compliance_total = 0
         compliance_counts = {}
         compliance_by_type = {}
@@ -165,6 +171,7 @@ async def get_people_stats(
         )
         total_assignments = result.scalar() or 0
     except Exception:
+        log.warning("people_stats_section_failed", exc_info=True)
         total_skills = 0
         by_level = {}
         total_assignments = 0
@@ -192,6 +199,7 @@ async def get_people_stats(
         )
         total_allowances = result.scalar() or 0
     except Exception:
+        log.warning("people_stats_section_failed", exc_info=True)
         pending_requests = 0
         approved_this_month = 0
         total_allowances = 0
@@ -218,6 +226,7 @@ async def get_people_stats(
         )
         candidates_active = result.scalar() or 0
     except Exception:
+        log.warning("people_stats_section_failed", exc_info=True)
         candidates_total = 0
         candidates_by_stage = {}
         candidates_active = 0
@@ -293,6 +302,7 @@ async def get_people_stats(
         )
         by_horizon = {row[0]: row[1] for row in result.all()}
     except Exception:
+        log.warning("people_stats_section_failed", exc_info=True)
         total_plans = 0
         active_plans = 0
         total_goals = 0
@@ -332,6 +342,7 @@ async def get_people_stats(
         )
         reviews_completed = result.scalar() or 0
     except Exception:
+        log.warning("people_stats_section_failed", exc_info=True)
         total_cycles = 0
         total_reviews = 0
         avg_rating = None
@@ -368,6 +379,7 @@ async def get_people_stats(
         )
         recent_kudos = result.scalar() or 0
     except Exception:
+        log.warning("people_stats_section_failed", exc_info=True)
         avg_morale = None
         avg_workload = None
         avg_support = None
@@ -401,6 +413,7 @@ async def get_people_stats(
         avg_onboarding_progress = result.scalar()
         avg_onboarding_progress = round(float(avg_onboarding_progress), 1) if avg_onboarding_progress is not None else 0.0
     except Exception:
+        log.warning("people_stats_section_failed", exc_info=True)
         active_checklists = 0
         avg_onboarding_progress = 0.0
 
@@ -444,6 +457,7 @@ async def get_people_stats(
         )
         et_overdue_milestones = result.scalar() or 0
     except Exception:
+        log.warning("people_stats_section_failed", exc_info=True)
         et_active_programmes = 0
         et_total_participants = 0
         et_active_participants = 0
