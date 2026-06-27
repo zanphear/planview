@@ -13,7 +13,7 @@ export default defineConfig({
       output: {
         manualChunks: {
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'editor': ['@tiptap/react', '@tiptap/pm', '@tiptap/starter-kit', '@tiptap/extension-link', '@tiptap/extension-placeholder'],
+          'editor': ['@tiptap/react', '@tiptap/starter-kit', '@tiptap/extension-link', '@tiptap/extension-placeholder'],
           'dnd': ['@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities'],
           'markdown': ['react-markdown', 'remark-gfm'],
         },
