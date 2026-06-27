@@ -18,3 +18,12 @@ Keep bidirectional WebSockets for collaborative realtime; they are the core prod
   1. **Crash recovery.** An in-flight report is lost on restart and left stuck in `generating`. Add a startup reconciler that marks orphaned `generating` rows as `failed`.
   2. **Job contract.** Optionally expose an HTTP 202 + job-id + poll endpoint alongside the WS push, for clients that are not connected.
 - Realtime auth, reconnection, and message-shape changes are security-touching: route them through review.
+
+## Update 2026-06-27: implemented
+The Redis pub/sub backplane is now in `app/websocket/manager.py`: `broadcast`
+publishes to `ws:{workspace_id}`, each worker runs one subscriber and relays to
+its local sockets, and the rate limiter (`app/middleware/rate_limit.py`) uses a
+Redis fixed-window counter. Broadcast failures are logged loudly but never
+propagate into the primary write. The single-worker constraint is lifted in code;
+verify under load before raising the worker count. The report-queue crash
+reconciler remains a follow-up.

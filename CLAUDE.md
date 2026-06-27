@@ -38,7 +38,7 @@ Accepted deviations and migration plans live in `docs/adr/`. The playbook wins b
 4. Async everywhere: async engine, async sessions, async routes
 5. Pydantic v2 schemas for all request/response validation
 6. Business logic belongs in `services/`, not route handlers (ADR 0005 tracks the repository-layer rollout)
-7. Real-time updates broadcast over WebSocket. NB: the connection registry and the 120rpm rate limiter are currently in-process (single-worker only); a Redis pub/sub backplane is required before scaling past one worker (ADR 0002)
+7. Real-time updates broadcast over WebSocket via a Redis pub/sub backplane (`manager.py`); rate limiting is Redis-backed too, so multi-worker is supported (ADR 0002, verify under load before raising worker count)
 8. Every query scoped by `workspace_id`; never trust an id from the path alone (IDOR guard)
 9. All timestamps UTC with timezone awareness
 10. No em dashes or en dashes anywhere (enforced by `scripts/check-no-dashes.sh` in CI + pre-commit)

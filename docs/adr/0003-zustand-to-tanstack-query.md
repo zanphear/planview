@@ -23,3 +23,12 @@ Migrate incrementally, store-by-store and page-by-page, behind the existing type
 ## Consequences
 - Realistic effort: large (about 5 to 8 focused days), but each phase ships independently.
 - Until complete, the codebase carries both patterns; that is acceptable under the strangler-fig approach.
+
+## Update 2026-06-27: foundation + pilot landed
+`QueryClientProvider` and `src/lib/queryClient.ts` are wired. The project-board
+slice is migrated as the template: `src/api/queries/{projects,tasks}.ts` wrap the
+existing typed fetchers with query-key factories and mutations (optimistic
+move/reorder with onError rollback), and `ProjectBoardPage` renders all four
+states. The Zustand stores remain for other consumers; `Board.tsx` is bridged
+one-way from the Query cache until it is migrated. Steps 3 to 5 (remaining stores,
+the ~47 direct-fetch pages, the ESLint guard) are the remaining work.

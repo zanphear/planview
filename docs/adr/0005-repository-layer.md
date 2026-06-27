@@ -19,3 +19,10 @@ Adopt a repository layer incrementally with a strangler-fig, one aggregate at a 
 ## Consequences
 - Large, multi-PR effort. The app keeps working throughout; each PR is independently shippable.
 - Pairs naturally with the test-coverage rollout (ADR 0007): characterization tests written before each extraction become the permanent integration tests.
+
+## Update 2026-06-27: base + first aggregate landed
+`app/repositories/base.py` (`WorkspaceRepository`) is in place and the teams
+aggregate is migrated to thin router -> `TeamService` -> `TeamRepository` as the
+template, behaviour-preserving. The service raises local domain errors (no FastAPI
+imports) which the router maps to HTTP. Remaining aggregates (tasks, projects,
+people, the analysis_service split) follow the same pattern, one per PR.
