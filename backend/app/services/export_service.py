@@ -68,9 +68,9 @@ async def export_tasks_ics(db: AsyncSession, workspace_id, params: dict) -> str:
             continue
         lines.append("BEGIN:VEVENT")
         lines.append(f"UID:{t.id}")
-        lines.append(f"DTSTART;VALUE=DATE:{t.date_from.replace('-', '')}")
+        lines.append(f"DTSTART;VALUE=DATE:{t.date_from.strftime('%Y%m%d')}")
         if t.date_to:
-            lines.append(f"DTEND;VALUE=DATE:{t.date_to.replace('-', '')}")
+            lines.append(f"DTEND;VALUE=DATE:{t.date_to.strftime('%Y%m%d')}")
         lines.append(f"SUMMARY:{_ical_escape(t.name)}")
         if t.description:
             lines.append(f"DESCRIPTION:{_ical_escape(t.description)}")

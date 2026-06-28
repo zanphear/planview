@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -86,7 +86,7 @@ async def list_reviews(
 async def create_review(
     workspace_id: uuid.UUID,
     cycle_id: uuid.UUID = Query(...),
-    data: ReviewCreate = ...,
+    data: ReviewCreate = Body(...),
     current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):

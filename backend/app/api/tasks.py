@@ -333,6 +333,8 @@ async def _create_next_recurrence(
     actor: User,
 ):
     """Create the next occurrence of a recurring task."""
+    if not task.recurrence_rule:
+        return
     task_start = task.date_from or date.today()
     duration_days = 0
     if task.date_from and task.date_to:

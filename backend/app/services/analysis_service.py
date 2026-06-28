@@ -844,9 +844,9 @@ async def gather_context(report_type: str, db: AsyncSession, workspace_id: uuid.
                 sections.append(f"## {name}\n(Error gathering data: {e})")
         return "\n\n".join(sections)
 
-    fn = GATHERERS.get(report_type)
-    if fn:
-        return await fn(db, workspace_id)
+    gatherer = GATHERERS.get(report_type)
+    if gatherer is not None:
+        return await gatherer(db, workspace_id)
     return "(No context data available for this report type)"
 
 

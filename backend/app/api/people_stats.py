@@ -114,8 +114,8 @@ async def get_people_stats(
             select(func.avg(Objective.progress))
             .where(Objective.workspace_id == workspace_id)
         )
-        avg_progress = result.scalar()
-        avg_progress = round(float(avg_progress), 1) if avg_progress is not None else 0.0
+        avg_progress_raw = result.scalar()
+        avg_progress: float = round(float(avg_progress_raw), 1) if avg_progress_raw is not None else 0.0
     except Exception:
         log.warning("people_stats_section_failed", exc_info=True)
         objectives_total = 0
@@ -332,8 +332,8 @@ async def get_people_stats(
             .where(Review.workspace_id == workspace_id)
             .where(Review.overall_rating.isnot(None))
         )
-        avg_rating = result.scalar()
-        avg_rating = round(float(avg_rating), 2) if avg_rating is not None else None
+        avg_rating_raw = result.scalar()
+        avg_rating: float | None = round(float(avg_rating_raw), 2) if avg_rating_raw is not None else None
 
         result = await db.execute(
             select(func.count(Review.id))
@@ -410,8 +410,8 @@ async def get_people_stats(
             .where(OnboardingChecklist.workspace_id == workspace_id)
             .where(OnboardingChecklist.status == "in_progress")
         )
-        avg_onboarding_progress = result.scalar()
-        avg_onboarding_progress = round(float(avg_onboarding_progress), 1) if avg_onboarding_progress is not None else 0.0
+        avg_onboarding_progress_raw = result.scalar()
+        avg_onboarding_progress: float = round(float(avg_onboarding_progress_raw), 1) if avg_onboarding_progress_raw is not None else 0.0
     except Exception:
         log.warning("people_stats_section_failed", exc_info=True)
         active_checklists = 0

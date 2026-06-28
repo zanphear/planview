@@ -67,6 +67,7 @@ class ConnectionManager:
         await websocket.accept()
         self.active_connections[workspace_id].append(websocket)
         await self._ensure_started()
+        assert self._pubsub is not None  # guaranteed by _ensure_started
         if workspace_id not in self._subscribed:
             try:
                 async with self._pubsub_lock:
@@ -98,6 +99,8 @@ class ConnectionManager:
             return
         if workspace_id not in self._subscribed:
             return
+        # A non-empty _subscribed set implies the backplane has started.
+        assert self._pubsub is not None
         try:
             async with self._pubsub_lock:
                 await self._pubsub.unsubscribe(_channel(workspace_id))
@@ -124,6 +127,7 @@ class ConnectionManager:
         }
         try:
             await self._ensure_started()
+            assert self._redis is not None  # guaranteed by _ensure_started
             await self._redis.publish(_channel(workspace_id), json.dumps(payload))
         except Exception:
             logger.error("ws_publish_failed", workspace_id=workspace_id, exc_info=True)
@@ -136,6 +140,8 @@ class ConnectionManager:
                     # Nothing to listen for yet; avoid polling a bare connection.
                     await asyncio.sleep(0.2)
                     continue
+                # A non-empty _subscribed set implies the backplane has started.
+                assert self._pubsub is not None
                 async with self._pubsub_lock:
                     message = await self._pubsub.get_message(
                         ignore_subscribe_messages=True, timeout=0.5

@@ -238,7 +238,7 @@ async def resource_utilisation(
         })
 
     # Sort by active tasks descending
-    results.sort(key=lambda r: r["active_tasks"], reverse=True)
+    results.sort(key=lambda r: r["active_tasks"] or 0, reverse=True)
     return results
 
 
@@ -336,5 +336,5 @@ async def absence_calendar(
             "colour": t.colour or "#94A3B8",
         })
 
-    absences.sort(key=lambda a: a["start_date"])
+    absences.sort(key=lambda a: a["start_date"] or "")
     return absences
