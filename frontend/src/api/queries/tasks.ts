@@ -14,6 +14,7 @@ export const taskKeys = {
     [...taskKeys.lists(), workspaceId, params] as const,
   byProject: (workspaceId: string, projectId: string) =>
     taskKeys.list(workspaceId, { project_id: projectId }),
+  workspace: (workspaceId: string) => taskKeys.list(workspaceId, { scope: 'all' }),
 };
 
 type CreateTaskInput = Parameters<typeof tasksApi.create>[1];
@@ -172,5 +173,39 @@ export function useReorderTasks(workspaceId: string | undefined, projectId: stri
     onSettled: () => {
       qc.invalidateQueries({ queryKey: key });
     },
+  });
+}
+
+// ── All-tasks (workspace-wide) hooks for the All Tasks page (ADR 0003 pattern) ──
+
+/** Every task in the workspace, regardless of project. */
+export function useWorkspaceTasks(workspaceId: string | undefined) {
+  return useQuery({
+    queryKey: taskKeys.workspace(workspaceId ?? ''),
+    queryFn: () => tasksApi.list(workspaceId!).then((r) => r.data),
+    enabled: !!workspaceId,
+  });
+}
+
+/** Set or clear a single task's project (projectId null = unassign). Invalidates
+ *  every task list (workspace view plus any affected project board). */
+export function useSetTaskProject(workspaceId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ taskId, projectId }: { taskId: string; projectId: string | null }) =>
+      tasksApi.update(workspaceId!, taskId, { project_id: projectId }).then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: taskKeys.lists() }),
+  });
+}
+
+/** Move several tasks to a project (or clear it) in one call. */
+export function useBulkSetTaskProject(workspaceId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ taskIds, projectId }: { taskIds: string[]; projectId: string | null }) =>
+      tasksApi
+        .bulkUpdate(workspaceId!, { task_ids: taskIds, project_id: projectId })
+        .then((r) => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: taskKeys.lists() }),
   });
 }

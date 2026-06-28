@@ -55,6 +55,7 @@ def _task_query(workspace_id: uuid.UUID):
 async def list_tasks(
     workspace_id: uuid.UUID,
     project_id: uuid.UUID | None = None,
+    unassigned: bool = Query(False, description="Only tasks with no project"),
     status: str | None = None,
     assignee: uuid.UUID | None = None,
     segment_id: uuid.UUID | None = None,
@@ -72,6 +73,8 @@ async def list_tasks(
 
     if project_id:
         query = query.where(Task.project_id == project_id)
+    if unassigned:
+        query = query.where(Task.project_id.is_(None))
     if status:
         query = query.where(Task.status == status)
     if segment_id:

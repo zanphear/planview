@@ -55,6 +55,9 @@ const RotaPage = lazy(() => import('./pages/RotaPage').then((m) => ({ default: m
 const PeoplePage = lazy(() =>
   import('./pages/PeoplePage').then((m) => ({ default: m.PeoplePage })),
 );
+const AllTasksPage = lazy(() =>
+  import('./pages/AllTasksPage').then((m) => ({ default: m.AllTasksPage })),
+);
 const OneToOnesPage = lazy(() =>
   import('./pages/OneToOnesPage').then((m) => ({ default: m.OneToOnesPage })),
 );
@@ -231,6 +234,7 @@ export default function App() {
           >
             <Route index element={<DashboardPage />} />
             <Route path="my-work" element={<MyWorkPage />} />
+            <Route path="tasks" element={<AllTasksPage />} />
             <Route path="teams/:teamId" element={<TeamTimelinePage />} />
             <Route path="projects/:projectId/board" element={<ProjectBoardPage />} />
             <Route path="projects/:projectId/timeline" element={<ProjectTimelinePage />} />

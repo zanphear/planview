@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import {
+  ListTodo,
   Users,
   FolderKanban,
   Star,
@@ -261,6 +262,19 @@ export function Sidebar() {
           >
             <User size={16} />
             My Work
+          </NavLink>
+          <NavLink
+            to="/tasks"
+            className={({ isActive }) =>
+              `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
+                isActive
+                  ? 'bg-sidebar-selected text-white'
+                  : 'text-sidebar-foreground hover:bg-sidebar-accent'
+              }`
+            }
+          >
+            <ListTodo size={16} />
+            All Tasks
           </NavLink>
           <NavLink
             to="/activity"
