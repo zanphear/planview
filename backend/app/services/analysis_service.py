@@ -32,7 +32,7 @@ async def call_llm(messages: list[dict]) -> str:
 
     async with httpx.AsyncClient(timeout=180.0) as client:
         resp = await client.post(
-            f"{settings.ai_model_url}/v1/chat/completions",
+            settings.ai_chat_url,
             json={
                 "model": settings.ai_model_name,
                 "messages": messages,
