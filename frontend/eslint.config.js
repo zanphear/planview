@@ -20,16 +20,27 @@ export default defineConfig([
       globals: globals.browser,
     },
     rules: {
-      // react-hooks v7 ships the React Compiler lints as errors. The project does
-      // not run the React Compiler yet, and set-state-in-effect flags the legacy
-      // fetch-into-useState pattern that the TanStack Query migration removes
-      // (ADR 0003). Keep them visible as warnings; promote back to error once the
-      // compiler is enabled and the migration is complete. Real correctness rules
-      // (rules-of-hooks, exhaustive-deps, the TS rules) stay as their defaults.
+      // react-hooks v7 ships the React Compiler optimization lints as errors. The
+      // project does not run the React Compiler yet, so these advisories (which
+      // only affect compiler-generated memoization) are downgraded to warnings;
+      // promote back to error once the compiler is enabled. Genuine correctness
+      // rules stay as errors: rules-of-hooks, set-state-in-render (infinite-loop
+      // bug), error-boundaries, plus the TS rules. exhaustive-deps stays a warning.
       'react-hooks/set-state-in-effect': 'warn',
       'react-hooks/immutability': 'warn',
       'react-hooks/purity': 'warn',
       'react-hooks/refs': 'warn',
+      'react-hooks/preserve-manual-memoization': 'warn',
+      'react-hooks/use-memo': 'warn',
+      'react-hooks/void-use-memo': 'warn',
+      'react-hooks/static-components': 'warn',
+      'react-hooks/component-hook-factories': 'warn',
+      'react-hooks/globals': 'warn',
+      'react-hooks/memoized-effect-dependencies': 'warn',
+      'react-hooks/no-deriving-state-in-effects': 'warn',
+      'react-hooks/automatic-effect-dependencies': 'warn',
+      'react-hooks/gating': 'warn',
+      'react-hooks/config': 'warn',
       'react-refresh/only-export-components': 'warn',
     },
   },
