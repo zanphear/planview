@@ -14,8 +14,8 @@ Accepted deviations and migration plans live in `docs/adr/`. The playbook wins b
 
 ## Repository
 - **GitHub:** github.com/zanphear/planview
-- **Docker Hub:** wgf007/planview (`planview-api`, `planview-ui`)
-- **Deployment:** bill@lxc-testbed, Dockge stack `/files/appdata/config/dockge/stacks/planview`
+- **Deployment:** lxc-testbed (192.168.0.246), Dockge stack at `/opt/stacks/planview` (compose builds `./backend` and `./frontend` locally; no registry pull). Access at http://192.168.0.246 (or http://lxc-testbed.omnichannel.cc).
+- **Deploy:** sync source to `/opt/stacks/planview`, set `/opt/stacks/planview/.env` (gitignored, fresh secrets), then `docker compose build --no-cache && docker compose up -d`. Web runs `alembic upgrade head` on start. First user self-registers (open registration in password mode) and becomes workspace owner.
 
 ## Tech Stack
 | Layer | Technology |

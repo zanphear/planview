@@ -99,7 +99,7 @@ services:
       - planview-web
       - planview-ui
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:80/health || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:80/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 3
