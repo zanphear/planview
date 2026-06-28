@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
@@ -109,8 +109,8 @@ async def delete_time_entry(
 async def list_workspace_time_entries(
     workspace_id: uuid.UUID,
     user_id: uuid.UUID | None = Query(None),
-    since: str | None = Query(None),
-    until: str | None = Query(None),
+    since: date | None = Query(None),
+    until: date | None = Query(None),
     limit: int = Query(200, ge=1, le=1000),
     current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
@@ -146,8 +146,8 @@ async def list_workspace_time_entries(
 @router.get("/resource-utilisation")
 async def resource_utilisation(
     workspace_id: uuid.UUID,
-    since: str | None = Query(None),
-    until: str | None = Query(None),
+    since: date | None = Query(None),
+    until: date | None = Query(None),
     current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -184,7 +184,6 @@ async def resource_utilisation(
         active_tasks = task_count_result.scalar_one()
 
         # Count overdue tasks
-        from datetime import date
         overdue_result = await db.execute(
             select(func.count())
             .select_from(task_assignees)
@@ -246,8 +245,8 @@ async def resource_utilisation(
 @router.get("/absences")
 async def absence_calendar(
     workspace_id: uuid.UUID,
-    since: str | None = Query(None),
-    until: str | None = Query(None),
+    since: date | None = Query(None),
+    until: date | None = Query(None),
     current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
