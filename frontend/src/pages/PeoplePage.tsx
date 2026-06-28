@@ -32,11 +32,18 @@ import {
   Camera,
 } from 'lucide-react';
 import { useWorkspaceStore } from '../stores/workspaceStore';
-import { usePeopleStore } from '../stores/peopleStore';
 import { peopleApi } from '../api/people';
 import type { PersonProfile, PersonInsights, PersonDocument, OrgChartNode } from '../api/people';
-import { membersApi } from '../api/users';
 import type { User } from '../api/users';
+import {
+  useProfiles,
+  useOrgChart,
+  useWorkspaceMembers,
+  useCurrentUser,
+  useUpdateProfile,
+  useUploadProfileAvatar,
+  useCreateProfile,
+} from '../api/queries/people';
 import { Toast } from '../components/shared/Toast';
 import { LookupSelect } from '../components/shared/LookupSelect';
 import { StatCard } from '../components/shared/StatCard';
@@ -185,7 +192,8 @@ function ProfileDetail({
   const [uploadType, setUploadType] = useState('other');
   const [uploadExpiry, setUploadExpiry] = useState('');
   const [uploadNotes, setUploadNotes] = useState('');
-  const updateProfileStore = usePeopleStore((s) => s.updateProfile);
+  const updateProfile = useUpdateProfile(workspaceId);
+  const uploadAvatar = useUploadProfileAvatar(workspaceId);
 
   const isManagerOrAdmin =
     currentUserRole === 'owner' ||
@@ -210,9 +218,8 @@ function ProfileDetail({
 
   const handleSaveProfile = async () => {
     try {
-      const { data } = await peopleApi.update(workspaceId, profile.user_id, editData);
+      const data = await updateProfile.mutateAsync({ userId: profile.user_id, data: editData });
       setProfile(data);
-      updateProfileStore(data);
       setEditing(false);
       setEditData({});
       Toast.show('Profile updated');
@@ -237,9 +244,8 @@ function ProfileDetail({
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      const { data } = await peopleApi.uploadAvatar(workspaceId, profile.user_id, file);
+      const data = await uploadAvatar.mutateAsync({ userId: profile.user_id, file });
       setProfile(data);
-      updateProfileStore(data);
       Toast.show('Avatar uploaded');
     } catch {
       Toast.show('Failed to upload avatar');
@@ -678,7 +684,7 @@ function ProfileDetail({
                   <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>
                     Personal Insights
                   </h2>
-                  <span className="flex items-center gap-1 px-2 py-0.5 text-xs bg-amber-50 text-amber-700 rounded-full border border-amber-200">
+                  <span className="flex items-center gap-1 px-2 py-0.5 text-xs bg-amber-50 text-caution rounded-full border border-caution">
                     <EyeOff size={12} /> Manager only
                   </span>
                 </div>
@@ -714,8 +720,8 @@ function ProfileDetail({
                 )}
               </div>
 
-              <div className="bg-amber-50/50 border border-amber-200 rounded-lg p-4 mb-6">
-                <p className="text-sm text-amber-800 flex items-center gap-2">
+              <div className="bg-amber-50/50 border border-caution rounded-lg p-4 mb-6">
+                <p className="text-sm text-caution flex items-center gap-2">
                   <AlertTriangle size={16} />
                   This information is confidential and only visible to the person's line manager and
                   workspace admins.
@@ -998,12 +1004,12 @@ function ProfileDetail({
                               {docType.label}
                             </span>
                             {isExpired && (
-                              <span className="text-xs px-2 py-0.5 bg-red-100 text-red-700 rounded font-medium">
+                              <span className="text-xs px-2 py-0.5 bg-red-100 text-destructive rounded font-medium">
                                 Expired
                               </span>
                             )}
                             {isExpiringSoon && (
-                              <span className="text-xs px-2 py-0.5 bg-amber-100 text-amber-700 rounded font-medium">
+                              <span className="text-xs px-2 py-0.5 bg-amber-100 text-caution rounded font-medium">
                                 Expiring soon
                               </span>
                             )}
@@ -1029,7 +1035,7 @@ function ProfileDetail({
                           </button>
                           <button
                             onClick={() => handleDeleteDoc(doc.id)}
-                            className="p-2 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                            className="p-2 hover:text-destructive hover:bg-red-50 rounded-lg"
                             style={{ color: 'var(--color-text-secondary)' }}
                             title="Delete"
                           >
@@ -1105,7 +1111,7 @@ function CreateProfileModal({
 }: {
   member: User;
   workspaceId: string;
-  onCreated: (p: PersonProfile) => void;
+  onCreated: () => void;
   onClose: () => void;
 }) {
   const [jobTitle, setJobTitle] = useState('');
@@ -1113,6 +1119,7 @@ function CreateProfileModal({
   const [contractType, setContractType] = useState('');
   const [location, setLocation] = useState('');
   const [saving, setSaving] = useState(false);
+  const createProfile = useCreateProfile(workspaceId);
 
   const handleSubmit = async () => {
     setSaving(true);
@@ -1122,8 +1129,8 @@ function CreateProfileModal({
       if (department) data.department = department;
       if (contractType) data.contract_type = contractType;
       if (location) data.location = location;
-      const { data: profile } = await peopleApi.create(workspaceId, member.id, data);
-      onCreated(profile);
+      await createProfile.mutateAsync({ userId: member.id, data });
+      onCreated();
       Toast.show('Profile created');
     } catch {
       Toast.show('Failed to create profile');
@@ -1259,26 +1266,18 @@ export function PeoplePage() {
   const workspace = useWorkspaceStore((s) => s.currentWorkspace);
   const { userId } = useParams();
   const navigate = useNavigate();
-  const { profiles, orgChart, isLoading, fetchProfiles, fetchOrgChart, addProfile } =
-    usePeopleStore();
+  const profilesQuery = useProfiles(workspace?.id);
+  const orgChartQuery = useOrgChart(workspace?.id);
+  const membersQuery = useWorkspaceMembers(workspace?.id);
+  const currentUserQuery = useCurrentUser();
+  const profiles = useMemo(() => profilesQuery.data ?? [], [profilesQuery.data]);
+  const orgChart = orgChartQuery.data ?? [];
+  const allMembers = useMemo(() => membersQuery.data ?? [], [membersQuery.data]);
+  const currentUser = currentUserQuery.data ?? null;
   const [viewMode, setViewMode] = useState<ViewMode>('directory');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterDept, setFilterDept] = useState('');
-  const [allMembers, setAllMembers] = useState<User[]>([]);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [creatingFor, setCreatingFor] = useState<User | null>(null);
-
-  useEffect(() => {
-    if (workspace) {
-      fetchProfiles(workspace.id);
-      fetchOrgChart(workspace.id);
-      membersApi.list(workspace.id).then(({ data }) => setAllMembers(data));
-      // Get current user from auth
-      import('../api/users').then(({ authApi }) => {
-        authApi.me().then(({ data }) => setCurrentUser(data));
-      });
-    }
-  }, [workspace, fetchProfiles, fetchOrgChart]);
 
   const departments = useMemo(() => {
     const depts = new Set(profiles.map((p) => p.department).filter(Boolean) as string[]);
@@ -1383,6 +1382,71 @@ export function PeoplePage() {
           onBack={() => navigate('/people')}
           allMembers={allMembers}
         />
+      </div>
+    );
+  }
+
+  // ── Pending ──────────────────────────────────────────────────────────────
+  if (!workspace || profilesQuery.isPending) {
+    return (
+      <div className="p-6">
+        <div
+          className="max-w-6xl mx-auto text-center py-20 text-sm"
+          style={{ color: 'var(--color-text-secondary)' }}
+        >
+          Loading people...
+        </div>
+      </div>
+    );
+  }
+
+  // ── Error (with retry) ────────────────────────────────────────────────────
+  if (profilesQuery.isError) {
+    return (
+      <div className="p-6">
+        <div className="max-w-6xl mx-auto text-center py-20">
+          <AlertTriangle
+            size={40}
+            className="mx-auto mb-3"
+            style={{ color: 'var(--color-text-secondary)' }}
+          />
+          <p className="text-sm mb-4" style={{ color: 'var(--color-text-secondary)' }}>
+            Could not load people. Check your connection and try again.
+          </p>
+          <button
+            onClick={() => profilesQuery.refetch()}
+            className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Try again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Empty (with CTA) ──────────────────────────────────────────────────────
+  if (profiles.length === 0 && membersWithoutProfiles.length === 0) {
+    return (
+      <div className="p-6">
+        <div className="max-w-6xl mx-auto text-center py-20">
+          <Users
+            size={48}
+            className="mx-auto mb-4 opacity-40"
+            style={{ color: 'var(--color-text-secondary)' }}
+          />
+          <h2 className="text-lg font-semibold mb-1" style={{ color: 'var(--color-text)' }}>
+            No people yet
+          </h2>
+          <p className="text-sm mb-5" style={{ color: 'var(--color-text-secondary)' }}>
+            Add members to your workspace, then create profiles to build your directory.
+          </p>
+          <button
+            onClick={() => navigate('/settings')}
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            <Plus size={16} /> Manage members
+          </button>
+        </div>
       </div>
     );
   }
@@ -1543,9 +1607,10 @@ export function PeoplePage() {
             </div>
 
             {/* Directory grid */}
-            {isLoading ? (
+            {filteredProfiles.length === 0 && membersWithoutProfiles.length === 0 ? (
               <div className="text-center py-12" style={{ color: 'var(--color-text-secondary)' }}>
-                Loading...
+                <Search size={32} className="mx-auto mb-3 opacity-40" />
+                <p className="text-sm">No people match your search.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -1701,8 +1766,7 @@ export function PeoplePage() {
         <CreateProfileModal
           member={creatingFor}
           workspaceId={workspace.id}
-          onCreated={(p) => {
-            addProfile(p);
+          onCreated={() => {
             setCreatingFor(null);
           }}
           onClose={() => setCreatingFor(null)}
