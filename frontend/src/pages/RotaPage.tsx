@@ -1,4 +1,5 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   startOfWeek,
   endOfWeek,
@@ -11,10 +12,28 @@ import {
   isToday,
   isSameDay,
 } from 'date-fns';
-import { ChevronLeft, ChevronRight, Plus, Trash2, Edit2, X, Phone, Clock, Sun } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  Trash2,
+  Edit2,
+  X,
+  Phone,
+  Clock,
+  Sun,
+  AlertTriangle,
+} from 'lucide-react';
 import { useWorkspaceStore } from '../stores/workspaceStore';
-import { rotasApi } from '../api/rotas';
 import { membersApi } from '../api/users';
+import {
+  useRotas,
+  useCreateRota,
+  useUpdateRota,
+  useDeleteRota,
+  useCreateRotaEntry,
+  useDeleteRotaEntry,
+} from '../api/queries/rotas';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import type { Rota, RotaEntry } from '../api/rotas';
 import type { User } from '../api/users';
@@ -33,43 +52,66 @@ const ROTA_TYPE_ICONS: Record<string, typeof Phone> = {
 
 export function RotaPage() {
   const workspace = useWorkspaceStore((s) => s.currentWorkspace);
-  const [rotas, setRotas] = useState<Rota[]>([]);
-  const [members, setMembers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+  const wsId = workspace?.id;
+
+  // ── Server state (TanStack Query) ────────────────────────────────────────────
+  const rotasQuery = useRotas(wsId);
+  // Members are auxiliary lookup data (name/avatar resolution) with no dedicated
+  // queries module, so fetched inline rather than via a stores fetch-into-state.
+  const membersQuery = useQuery({
+    queryKey: ['members', wsId ?? ''],
+    queryFn: async () => (await membersApi.list(wsId!)).data,
+    enabled: !!wsId,
+  });
+
+  const rotas: Rota[] = rotasQuery.data ?? [];
+  const members: User[] = membersQuery.data ?? [];
+
+  // ── Client / UI state ────────────────────────────────────────────────────────
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [weeksToShow, setWeeksToShow] = useState(2);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingRota, setEditingRota] = useState<Rota | null>(null);
   const [addingEntry, setAddingEntry] = useState<string | null>(null);
 
-  const loadData = async () => {
-    if (!workspace) return;
-    setLoading(true);
-    try {
-      const [rotasRes, membersRes] = await Promise.all([
-        rotasApi.list(workspace.id),
-        membersApi.list(workspace.id),
-      ]);
-      setRotas(rotasRes.data);
-      setMembers(membersRes.data);
-    } catch (err) {
-      console.error('Failed to load rotas:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadData();
-  }, [workspace]);
-
   const dateRange = useMemo(() => {
     const end = endOfWeek(addWeeks(weekStart, weeksToShow - 1), { weekStartsOn: 1 });
     return eachDayOfInterval({ start: weekStart, end });
   }, [weekStart, weeksToShow]);
 
-  if (loading) return <LoadingSpinner />;
+  // ── Four states ───────────────────────────────────────────────────────────────
+  // 1) PENDING: initial load of the page's core server data.
+  if (rotasQuery.isPending || membersQuery.isPending) return <LoadingSpinner />;
 
+  // 2) ERROR: with a retry that refetches both queries.
+  if (rotasQuery.isError || membersQuery.isError) {
+    return (
+      <div className="p-4 sm:p-6 h-full flex items-center justify-center">
+        <div className="text-center">
+          <AlertTriangle
+            size={48}
+            className="mx-auto mb-3"
+            style={{ color: '#ef4444', opacity: 0.7 }}
+          />
+          <p className="text-sm mb-4" style={{ color: 'var(--color-text-secondary)' }}>
+            Failed to load rotas.
+          </p>
+          <button
+            onClick={() => {
+              rotasQuery.refetch();
+              membersQuery.refetch();
+            }}
+            className="px-4 py-2 text-sm font-medium rounded-lg text-white"
+            style={{ background: 'linear-gradient(135deg, #8A00E5, #4D217A)' }}
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // 3) EMPTY-WITH-CTA and 4) SUCCESS are rendered below.
   return (
     <div className="p-4 sm:p-6 h-full flex flex-col">
       {/* Header */}
@@ -139,9 +181,17 @@ export function RotaPage() {
               className="mx-auto mb-3 opacity-30"
               style={{ color: 'var(--color-text-secondary)' }}
             />
-            <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+            <p className="text-sm mb-4" style={{ color: 'var(--color-text-secondary)' }}>
               No rotas configured yet. Create one to get started.
             </p>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg text-white transition-colors"
+              style={{ background: 'linear-gradient(135deg, #8A00E5, #4D217A)' }}
+            >
+              <Plus size={14} />
+              New Rota
+            </button>
           </div>
         </div>
       ) : (
@@ -152,8 +202,7 @@ export function RotaPage() {
               rota={rota}
               dateRange={dateRange}
               members={members}
-              workspaceId={workspace!.id}
-              onUpdate={loadData}
+              workspaceId={wsId!}
               onEdit={() => setEditingRota(rota)}
               addingEntry={addingEntry === rota.id}
               onToggleAddEntry={() => setAddingEntry(addingEntry === rota.id ? null : rota.id)}
@@ -163,22 +212,22 @@ export function RotaPage() {
       )}
 
       {/* Create Modal */}
-      {showCreateModal && workspace && (
+      {showCreateModal && wsId && (
         <CreateRotaModal
-          workspaceId={workspace.id}
+          workspaceId={wsId}
           onClose={() => setShowCreateModal(false)}
-          onCreated={loadData}
+          onCreated={() => setShowCreateModal(false)}
         />
       )}
 
       {/* Edit Modal */}
-      {editingRota && workspace && (
+      {editingRota && wsId && (
         <EditRotaModal
           rota={editingRota}
-          workspaceId={workspace.id}
+          workspaceId={wsId}
           onClose={() => setEditingRota(null)}
-          onSaved={loadData}
-          onDeleted={loadData}
+          onSaved={() => setEditingRota(null)}
+          onDeleted={() => setEditingRota(null)}
         />
       )}
     </div>
@@ -192,7 +241,6 @@ function RotaSection({
   dateRange,
   members,
   workspaceId,
-  onUpdate,
   onEdit,
   addingEntry,
   onToggleAddEntry,
@@ -201,13 +249,14 @@ function RotaSection({
   dateRange: Date[];
   members: User[];
   workspaceId: string;
-  onUpdate: () => void;
   onEdit: () => void;
   addingEntry: boolean;
   onToggleAddEntry: () => void;
 }) {
   const Icon = ROTA_TYPE_ICONS[rota.rota_type] || Phone;
   const typeInfo = ROTA_TYPE_LABELS[rota.rota_type] || { label: rota.rota_type, desc: '' };
+
+  const deleteEntry = useDeleteRotaEntry(workspaceId);
 
   const timeLabel =
     rota.rota_type === 'weekday' && rota.start_time && rota.end_time
@@ -218,8 +267,7 @@ function RotaSection({
 
   const handleDeleteEntry = async (entryId: string) => {
     try {
-      await rotasApi.deleteEntry(workspaceId, rota.id, entryId);
-      onUpdate();
+      await deleteEntry.mutateAsync({ rotaId: rota.id, entryId });
     } catch (err) {
       console.error('Failed to delete entry:', err);
     }
@@ -279,10 +327,7 @@ function RotaSection({
           rotaId={rota.id}
           workspaceId={workspaceId}
           members={members}
-          onCreated={() => {
-            onToggleAddEntry();
-            onUpdate();
-          }}
+          onCreated={onToggleAddEntry}
           onCancel={onToggleAddEntry}
         />
       )}
@@ -473,24 +518,25 @@ function AddEntryForm({
   const [dateFrom, setDateFrom] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [dateTo, setDateTo] = useState(format(addDays(new Date(), 6), 'yyyy-MM-dd'));
   const [notes, setNotes] = useState('');
-  const [saving, setSaving] = useState(false);
+  const createEntry = useCreateRotaEntry(workspaceId);
+  const saving = createEntry.isPending;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userId) return;
-    setSaving(true);
     try {
-      await rotasApi.createEntry(workspaceId, rotaId, {
-        user_id: userId,
-        date_from: dateFrom,
-        date_to: dateTo,
-        notes: notes || undefined,
+      await createEntry.mutateAsync({
+        rotaId,
+        data: {
+          user_id: userId,
+          date_from: dateFrom,
+          date_to: dateTo,
+          notes: notes || undefined,
+        },
       });
       onCreated();
     } catch (err) {
       console.error('Failed to add entry:', err);
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -610,13 +656,13 @@ function CreateRotaModal({
   const [endTime, setEndTime] = useState('17:00');
   const [includeWeekends, setIncludeWeekends] = useState(false);
   const [colour, setColour] = useState('#8A00E5');
-  const [saving, setSaving] = useState(false);
+  const createRota = useCreateRota(workspaceId);
+  const saving = createRota.isPending;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
     try {
-      await rotasApi.create(workspaceId, {
+      await createRota.mutateAsync({
         name,
         rota_type: rotaType as Rota['rota_type'],
         start_time: rotaType === 'weekday' ? startTime : null,
@@ -628,8 +674,6 @@ function CreateRotaModal({
       onClose();
     } catch (err) {
       console.error('Failed to create rota:', err);
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -850,33 +894,35 @@ function EditRotaModal({
   const [endTime, setEndTime] = useState(rota.end_time?.slice(0, 5) || '17:00');
   const [includeWeekends, setIncludeWeekends] = useState(rota.include_weekends);
   const [colour, setColour] = useState(rota.colour);
-  const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const updateRota = useUpdateRota(workspaceId);
+  const deleteRota = useDeleteRota(workspaceId);
+  const saving = updateRota.isPending;
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
     try {
-      await rotasApi.update(workspaceId, rota.id, {
-        name,
-        rota_type: rotaType as Rota['rota_type'],
-        start_time: rotaType === 'weekday' ? startTime : null,
-        end_time: rotaType === 'weekday' ? endTime : null,
-        include_weekends: includeWeekends,
-        colour,
+      await updateRota.mutateAsync({
+        rotaId: rota.id,
+        data: {
+          name,
+          rota_type: rotaType as Rota['rota_type'],
+          start_time: rotaType === 'weekday' ? startTime : null,
+          end_time: rotaType === 'weekday' ? endTime : null,
+          include_weekends: includeWeekends,
+          colour,
+        },
       });
       onSaved();
       onClose();
     } catch (err) {
       console.error('Failed to update rota:', err);
-    } finally {
-      setSaving(false);
     }
   };
 
   const handleDelete = async () => {
     try {
-      await rotasApi.delete(workspaceId, rota.id);
+      await deleteRota.mutateAsync(rota.id);
       onDeleted();
       onClose();
     } catch (err) {

@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   ClipboardList,
   Plus,
@@ -15,13 +16,15 @@ import {
 } from 'lucide-react';
 import { useWorkspaceStore } from '../stores/workspaceStore';
 import { useAuthStore } from '../stores/authStore';
+import { membersApi, type User } from '../api/users';
 import {
-  onboardingApi,
-  type OnboardingTemplate,
-  type OnboardingChecklist,
-} from '../api/onboarding';
-import { membersApi } from '../api/users';
-import type { User } from '../api/users';
+  useOnboardingTemplates,
+  useOnboardingChecklists,
+  useCreateTemplate,
+  useDeleteTemplate,
+  useCreateChecklist,
+  useToggleChecklistItem,
+} from '../api/queries/onboarding';
 import { LookupSelect } from '../components/shared/LookupSelect';
 import { StatCard } from '../components/shared/StatCard';
 import { StatusBadge } from '../components/shared/StatusBadge';
@@ -78,6 +81,33 @@ function ProgressBar({ completed, total }: { completed: number; total: number })
   );
 }
 
+function Spinner() {
+  return (
+    <div className="flex items-center justify-center h-40">
+      <div
+        className="animate-spin rounded-full h-8 w-8 border-b-2"
+        style={{ borderColor: 'var(--color-primary)' }}
+      />
+    </div>
+  );
+}
+
+function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
+  return (
+    <div className="text-center py-16" style={{ color: 'var(--color-text-secondary)' }}>
+      <X size={48} className="mx-auto mb-3 opacity-40" />
+      <p className="mb-3">{message}</p>
+      <button
+        onClick={onRetry}
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white rounded-lg transition-colors"
+        style={{ backgroundColor: 'var(--color-primary)' }}
+      >
+        Retry
+      </button>
+    </div>
+  );
+}
+
 const inputStyle: React.CSSProperties = {
   backgroundColor: 'var(--color-surface)',
   borderColor: 'var(--color-border)',
@@ -89,10 +119,24 @@ export function OnboardingPage() {
   const user = useAuthStore((s) => s.user);
 
   const [tab, setTab] = useState<Tab>('templates');
-  const [templates, setTemplates] = useState<OnboardingTemplate[]>([]);
-  const [checklists, setChecklists] = useState<OnboardingChecklist[]>([]);
-  const [members, setMembers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+
+  // ── Server state (TanStack Query, ADR 0003) ────────────────────────────────
+  const templatesQuery = useOnboardingTemplates(workspace?.id);
+  const checklistsQuery = useOnboardingChecklists(workspace?.id);
+  const membersQuery = useQuery({
+    queryKey: ['members', workspace?.id],
+    queryFn: async (): Promise<User[]> => (await membersApi.list(workspace!.id)).data,
+    enabled: !!workspace,
+  });
+
+  const templates = templatesQuery.data ?? [];
+  const checklists = checklistsQuery.data ?? [];
+  const members = membersQuery.data ?? [];
+
+  const createTemplate = useCreateTemplate(workspace?.id);
+  const deleteTemplate = useDeleteTemplate(workspace?.id);
+  const createChecklist = useCreateChecklist(workspace?.id);
+  const toggleItem = useToggleChecklistItem(workspace?.id);
 
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [tmplName, setTmplName] = useState('');
@@ -108,27 +152,15 @@ export function OnboardingPage() {
 
   const [expandedChecklistId, setExpandedChecklistId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!workspace) return;
-    setLoading(true);
-    Promise.all([
-      onboardingApi.listTemplates(workspace.id).then((res) => setTemplates(res.data)),
-      onboardingApi.listChecklists(workspace.id).then((res) => setChecklists(res.data)),
-      membersApi.list(workspace.id).then((res) => setMembers(res.data)),
-    ])
-      .catch((err) => console.error('Failed to load onboarding data:', err))
-      .finally(() => setLoading(false));
-  }, [workspace]);
-
   const getMemberName = (userId: string): string => {
     const m = members.find((u) => u.id === userId);
     return m?.name ?? 'Unknown';
   };
 
-  const handleCreateTemplate = async () => {
+  const handleCreateTemplate = () => {
     if (!workspace || !tmplName.trim()) return;
-    try {
-      const { data } = await onboardingApi.createTemplate(workspace.id, {
+    createTemplate.mutate(
+      {
         name: tmplName.trim(),
         template_type: tmplType,
         description: tmplDescription.trim() || undefined,
@@ -138,23 +170,18 @@ export function OnboardingPage() {
           sort_order: item.sort_order || i + 1,
           default_assignee_role: item.default_assignee_role || null,
         })),
-      });
-      setTemplates((prev) => [...prev, data]);
-      resetTemplateModal();
-    } catch (err) {
-      console.error('Failed to create template:', err);
-    }
+      },
+      { onSuccess: () => resetTemplateModal() },
+    );
   };
 
-  const handleDeleteTemplate = async (templateId: string) => {
+  const handleDeleteTemplate = (templateId: string) => {
     if (!workspace) return;
-    try {
-      await onboardingApi.deleteTemplate(workspace.id, templateId);
-      setTemplates((prev) => prev.filter((t) => t.id !== templateId));
-      if (expandedTemplateId === templateId) setExpandedTemplateId(null);
-    } catch (err) {
-      console.error('Failed to delete template:', err);
-    }
+    deleteTemplate.mutate(templateId, {
+      onSuccess: () => {
+        if (expandedTemplateId === templateId) setExpandedTemplateId(null);
+      },
+    });
   };
 
   const resetTemplateModal = () => {
@@ -186,18 +213,12 @@ export function OnboardingPage() {
     setTmplItems((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const handleCreateChecklist = async () => {
+  const handleCreateChecklist = () => {
     if (!workspace || !clUserId) return;
-    try {
-      const { data } = await onboardingApi.createChecklist(workspace.id, {
-        user_id: clUserId,
-        template_id: clTemplateId || undefined,
-      });
-      setChecklists((prev) => [...prev, data]);
-      resetChecklistModal();
-    } catch (err) {
-      console.error('Failed to create checklist:', err);
-    }
+    createChecklist.mutate(
+      { user_id: clUserId, template_id: clTemplateId || undefined },
+      { onSuccess: () => resetChecklistModal() },
+    );
   };
 
   const resetChecklistModal = () => {
@@ -206,14 +227,9 @@ export function OnboardingPage() {
     setClTemplateId('');
   };
 
-  const handleToggleItem = async (checklistId: string, itemId: string) => {
+  const handleToggleItem = (checklistId: string, itemId: string) => {
     if (!workspace) return;
-    try {
-      const { data } = await onboardingApi.toggleItem(workspace.id, checklistId, itemId);
-      setChecklists((prev) => prev.map((cl) => (cl.id === data.id ? data : cl)));
-    } catch (err) {
-      console.error('Failed to toggle item:', err);
-    }
+    toggleItem.mutate({ checklistId, itemId });
   };
 
   const completedChecklists = checklists.filter((cl) => cl.status === 'completed').length;
@@ -329,14 +345,7 @@ export function OnboardingPage() {
             </div>
           </div>
         )}
-        {loading ? (
-          <div className="flex items-center justify-center h-40">
-            <div
-              className="animate-spin rounded-full h-8 w-8 border-b-2"
-              style={{ borderColor: 'var(--color-primary)' }}
-            />
-          </div>
-        ) : tab === 'templates' ? (
+        {tab === 'templates' ? (
           <div className="space-y-4">
             <div className="flex justify-end">
               <button
@@ -349,10 +358,25 @@ export function OnboardingPage() {
               </button>
             </div>
 
-            {templates.length === 0 ? (
+            {templatesQuery.isPending ? (
+              <Spinner />
+            ) : templatesQuery.isError ? (
+              <ErrorState
+                message="Failed to load templates."
+                onRetry={() => templatesQuery.refetch()}
+              />
+            ) : templates.length === 0 ? (
               <div className="text-center py-16" style={{ color: 'var(--color-text-secondary)' }}>
                 <ClipboardList size={48} className="mx-auto mb-3 opacity-40" />
-                <p>No templates yet. Create one to get started.</p>
+                <p className="mb-3">No templates yet. Create one to get started.</p>
+                <button
+                  onClick={() => setShowTemplateModal(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white rounded-lg transition-colors"
+                  style={{ backgroundColor: 'var(--color-primary)' }}
+                >
+                  <Plus size={16} />
+                  New Template
+                </button>
               </div>
             ) : (
               <div className="grid gap-3">
@@ -461,10 +485,25 @@ export function OnboardingPage() {
               </button>
             </div>
 
-            {checklists.length === 0 ? (
+            {checklistsQuery.isPending ? (
+              <Spinner />
+            ) : checklistsQuery.isError ? (
+              <ErrorState
+                message="Failed to load checklists."
+                onRetry={() => checklistsQuery.refetch()}
+              />
+            ) : checklists.length === 0 ? (
               <div className="text-center py-16" style={{ color: 'var(--color-text-secondary)' }}>
                 <Check size={48} className="mx-auto mb-3 opacity-40" />
-                <p>No active checklists. Start one from a template.</p>
+                <p className="mb-3">No active checklists. Start one from a template.</p>
+                <button
+                  onClick={() => setShowChecklistModal(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-white rounded-lg transition-colors"
+                  style={{ backgroundColor: 'var(--color-primary)' }}
+                >
+                  <UserPlus size={16} />
+                  Start Checklist
+                </button>
               </div>
             ) : (
               <div className="grid gap-3">

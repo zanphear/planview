@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   Award,
   Plus,
@@ -11,11 +12,20 @@ import {
   Shield,
   BookOpen,
   TrendingUp,
+  AlertTriangle,
 } from 'lucide-react';
 import { useWorkspaceStore } from '../stores/workspaceStore';
 import { useAuthStore } from '../stores/authStore';
-import { competenciesApi } from '../api/competencies';
 import type { Competency, UserCompetency } from '../api/competencies';
+import {
+  useCompetencies,
+  useCompetencyMatrix,
+  useCreateCompetency,
+  useUpdateCompetency,
+  useDeleteCompetency,
+  useAssessCompetency,
+  useUpdateAssessment,
+} from '../api/queries/competencies';
 import { membersApi } from '../api/users';
 import type { User } from '../api/users';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
@@ -61,16 +71,32 @@ export function CompetenciesPage() {
   const workspace = useWorkspaceStore((s) => s.currentWorkspace);
   const user = useAuthStore((s) => s.user);
   const [tab, setTab] = useState<Tab>('competencies');
-  const [competencies, setCompetencies] = useState<Competency[]>([]);
-  const [members, setMembers] = useState<User[]>([]);
-  const [matrix, setMatrix] = useState<UserCompetency[]>([]);
-  const [loading, setLoading] = useState(true);
+
+  // ── Server state (TanStack Query, ADR 0003) ────────────────────────────────
+  const competenciesQuery = useCompetencies(workspace?.id);
+  const matrixQuery = useCompetencyMatrix(workspace?.id);
+  const membersQuery = useQuery({
+    queryKey: ['members', workspace?.id],
+    queryFn: async (): Promise<User[]> => (await membersApi.list(workspace!.id)).data,
+    enabled: !!workspace,
+  });
+
+  const competencies = competenciesQuery.data ?? [];
+  const matrix = matrixQuery.data ?? [];
+  const members = membersQuery.data ?? [];
+
+  // ── Mutations ──────────────────────────────────────────────────────────────
+  const createMutation = useCreateCompetency(workspace?.id);
+  const updateMutation = useUpdateCompetency(workspace?.id);
+  const deleteMutation = useDeleteCompetency(workspace?.id);
+  const assessMutation = useAssessCompetency(workspace?.id);
+  const updateAssessmentMutation = useUpdateAssessment(workspace?.id);
 
   // Modal state
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<CompetencyFormData>(EMPTY_FORM);
-  const [saving, setSaving] = useState(false);
+  const saving = createMutation.isPending || updateMutation.isPending;
 
   // Popover state for matrix cell
   const [popover, setPopover] = useState<{
@@ -83,30 +109,6 @@ export function CompetenciesPage() {
   // Category filter
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
-
-  const loadData = async () => {
-    if (!workspace) return;
-    setLoading(true);
-    try {
-      const [compRes, membersRes, matrixRes] = await Promise.all([
-        competenciesApi.list(workspace.id),
-        membersApi.list(workspace.id),
-        competenciesApi.matrix(workspace.id),
-      ]);
-      setCompetencies(compRes.data);
-      setMembers(membersRes.data);
-      setMatrix(matrixRes.data);
-    } catch (err) {
-      console.error('Failed to load competencies:', err);
-      Toast.show('Failed to load competencies data');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadData();
-  }, [workspace]);
 
   // Close popover on outside click
   useEffect(() => {
@@ -245,41 +247,36 @@ export function CompetenciesPage() {
 
   const handleSave = async () => {
     if (!workspace || !form.name.trim()) return;
-    setSaving(true);
+    const payload: Partial<Competency> = {
+      name: form.name.trim(),
+      category: form.category.trim() || null,
+      description: form.description.trim() || null,
+      requires_certification: form.requires_certification,
+      certification_validity_months: form.certification_validity_months
+        ? parseInt(form.certification_validity_months, 10)
+        : null,
+      levels: parseLevels(form.levels),
+    };
     try {
-      const payload: Partial<Competency> = {
-        name: form.name.trim(),
-        category: form.category.trim() || null,
-        description: form.description.trim() || null,
-        requires_certification: form.requires_certification,
-        certification_validity_months: form.certification_validity_months
-          ? parseInt(form.certification_validity_months, 10)
-          : null,
-        levels: parseLevels(form.levels),
-      };
       if (editingId) {
-        await competenciesApi.update(workspace.id, editingId, payload);
+        await updateMutation.mutateAsync({ competencyId: editingId, data: payload });
         Toast.show('Competency updated');
       } else {
-        await competenciesApi.create(workspace.id, payload);
+        await createMutation.mutateAsync(payload);
         Toast.show('Competency created');
       }
       setShowModal(false);
-      await loadData();
     } catch (err) {
       console.error('Failed to save competency:', err);
       Toast.show('Failed to save competency');
-    } finally {
-      setSaving(false);
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!workspace) return;
     try {
-      await competenciesApi.delete(workspace.id, id);
+      await deleteMutation.mutateAsync(id);
       Toast.show('Competency deleted');
-      await loadData();
     } catch (err) {
       console.error('Failed to delete competency:', err);
       Toast.show('Failed to delete competency');
@@ -289,15 +286,9 @@ export function CompetenciesPage() {
   const handleAssess = async (userId: string, competencyId: string, level: Level) => {
     if (!workspace || !user) return;
     try {
-      await competenciesApi.assess(workspace.id, competencyId, {
-        user_id: userId,
-        level,
-      });
+      await assessMutation.mutateAsync({ competencyId, data: { user_id: userId, level } });
       setPopover(null);
       Toast.show('Assessment saved');
-      // Reload matrix
-      const res = await competenciesApi.matrix(workspace.id);
-      setMatrix(res.data);
     } catch (err) {
       console.error('Failed to save assessment:', err);
       Toast.show('Failed to save assessment');
@@ -309,18 +300,52 @@ export function CompetenciesPage() {
     const uc = matrixLookup[`${userId}:${competencyId}`];
     if (!uc) return;
     try {
-      await competenciesApi.updateAssessment(workspace.id, competencyId, uc.id, { level: '' });
+      await updateAssessmentMutation.mutateAsync({
+        competencyId,
+        assessmentId: uc.id,
+        data: { level: '' },
+      });
       setPopover(null);
       Toast.show('Assessment cleared');
-      const res = await competenciesApi.matrix(workspace.id);
-      setMatrix(res.data);
     } catch (err) {
       console.error('Failed to clear assessment:', err);
       Toast.show('Failed to clear assessment');
     }
   };
 
-  if (loading) return <LoadingSpinner fullPage />;
+  // ── Four states ────────────────────────────────────────────────────────────
+  const isPending = competenciesQuery.isPending || matrixQuery.isPending || membersQuery.isPending;
+  const isError = competenciesQuery.isError || matrixQuery.isError || membersQuery.isError;
+
+  if (isPending) return <LoadingSpinner fullPage />;
+
+  if (isError) {
+    return (
+      <div className="flex-1 flex items-center justify-center h-full">
+        <div className="text-center">
+          <AlertTriangle
+            size={48}
+            className="mx-auto mb-3"
+            style={{ color: 'var(--color-danger, #ef4444)' }}
+          />
+          <p className="text-sm mb-3" style={{ color: 'var(--color-text-secondary)' }}>
+            Failed to load competencies data.
+          </p>
+          <button
+            onClick={() => {
+              competenciesQuery.refetch();
+              matrixQuery.refetch();
+              membersQuery.refetch();
+            }}
+            className="px-4 py-2 text-sm font-medium rounded-lg text-white"
+            style={{ background: 'var(--color-primary)' }}
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-6 h-full flex flex-col">
@@ -417,7 +442,28 @@ export function CompetenciesPage() {
       )}
 
       {/* Content */}
-      {tab === 'competencies' ? (
+      {competencies.length === 0 ? (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <Award
+              size={48}
+              className="mx-auto mb-3 opacity-30"
+              style={{ color: 'var(--color-text-secondary)' }}
+            />
+            <p className="text-sm mb-3" style={{ color: 'var(--color-text-secondary)' }}>
+              No competencies defined yet. Add one to get started.
+            </p>
+            <button
+              onClick={openCreate}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg text-white transition-colors hover:opacity-90"
+              style={{ background: 'var(--color-primary)' }}
+            >
+              <Plus size={14} />
+              Add Competency
+            </button>
+          </div>
+        </div>
+      ) : tab === 'competencies' ? (
         <CompetenciesTab
           grouped={grouped}
           categories={categories}

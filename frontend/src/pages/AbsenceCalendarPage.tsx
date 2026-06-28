@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   startOfMonth,
@@ -14,38 +14,30 @@ import {
   parseISO,
 } from 'date-fns';
 import { useWorkspaceStore } from '../stores/workspaceStore';
-import { timeEntriesApi, type Absence } from '../api/timeEntries';
+import { type Absence } from '../api/timeEntries';
+import { useAbsences } from '../api/queries/timeEntries';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 
 export function AbsenceCalendarPage() {
   const workspace = useWorkspaceStore((s) => s.currentWorkspace);
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [absences, setAbsences] = useState<Absence[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!workspace) return;
-    const monthStart = startOfMonth(currentMonth);
-    const monthEnd = endOfMonth(currentMonth);
-    const calStart = startOfWeek(monthStart, { weekStartsOn: 1 });
-    const calEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
-
-    setLoading(true);
-    timeEntriesApi
-      .absences(workspace.id, {
-        since: format(calStart, 'yyyy-MM-dd'),
-        until: format(calEnd, 'yyyy-MM-dd'),
-      })
-      .then(({ data }) => setAbsences(data))
-      .catch(() => setAbsences([]))
-      .finally(() => setLoading(false));
-  }, [workspace, currentMonth]);
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
   const calStart = startOfWeek(monthStart, { weekStartsOn: 1 });
   const calEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
   const days = eachDayOfInterval({ start: calStart, end: calEnd });
+
+  const range = useMemo(
+    () => ({
+      since: format(calStart, 'yyyy-MM-dd'),
+      until: format(calEnd, 'yyyy-MM-dd'),
+    }),
+    [calStart, calEnd],
+  );
+
+  const { data, isPending, isError, refetch } = useAbsences(workspace?.id, range);
+  const absences = useMemo<Absence[]>(() => data ?? [], [data]);
 
   const absencesByDate = useMemo(() => {
     const map = new Map<string, Absence[]>();
@@ -83,7 +75,24 @@ export function AbsenceCalendarPage() {
     }));
   }, [absences]);
 
-  if (loading) return <LoadingSpinner />;
+  if (isPending) return <LoadingSpinner />;
+
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+        <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+          Couldn&apos;t load the absence calendar.
+        </p>
+        <button
+          onClick={() => refetch()}
+          className="px-4 py-2 text-sm font-medium rounded-lg text-white"
+          style={{ backgroundColor: 'var(--color-primary)' }}
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-6 h-full flex flex-col">
@@ -238,10 +247,10 @@ export function AbsenceCalendarPage() {
         </div>
       )}
 
-      {absences.length === 0 && !loading && (
+      {absences.length === 0 && (
         <div className="flex-1 flex items-center justify-center">
           <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-            No absences recorded for this period.
+            No absences recorded for this period. Book leave or log time off to see it here.
           </p>
         </div>
       )}

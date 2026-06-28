@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   Heart,
   ThumbsUp,
@@ -12,10 +13,16 @@ import {
 } from 'lucide-react';
 import { useWorkspaceStore } from '../stores/workspaceStore';
 import { useAuthStore } from '../stores/authStore';
-import { wellbeingApi } from '../api/wellbeing';
 import { membersApi } from '../api/users';
 import type { PulseSurvey, Kudos } from '../api/wellbeing';
 import type { User } from '../api/users';
+import {
+  useSurveys,
+  useKudos,
+  useCreateSurvey,
+  useSubmitResponse,
+  useGiveKudos,
+} from '../api/queries/wellbeing';
 import { Toast } from '../components/shared/Toast';
 import { StatCard } from '../components/shared/StatCard';
 import { BarChart } from '../components/charts/BarChart';
@@ -59,38 +66,25 @@ function getScoreColour(score: number): string {
 export function WellbeingPage() {
   const workspace = useWorkspaceStore((s) => s.currentWorkspace);
   const user = useAuthStore((s) => s.user);
+  const workspaceId = workspace?.id;
+
+  // Client/UI state only — server data lives in TanStack Query (ADR 0003).
   const [tab, setTab] = useState<Tab>('surveys');
-  const [surveys, setSurveys] = useState<PulseSurvey[]>([]);
-  const [kudos, setKudos] = useState<Kudos[]>([]);
-  const [members, setMembers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
   const [expandedSurvey, setExpandedSurvey] = useState<string | null>(null);
   const [showNewSurvey, setShowNewSurvey] = useState(false);
   const [showGiveKudos, setShowGiveKudos] = useState(false);
 
-  const loadData = async () => {
-    if (!workspace) return;
-    setLoading(true);
-    try {
-      const [surveysRes, kudosRes, membersRes] = await Promise.all([
-        wellbeingApi.listSurveys(workspace.id),
-        wellbeingApi.listKudos(workspace.id),
-        membersApi.list(workspace.id),
-      ]);
-      setSurveys(surveysRes.data);
-      setKudos(kudosRes.data);
-      setMembers(membersRes.data);
-    } catch (err) {
-      console.error('Failed to load wellbeing data:', err);
-      Toast.show('Failed to load wellbeing data');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const surveysQuery = useSurveys(workspaceId);
+  const kudosQuery = useKudos(workspaceId);
+  const membersQuery = useQuery({
+    queryKey: ['members', workspaceId ?? ''],
+    queryFn: async (): Promise<User[]> => (await membersApi.list(workspaceId!)).data,
+    enabled: !!workspaceId,
+  });
 
-  useEffect(() => {
-    loadData();
-  }, [workspace]);
+  const surveys = surveysQuery.data ?? [];
+  const kudos = kudosQuery.data ?? [];
+  const members = membersQuery.data ?? [];
 
   const getMemberName = (userId: string): string => {
     const m = members.find((u) => u.id === userId);
@@ -101,8 +95,11 @@ export function WellbeingPage() {
     return members.find((u) => u.id === userId);
   };
 
-  // Computed stats
-  const allResponses = useMemo(() => surveys.flatMap((s) => s.responses), [surveys]);
+  // Computed stats — derive purely from query data, no input mutation.
+  const allResponses = useMemo(
+    () => (surveysQuery.data ?? []).flatMap((s) => s.responses),
+    [surveysQuery.data],
+  );
   const totalResponses = allResponses.length;
   const avgMoraleNum =
     totalResponses > 0 ? allResponses.reduce((sum, r) => sum + r.morale, 0) / totalResponses : 0;
@@ -123,7 +120,8 @@ export function WellbeingPage() {
     { label: 'Support', value: avgSupport, colour: COLOURS.green },
   ];
 
-  if (loading) {
+  // ── PENDING ────────────────────────────────────────────────────────────────
+  if (surveysQuery.isPending || kudosQuery.isPending || membersQuery.isPending) {
     return (
       <div className="flex items-center justify-center h-full">
         <div
@@ -134,6 +132,53 @@ export function WellbeingPage() {
     );
   }
 
+  // ── ERROR (with retry) ───────────────────────────────────────────────────────
+  if (surveysQuery.isError || kudosQuery.isError || membersQuery.isError) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-3 p-6 text-center">
+        <Heart size={40} className="opacity-30" style={{ color: 'var(--color-text-secondary)' }} />
+        <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+          Couldn't load wellbeing data.
+        </p>
+        <button
+          onClick={() => {
+            surveysQuery.refetch();
+            kudosQuery.refetch();
+            membersQuery.refetch();
+          }}
+          className="px-4 py-2 text-sm font-medium rounded-lg text-white"
+          style={{ backgroundColor: 'var(--color-primary)' }}
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  // ── EMPTY (with CTA) ─────────────────────────────────────────────────────────
+  if (surveys.length === 0 && kudos.length === 0 && !showNewSurvey) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-3 p-6 text-center">
+        <Heart size={48} className="opacity-30" style={{ color: 'var(--color-text-secondary)' }} />
+        <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+          No wellbeing activity yet. Start by sending a pulse survey to check in with your team.
+        </p>
+        <button
+          onClick={() => {
+            setTab('surveys');
+            setShowNewSurvey(true);
+          }}
+          className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg text-white"
+          style={{ background: 'linear-gradient(135deg, #8A00E5, #4D217A)' }}
+        >
+          <Plus size={14} />
+          New Survey
+        </button>
+      </div>
+    );
+  }
+
+  // ── SUCCESS ──────────────────────────────────────────────────────────────────
   return (
     <div className="p-4 sm:p-6 h-full flex flex-col">
       {/* Header */}
@@ -231,7 +276,6 @@ export function WellbeingPage() {
             onToggleExpand={(id) => setExpandedSurvey(expandedSurvey === id ? null : id)}
             showNewSurvey={showNewSurvey}
             onToggleNewSurvey={() => setShowNewSurvey(!showNewSurvey)}
-            onRefresh={loadData}
           />
         ) : (
           <KudosTab
@@ -243,7 +287,6 @@ export function WellbeingPage() {
             onToggleGiveKudos={() => setShowGiveKudos(!showGiveKudos)}
             workspace={workspace}
             user={user}
-            onRefresh={loadData}
           />
         )}
       </div>
@@ -261,7 +304,6 @@ function SurveysTab({
   onToggleExpand,
   showNewSurvey,
   onToggleNewSurvey,
-  onRefresh,
 }: {
   surveys: PulseSurvey[];
   workspace: { id: string } | null;
@@ -270,7 +312,6 @@ function SurveysTab({
   onToggleExpand: (id: string) => void;
   showNewSurvey: boolean;
   onToggleNewSurvey: () => void;
-  onRefresh: () => void;
 }) {
   return (
     <div className="space-y-4">
@@ -290,10 +331,7 @@ function SurveysTab({
       {showNewSurvey && workspace && (
         <CreateSurveyForm
           workspaceId={workspace.id}
-          onCreated={() => {
-            onToggleNewSurvey();
-            onRefresh();
-          }}
+          onCreated={onToggleNewSurvey}
           onCancel={onToggleNewSurvey}
         />
       )}
@@ -319,7 +357,6 @@ function SurveysTab({
             onToggle={() => onToggleExpand(survey.id)}
             workspace={workspace}
             user={user}
-            onRefresh={onRefresh}
           />
         ))
       )}
@@ -340,24 +377,22 @@ function CreateSurveyForm({
 }) {
   const [title, setTitle] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [saving, setSaving] = useState(false);
+  const createSurvey = useCreateSurvey(workspaceId);
+  const saving = createSurvey.isPending;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
-    setSaving(true);
-    try {
-      await wellbeingApi.createSurvey(workspaceId, {
-        title: title.trim(),
-        end_date: endDate || undefined,
-      });
-      onCreated();
-    } catch (err) {
-      console.error('Failed to create survey:', err);
-      Toast.show('Failed to create survey');
-    } finally {
-      setSaving(false);
-    }
+    createSurvey.mutate(
+      { title: title.trim(), end_date: endDate || undefined },
+      {
+        onSuccess: () => onCreated(),
+        onError: (err) => {
+          console.error('Failed to create survey:', err);
+          Toast.show('Failed to create survey');
+        },
+      },
+    );
   };
 
   return (
@@ -433,14 +468,12 @@ function SurveyCard({
   onToggle,
   workspace,
   user,
-  onRefresh,
 }: {
   survey: PulseSurvey;
   expanded: boolean;
   onToggle: () => void;
   workspace: { id: string } | null;
   user: User | null;
-  onRefresh: () => void;
 }) {
   const responseCount = survey.responses.length;
   const hasResponded = user ? survey.responses.some((r) => r.user_id === user.id) : false;
@@ -549,7 +582,7 @@ function SurveyCard({
 
           {/* Respond form */}
           {survey.status === 'active' && !hasResponded && workspace && (
-            <RespondForm workspaceId={workspace.id} surveyId={survey.id} onSubmitted={onRefresh} />
+            <RespondForm workspaceId={workspace.id} surveyId={survey.id} />
           )}
 
           {hasResponded && (
@@ -595,38 +628,28 @@ function ScoreBar({ label, value }: { label: string; value: number }) {
 
 // --- Respond Form ---
 
-function RespondForm({
-  workspaceId,
-  surveyId,
-  onSubmitted,
-}: {
-  workspaceId: string;
-  surveyId: string;
-  onSubmitted: () => void;
-}) {
+function RespondForm({ workspaceId, surveyId }: { workspaceId: string; surveyId: string }) {
   const [morale, setMorale] = useState(3);
   const [workload, setWorkload] = useState(3);
   const [support, setSupport] = useState(3);
   const [comments, setComments] = useState('');
-  const [saving, setSaving] = useState(false);
+  const submitResponse = useSubmitResponse(workspaceId);
+  const saving = submitResponse.isPending;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
-    try {
-      await wellbeingApi.submitResponse(workspaceId, surveyId, {
-        morale,
-        workload,
-        support,
-        comments: comments.trim() || undefined,
-      });
-      onSubmitted();
-    } catch (err) {
-      console.error('Failed to submit response:', err);
-      Toast.show('Failed to submit response');
-    } finally {
-      setSaving(false);
-    }
+    submitResponse.mutate(
+      {
+        surveyId,
+        data: { morale, workload, support, comments: comments.trim() || undefined },
+      },
+      {
+        onError: (err) => {
+          console.error('Failed to submit response:', err);
+          Toast.show('Failed to submit response');
+        },
+      },
+    );
   };
 
   return (
@@ -733,7 +756,6 @@ function KudosTab({
   onToggleGiveKudos,
   workspace,
   user,
-  onRefresh,
 }: {
   kudos: Kudos[];
   members: User[];
@@ -743,7 +765,6 @@ function KudosTab({
   onToggleGiveKudos: () => void;
   workspace: { id: string } | null;
   user: User | null;
-  onRefresh: () => void;
 }) {
   const BORDER_COLOURS = ['#8A00E5', '#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#ec4899'];
 
@@ -768,10 +789,7 @@ function KudosTab({
           currentUserId={user.id}
           members={members}
           onClose={onToggleGiveKudos}
-          onSent={() => {
-            onToggleGiveKudos();
-            onRefresh();
-          }}
+          onSent={onToggleGiveKudos}
         />
       )}
 
@@ -885,7 +903,8 @@ function GiveKudosModal({
 }) {
   const [recipientId, setRecipientId] = useState('');
   const [message, setMessage] = useState('');
-  const [saving, setSaving] = useState(false);
+  const giveKudos = useGiveKudos(workspaceId);
+  const saving = giveKudos.isPending;
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -897,22 +916,19 @@ function GiveKudosModal({
 
   const otherMembers = members.filter((m) => m.id !== currentUserId);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!recipientId || !message.trim()) return;
-    setSaving(true);
-    try {
-      await wellbeingApi.giveKudos(workspaceId, {
-        to_user_id: recipientId,
-        message: message.trim(),
-      });
-      onSent();
-    } catch (err) {
-      console.error('Failed to give kudos:', err);
-      Toast.show('Failed to send kudos');
-    } finally {
-      setSaving(false);
-    }
+    giveKudos.mutate(
+      { to_user_id: recipientId, message: message.trim() },
+      {
+        onSuccess: () => onSent(),
+        onError: (err) => {
+          console.error('Failed to give kudos:', err);
+          Toast.show('Failed to send kudos');
+        },
+      },
+    );
   };
 
   return (

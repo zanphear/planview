@@ -1,40 +1,30 @@
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useWorkspaceStore } from '../stores/workspaceStore';
-import { timeEntriesApi, type ResourceUtilisation } from '../api/timeEntries';
+import { useResourceUtilisation } from '../api/queries/timeEntries';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 
 export function ResourcePage() {
   const workspace = useWorkspaceStore((s) => s.currentWorkspace);
-  const [resources, setResources] = useState<ResourceUtilisation[]>([]);
-  const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<'week' | 'month' | 'quarter'>('month');
 
-  useEffect(() => {
-    if (!workspace) return;
+  const range = useMemo(() => {
     const now = new Date();
-    let since: string;
+    const d = new Date(now);
     if (period === 'week') {
-      const d = new Date(now);
       d.setDate(d.getDate() - 7);
-      since = d.toISOString().split('T')[0];
     } else if (period === 'month') {
-      const d = new Date(now);
       d.setMonth(d.getMonth() - 1);
-      since = d.toISOString().split('T')[0];
     } else {
-      const d = new Date(now);
       d.setMonth(d.getMonth() - 3);
-      since = d.toISOString().split('T')[0];
     }
-    const until = now.toISOString().split('T')[0];
+    return {
+      since: d.toISOString().split('T')[0],
+      until: now.toISOString().split('T')[0],
+    };
+  }, [period]);
 
-    setLoading(true);
-    timeEntriesApi
-      .resourceUtilisation(workspace.id, { since, until })
-      .then(({ data }) => setResources(data))
-      .catch(() => setResources([]))
-      .finally(() => setLoading(false));
-  }, [workspace, period]);
+  const { data, isPending, isError, refetch } = useResourceUtilisation(workspace?.id, range);
+  const resources = data ?? [];
 
   const fmtDuration = (mins: number) => {
     if (mins === 0) return '0h';
@@ -43,7 +33,24 @@ export function ResourcePage() {
     return m > 0 ? `${h}h ${m}m` : `${h}h`;
   };
 
-  if (loading) return <LoadingSpinner />;
+  if (isPending) return <LoadingSpinner />;
+
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+        <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+          Couldn&apos;t load resource utilisation.
+        </p>
+        <button
+          onClick={() => refetch()}
+          className="px-4 py-2 text-sm font-medium rounded-lg text-white"
+          style={{ backgroundColor: 'var(--color-primary)' }}
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   const totalLogged = resources.reduce((s, r) => s + r.total_minutes_logged, 0);
   const totalEstimated = resources.reduce((s, r) => s + r.total_estimate_minutes, 0);
