@@ -1,17 +1,31 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Calendar, Plus, Check, X, Clock, CheckCircle, AlertTriangle } from 'lucide-react';
+import {
+  Calendar,
+  Plus,
+  Check,
+  X,
+  Clock,
+  CheckCircle,
+  AlertTriangle,
+  RefreshCw,
+} from 'lucide-react';
 import { useWorkspaceStore } from '../stores/workspaceStore';
 import { useAuthStore } from '../stores/authStore';
 import { useLookupValues } from '../stores/lookupStore';
-import { leaveApi } from '../api/leave';
-import { membersApi } from '../api/users';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { Toast } from '../components/shared/Toast';
 import { LookupSelect } from '../components/shared/LookupSelect';
 import { StatCard } from '../components/shared/StatCard';
 import { DonutChart } from '../components/charts/DonutChart';
 import { COLOURS } from '../utils/colours';
-import type { LeaveRequest, LeaveAllowance } from '../api/leave';
+import {
+  useLeaveRequests,
+  useLeaveAllowances,
+  useLeaveMembers,
+  useCreateLeaveRequest,
+  useUpdateLeaveRequest,
+  useCreateLeaveAllowance,
+} from '../api/queries/leave';
 import type { User } from '../api/users';
 
 type Tab = 'requests' | 'allowances';
@@ -35,16 +49,28 @@ const STATUS_STYLES: Record<string, { bg: string; text: string; label: string }>
 export function LeavePage() {
   const workspace = useWorkspaceStore((s) => s.currentWorkspace);
   const user = useAuthStore((s) => s.user);
+
+  // ── Client/UI state stays local ──────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<Tab>('requests');
-  const [requests, setRequests] = useState<LeaveRequest[]>([]);
-  const [allowances, setAllowances] = useState<LeaveAllowance[]>([]);
-  const [members, setMembers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [userFilter, setUserFilter] = useState<string>('');
   const [allowanceYear, setAllowanceYear] = useState(new Date().getFullYear());
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [showAllowanceModal, setShowAllowanceModal] = useState(false);
+
+  // ── Server state: TanStack Query (ADR 0003) ──────────────────────────────────
+  const requestsQuery = useLeaveRequests(workspace?.id, {
+    ...(statusFilter ? { status: statusFilter } : {}),
+    ...(userFilter ? { user_id: userFilter } : {}),
+  });
+  const allowancesQuery = useLeaveAllowances(workspace?.id, { year: allowanceYear });
+  const membersQuery = useLeaveMembers(workspace?.id);
+
+  const requests = requestsQuery.data ?? [];
+  const allowances = allowancesQuery.data ?? [];
+  const members = membersQuery.data ?? [];
+
+  const updateRequest = useUpdateLeaveRequest(workspace?.id);
 
   const isManager = user?.role === 'admin' || user?.role === 'manager';
 
@@ -99,55 +125,9 @@ export function LeavePage() {
     });
   }, [leaveTypeGroups, lookupValues]);
 
-  const loadData = async () => {
-    if (!workspace) return;
-    setLoading(true);
-    try {
-      const [reqRes, membersRes, allowRes] = await Promise.all([
-        leaveApi.listRequests(workspace.id, {
-          ...(statusFilter ? { status: statusFilter } : {}),
-          ...(userFilter ? { user_id: userFilter } : {}),
-        }),
-        membersApi.list(workspace.id),
-        leaveApi.listAllowances(workspace.id, { year: new Date().getFullYear() }),
-      ]);
-      setRequests(reqRes.data);
-      setMembers(membersRes.data);
-      setAllowances(allowRes.data);
-    } catch (err) {
-      console.error('Failed to load leave data:', err);
-      Toast.show('Failed to load leave data');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadAllowances = async () => {
-    if (!workspace) return;
-    try {
-      const res = await leaveApi.listAllowances(workspace.id, { year: allowanceYear });
-      setAllowances(res.data);
-    } catch (err) {
-      console.error('Failed to load allowances:', err);
-      Toast.show('Failed to load allowances');
-    }
-  };
-
-  useEffect(() => {
-    loadData();
-  }, [workspace, statusFilter, userFilter]);
-
-  useEffect(() => {
-    if (activeTab === 'allowances') {
-      loadAllowances();
-    }
-  }, [workspace, activeTab, allowanceYear]);
-
   const handleApprove = async (requestId: string) => {
-    if (!workspace) return;
     try {
-      await leaveApi.updateRequest(workspace.id, requestId, { status: 'approved' });
-      loadData();
+      await updateRequest.mutateAsync({ requestId, data: { status: 'approved' } });
     } catch (err) {
       console.error('Failed to approve request:', err);
       Toast.show('Failed to approve request');
@@ -155,10 +135,8 @@ export function LeavePage() {
   };
 
   const handleReject = async (requestId: string) => {
-    if (!workspace) return;
     try {
-      await leaveApi.updateRequest(workspace.id, requestId, { status: 'rejected' });
-      loadData();
+      await updateRequest.mutateAsync({ requestId, data: { status: 'rejected' } });
     } catch (err) {
       console.error('Failed to reject request:', err);
       Toast.show('Failed to reject request');
@@ -174,9 +152,330 @@ export function LeavePage() {
     return members.find((m) => m.id === userId);
   };
 
-  if (loading && requests.length === 0) return <LoadingSpinner />;
-
   const filteredRequests = requests;
+
+  // ── Reusable error-with-retry block for the four-state renders ───────────────
+  const renderError = (label: string, error: unknown, isFetching: boolean, retry: () => void) => (
+    <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
+      <AlertTriangle size={48} className="mb-4" style={{ color: 'var(--color-danger)' }} />
+      <h3 className="text-base font-semibold mb-1" style={{ color: 'var(--color-text)' }}>
+        {label}
+      </h3>
+      <p className="text-sm max-w-xs mb-4" style={{ color: 'var(--color-text-secondary)' }}>
+        {error instanceof Error ? error.message : 'Something went wrong fetching this data.'}
+      </p>
+      <button
+        onClick={retry}
+        disabled={isFetching}
+        className="flex items-center gap-2 px-4 py-2 text-white rounded-lg text-sm font-medium disabled:opacity-50"
+        style={{ backgroundColor: 'var(--color-primary)' }}
+      >
+        <RefreshCw size={14} className={isFetching ? 'animate-spin' : ''} />
+        Retry
+      </button>
+    </div>
+  );
+
+  // Requests tab content: pending / error / empty-with-CTA / success.
+  const renderRequests = () => {
+    if (requestsQuery.isPending || membersQuery.isPending) {
+      return (
+        <div className="flex-1 flex items-center justify-center">
+          <LoadingSpinner />
+        </div>
+      );
+    }
+    if (requestsQuery.isError) {
+      return renderError(
+        "Couldn't load leave requests",
+        requestsQuery.error,
+        requestsQuery.isFetching,
+        () => requestsQuery.refetch(),
+      );
+    }
+    if (filteredRequests.length === 0) {
+      return (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <Calendar
+              size={48}
+              className="mx-auto mb-3 opacity-30"
+              style={{ color: 'var(--color-text-secondary)' }}
+            />
+            <p className="text-sm mb-4" style={{ color: 'var(--color-text-secondary)' }}>
+              No leave requests found.
+            </p>
+            <button
+              onClick={() => setShowRequestModal(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg text-white transition-colors"
+              style={{ background: 'linear-gradient(135deg, #8A00E5, #4D217A)' }}
+            >
+              <Plus size={14} />
+              Request Leave
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div className="flex-1 overflow-auto space-y-2">
+        {filteredRequests.map((req) => {
+          const member = getMember(req.user_id);
+          const lookupMatch = lookupValues.find((v) => v.value === req.leave_type);
+          const fallback = LEAVE_TYPE_LABELS[req.leave_type as LeaveType] || {
+            label: req.leave_type,
+            colour: '#6b7280',
+          };
+          const leaveType = {
+            label: lookupMatch?.label || fallback.label,
+            colour: lookupMatch?.colour || fallback.colour,
+          };
+          const status = STATUS_STYLES[req.status] || STATUS_STYLES.pending;
+          const isPending = req.status === 'pending';
+
+          return (
+            <div
+              key={req.id}
+              className="rounded-lg border p-4 flex items-center gap-4 flex-wrap"
+              style={{
+                borderColor: isPending ? '#f59e0b' : 'var(--color-border)',
+                borderWidth: isPending ? '1.5px' : '1px',
+                borderLeftWidth: '4px',
+                borderLeftColor: leaveType.colour,
+                backgroundColor: 'var(--color-surface)',
+              }}
+            >
+              {/* User avatar + name */}
+              <div className="flex items-center gap-2 min-w-[140px]">
+                <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
+                  style={{ backgroundColor: member?.colour || '#999' }}
+                >
+                  {member?.initials || member?.name?.charAt(0) || '?'}
+                </div>
+                <span
+                  className="text-sm font-medium truncate"
+                  style={{ color: 'var(--color-text)' }}
+                >
+                  {getMemberName(req.user_id)}
+                </span>
+              </div>
+
+              {/* Leave type pill */}
+              <span
+                className="text-xs font-medium px-2 py-0.5 rounded-full"
+                style={{ backgroundColor: leaveType.colour + '20', color: leaveType.colour }}
+              >
+                {leaveType.label}
+              </span>
+
+              {/* Date range */}
+              <div
+                className="flex items-center gap-1.5 text-sm"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
+                <Calendar size={14} />
+                <span>
+                  {req.start_date}, {req.end_date}
+                </span>
+              </div>
+
+              {/* Days count */}
+              <div
+                className="flex items-center gap-1 text-sm"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
+                <Clock size={14} />
+                <span>
+                  {req.days} day{req.days !== 1 ? 's' : ''}
+                </span>
+              </div>
+
+              {/* Notes */}
+              {req.notes && (
+                <span
+                  className="text-xs italic truncate max-w-[200px]"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
+                  {req.notes}
+                </span>
+              )}
+
+              <div className="flex-1" />
+
+              {/* Status badge */}
+              <span
+                className="text-xs font-medium px-2 py-0.5 rounded-full"
+                style={{ backgroundColor: status.bg, color: status.text }}
+              >
+                {status.label}
+              </span>
+
+              {/* Approve / Reject buttons */}
+              {isPending && isManager && (
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => handleApprove(req.id)}
+                    disabled={updateRequest.isPending}
+                    className="p-1.5 rounded-lg hover:bg-green-50 transition-colors disabled:opacity-50"
+                    style={{ color: '#16a34a' }}
+                    title="Approve"
+                  >
+                    <Check size={18} />
+                  </button>
+                  <button
+                    onClick={() => handleReject(req.id)}
+                    disabled={updateRequest.isPending}
+                    className="p-1.5 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50"
+                    style={{ color: '#dc2626' }}
+                    title="Reject"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  // Allowances tab content: pending / error / empty-with-CTA / success.
+  const renderAllowances = () => {
+    if (allowancesQuery.isPending || membersQuery.isPending) {
+      return (
+        <div className="flex-1 flex items-center justify-center">
+          <LoadingSpinner />
+        </div>
+      );
+    }
+    if (allowancesQuery.isError) {
+      return renderError(
+        "Couldn't load allowances",
+        allowancesQuery.error,
+        allowancesQuery.isFetching,
+        () => allowancesQuery.refetch(),
+      );
+    }
+    if (allowances.length === 0) {
+      return (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <Calendar
+              size={48}
+              className="mx-auto mb-3 opacity-30"
+              style={{ color: 'var(--color-text-secondary)' }}
+            />
+            <p className="text-sm mb-4" style={{ color: 'var(--color-text-secondary)' }}>
+              No allowances configured for {allowanceYear}.
+            </p>
+            {isManager && (
+              <button
+                onClick={() => setShowAllowanceModal(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg text-white transition-colors"
+                style={{ background: 'linear-gradient(135deg, #8A00E5, #4D217A)' }}
+              >
+                <Plus size={14} />
+                Set Allowance
+              </button>
+            )}
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div className="flex-1 overflow-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b" style={{ borderColor: 'var(--color-border)' }}>
+              <th
+                className="text-left px-3 py-2 font-medium"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
+                Person
+              </th>
+              <th
+                className="text-right px-3 py-2 font-medium"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
+                Entitlement
+              </th>
+              <th
+                className="text-right px-3 py-2 font-medium"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
+                Carried Forward
+              </th>
+              <th
+                className="text-right px-3 py-2 font-medium"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
+                Used
+              </th>
+              <th
+                className="text-right px-3 py-2 font-medium"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
+                Booked
+              </th>
+              <th
+                className="text-right px-3 py-2 font-medium"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
+                Remaining
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {allowances.map((a) => {
+              const member = getMember(a.user_id);
+              const remainingColour =
+                a.remaining <= 0 ? '#dc2626' : a.remaining <= 5 ? '#f59e0b' : '#16a34a';
+
+              return (
+                <tr
+                  key={a.id}
+                  className="border-b last:border-b-0"
+                  style={{ borderColor: 'var(--color-border)' }}
+                >
+                  <td className="px-3 py-2.5">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
+                        style={{ backgroundColor: member?.colour || '#999' }}
+                      >
+                        {member?.initials || member?.name?.charAt(0) || '?'}
+                      </div>
+                      <span style={{ color: 'var(--color-text)' }}>{getMemberName(a.user_id)}</span>
+                    </div>
+                  </td>
+                  <td className="text-right px-3 py-2.5" style={{ color: 'var(--color-text)' }}>
+                    {a.entitlement_days}
+                  </td>
+                  <td className="text-right px-3 py-2.5" style={{ color: 'var(--color-text)' }}>
+                    {a.carried_forward}
+                  </td>
+                  <td className="text-right px-3 py-2.5" style={{ color: 'var(--color-text)' }}>
+                    {a.used_days}
+                  </td>
+                  <td className="text-right px-3 py-2.5" style={{ color: 'var(--color-text)' }}>
+                    {a.booked_days}
+                  </td>
+                  <td
+                    className="text-right px-3 py-2.5 font-semibold"
+                    style={{ color: remainingColour }}
+                  >
+                    {a.remaining}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
 
   return (
     <div className="p-4 sm:p-6 h-full flex flex-col">
@@ -321,140 +620,8 @@ export function LeavePage() {
             </select>
           </div>
 
-          {/* Request List */}
-          {filteredRequests.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center">
-              <div className="text-center">
-                <Calendar
-                  size={48}
-                  className="mx-auto mb-3 opacity-30"
-                  style={{ color: 'var(--color-text-secondary)' }}
-                />
-                <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-                  No leave requests found.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="flex-1 overflow-auto space-y-2">
-              {filteredRequests.map((req) => {
-                const member = getMember(req.user_id);
-                const lookupMatch = lookupValues.find((v) => v.value === req.leave_type);
-                const fallback = LEAVE_TYPE_LABELS[req.leave_type as LeaveType] || {
-                  label: req.leave_type,
-                  colour: '#6b7280',
-                };
-                const leaveType = {
-                  label: lookupMatch?.label || fallback.label,
-                  colour: lookupMatch?.colour || fallback.colour,
-                };
-                const status = STATUS_STYLES[req.status] || STATUS_STYLES.pending;
-                const isPending = req.status === 'pending';
-
-                return (
-                  <div
-                    key={req.id}
-                    className="rounded-lg border p-4 flex items-center gap-4 flex-wrap"
-                    style={{
-                      borderColor: isPending ? '#f59e0b' : 'var(--color-border)',
-                      borderWidth: isPending ? '1.5px' : '1px',
-                      borderLeftWidth: '4px',
-                      borderLeftColor: leaveType.colour,
-                      backgroundColor: 'var(--color-surface)',
-                    }}
-                  >
-                    {/* User avatar + name */}
-                    <div className="flex items-center gap-2 min-w-[140px]">
-                      <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
-                        style={{ backgroundColor: member?.colour || '#999' }}
-                      >
-                        {member?.initials || member?.name?.charAt(0) || '?'}
-                      </div>
-                      <span
-                        className="text-sm font-medium truncate"
-                        style={{ color: 'var(--color-text)' }}
-                      >
-                        {getMemberName(req.user_id)}
-                      </span>
-                    </div>
-
-                    {/* Leave type pill */}
-                    <span
-                      className="text-xs font-medium px-2 py-0.5 rounded-full"
-                      style={{ backgroundColor: leaveType.colour + '20', color: leaveType.colour }}
-                    >
-                      {leaveType.label}
-                    </span>
-
-                    {/* Date range */}
-                    <div
-                      className="flex items-center gap-1.5 text-sm"
-                      style={{ color: 'var(--color-text-secondary)' }}
-                    >
-                      <Calendar size={14} />
-                      <span>
-                        {req.start_date}, {req.end_date}
-                      </span>
-                    </div>
-
-                    {/* Days count */}
-                    <div
-                      className="flex items-center gap-1 text-sm"
-                      style={{ color: 'var(--color-text-secondary)' }}
-                    >
-                      <Clock size={14} />
-                      <span>
-                        {req.days} day{req.days !== 1 ? 's' : ''}
-                      </span>
-                    </div>
-
-                    {/* Notes */}
-                    {req.notes && (
-                      <span
-                        className="text-xs italic truncate max-w-[200px]"
-                        style={{ color: 'var(--color-text-secondary)' }}
-                      >
-                        {req.notes}
-                      </span>
-                    )}
-
-                    <div className="flex-1" />
-
-                    {/* Status badge */}
-                    <span
-                      className="text-xs font-medium px-2 py-0.5 rounded-full"
-                      style={{ backgroundColor: status.bg, color: status.text }}
-                    >
-                      {status.label}
-                    </span>
-
-                    {/* Approve / Reject buttons */}
-                    {isPending && isManager && (
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => handleApprove(req.id)}
-                          className="p-1.5 rounded-lg hover:bg-green-50 transition-colors"
-                          style={{ color: '#16a34a' }}
-                          title="Approve"
-                        >
-                          <Check size={18} />
-                        </button>
-                        <button
-                          onClick={() => handleReject(req.id)}
-                          className="p-1.5 rounded-lg hover:bg-red-50 transition-colors"
-                          style={{ color: '#dc2626' }}
-                          title="Reject"
-                        >
-                          <X size={18} />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          {/* Request List (four states: pending / error / empty / success) */}
+          {renderRequests()}
         </>
       )}
 
@@ -481,125 +648,8 @@ export function LeavePage() {
             </select>
           </div>
 
-          {/* Allowances table */}
-          {allowances.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center">
-              <div className="text-center">
-                <Calendar
-                  size={48}
-                  className="mx-auto mb-3 opacity-30"
-                  style={{ color: 'var(--color-text-secondary)' }}
-                />
-                <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-                  No allowances configured for {allowanceYear}.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="flex-1 overflow-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b" style={{ borderColor: 'var(--color-border)' }}>
-                    <th
-                      className="text-left px-3 py-2 font-medium"
-                      style={{ color: 'var(--color-text-secondary)' }}
-                    >
-                      Person
-                    </th>
-                    <th
-                      className="text-right px-3 py-2 font-medium"
-                      style={{ color: 'var(--color-text-secondary)' }}
-                    >
-                      Entitlement
-                    </th>
-                    <th
-                      className="text-right px-3 py-2 font-medium"
-                      style={{ color: 'var(--color-text-secondary)' }}
-                    >
-                      Carried Forward
-                    </th>
-                    <th
-                      className="text-right px-3 py-2 font-medium"
-                      style={{ color: 'var(--color-text-secondary)' }}
-                    >
-                      Used
-                    </th>
-                    <th
-                      className="text-right px-3 py-2 font-medium"
-                      style={{ color: 'var(--color-text-secondary)' }}
-                    >
-                      Booked
-                    </th>
-                    <th
-                      className="text-right px-3 py-2 font-medium"
-                      style={{ color: 'var(--color-text-secondary)' }}
-                    >
-                      Remaining
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {allowances.map((a) => {
-                    const member = getMember(a.user_id);
-                    const remainingColour =
-                      a.remaining <= 0 ? '#dc2626' : a.remaining <= 5 ? '#f59e0b' : '#16a34a';
-
-                    return (
-                      <tr
-                        key={a.id}
-                        className="border-b last:border-b-0"
-                        style={{ borderColor: 'var(--color-border)' }}
-                      >
-                        <td className="px-3 py-2.5">
-                          <div className="flex items-center gap-2">
-                            <div
-                              className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
-                              style={{ backgroundColor: member?.colour || '#999' }}
-                            >
-                              {member?.initials || member?.name?.charAt(0) || '?'}
-                            </div>
-                            <span style={{ color: 'var(--color-text)' }}>
-                              {getMemberName(a.user_id)}
-                            </span>
-                          </div>
-                        </td>
-                        <td
-                          className="text-right px-3 py-2.5"
-                          style={{ color: 'var(--color-text)' }}
-                        >
-                          {a.entitlement_days}
-                        </td>
-                        <td
-                          className="text-right px-3 py-2.5"
-                          style={{ color: 'var(--color-text)' }}
-                        >
-                          {a.carried_forward}
-                        </td>
-                        <td
-                          className="text-right px-3 py-2.5"
-                          style={{ color: 'var(--color-text)' }}
-                        >
-                          {a.used_days}
-                        </td>
-                        <td
-                          className="text-right px-3 py-2.5"
-                          style={{ color: 'var(--color-text)' }}
-                        >
-                          {a.booked_days}
-                        </td>
-                        <td
-                          className="text-right px-3 py-2.5 font-semibold"
-                          style={{ color: remainingColour }}
-                        >
-                          {a.remaining}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
+          {/* Allowances table (four states: pending / error / empty / success) */}
+          {renderAllowances()}
         </>
       )}
 
@@ -608,10 +658,7 @@ export function LeavePage() {
         <CreateRequestModal
           workspaceId={workspace.id}
           onClose={() => setShowRequestModal(false)}
-          onCreated={() => {
-            setShowRequestModal(false);
-            loadData();
-          }}
+          onCreated={() => setShowRequestModal(false)}
         />
       )}
 
@@ -622,10 +669,7 @@ export function LeavePage() {
           members={members}
           year={allowanceYear}
           onClose={() => setShowAllowanceModal(false)}
-          onCreated={() => {
-            setShowAllowanceModal(false);
-            loadAllowances();
-          }}
+          onCreated={() => setShowAllowanceModal(false)}
         />
       )}
     </div>
@@ -648,7 +692,8 @@ function CreateRequestModal({
   const [endDate, setEndDate] = useState('');
   const [days, setDays] = useState<number>(1);
   const [notes, setNotes] = useState('');
-  const [saving, setSaving] = useState(false);
+  const createRequest = useCreateLeaveRequest(workspaceId);
+  const saving = createRequest.isPending;
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -660,9 +705,8 @@ function CreateRequestModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
     try {
-      await leaveApi.createRequest(workspaceId, {
+      await createRequest.mutateAsync({
         leave_type: leaveType,
         start_date: startDate,
         end_date: endDate,
@@ -673,8 +717,6 @@ function CreateRequestModal({
     } catch (err) {
       console.error('Failed to create leave request:', err);
       Toast.show('Failed to create leave request');
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -852,7 +894,8 @@ function CreateAllowanceModal({
   const [userId, setUserId] = useState('');
   const [entitlementDays, setEntitlementDays] = useState<number>(25);
   const [carriedForward, setCarriedForward] = useState<number>(0);
-  const [saving, setSaving] = useState(false);
+  const createAllowance = useCreateLeaveAllowance(workspaceId);
+  const saving = createAllowance.isPending;
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -865,9 +908,8 @@ function CreateAllowanceModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userId) return;
-    setSaving(true);
     try {
-      await leaveApi.createAllowance(workspaceId, {
+      await createAllowance.mutateAsync({
         user_id: userId,
         year,
         entitlement_days: entitlementDays,
@@ -877,8 +919,6 @@ function CreateAllowanceModal({
     } catch (err) {
       console.error('Failed to create allowance:', err);
       Toast.show('Failed to create allowance');
-    } finally {
-      setSaving(false);
     }
   };
 

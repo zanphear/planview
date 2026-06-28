@@ -9,20 +9,24 @@ import {
   TrendingUp,
   CheckCircle,
   AlertTriangle,
+  RefreshCw,
 } from 'lucide-react';
-import { Toast } from '../components/shared/Toast';
 import { StatCard } from '../components/shared/StatCard';
 import { DonutChart } from '../components/charts/DonutChart';
 import { ProgressRing } from '../components/charts/ProgressRing';
 import { COLOURS, STATUS_COLOURS as CHART_STATUS_COLOURS } from '../utils/colours';
 import { useWorkspaceStore } from '../stores/workspaceStore';
 import { useAuthStore } from '../stores/authStore';
+import { type KeyResult } from '../api/objectives';
 import {
-  objectivesApi,
-  type Objective,
-  type KeyResult,
-  type ReviewPeriod,
-} from '../api/objectives';
+  useObjectives,
+  useReviewPeriods,
+  useCreateObjective,
+  useUpdateObjective,
+  useAddKeyResult,
+  useUpdateKeyResult,
+  useCreatePeriod,
+} from '../api/queries/objectives';
 
 type Status = 'not_started' | 'on_track' | 'at_risk' | 'behind' | 'completed';
 type Category = 'personal' | 'team' | 'company';
@@ -62,11 +66,9 @@ export function ObjectivesPage() {
   const workspace = useWorkspaceStore((s) => s.currentWorkspace);
   const user = useAuthStore((s) => s.user);
 
-  const [objectives, setObjectives] = useState<Objective[]>([]);
-  const [periods, setPeriods] = useState<ReviewPeriod[]>([]);
+  // ── Client/UI state stays local ────────────────────────────────────────────
   const [selectedPeriodId, setSelectedPeriodId] = useState<string | ''>('');
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
-  const [loading, setLoading] = useState(true);
 
   const [showNewObjective, setShowNewObjective] = useState(false);
   const [newTitle, setNewTitle] = useState('');
@@ -85,28 +87,19 @@ export function ObjectivesPage() {
   const [periodStart, setPeriodStart] = useState('');
   const [periodEnd, setPeriodEnd] = useState('');
 
-  useEffect(() => {
-    if (!workspace) return;
-    objectivesApi.listPeriods(workspace.id).then((res) => setPeriods(res.data));
-  }, [workspace]);
+  // ── Server state: TanStack Query (ADR 0003) ────────────────────────────────
+  const objectivesQuery = useObjectives(workspace?.id, selectedPeriodId);
+  const objectives = objectivesQuery.data ?? [];
 
-  useEffect(() => {
-    if (!workspace) return;
-    setLoading(true);
-    const params: { period_id?: string } = {};
-    if (selectedPeriodId) params.period_id = selectedPeriodId;
-    objectivesApi
-      .list(workspace.id, params)
-      .then((res) => {
-        setObjectives(res.data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error('Failed to load objectives', err);
-        Toast.show('Failed to load objectives');
-        setLoading(false);
-      });
-  }, [workspace, selectedPeriodId]);
+  const periodsQuery = useReviewPeriods(workspace?.id);
+  const periods = periodsQuery.data ?? [];
+
+  // ── Mutations ──────────────────────────────────────────────────────────────
+  const createObjective = useCreateObjective(workspace?.id, selectedPeriodId);
+  const updateObjective = useUpdateObjective(workspace?.id, selectedPeriodId);
+  const addKeyResult = useAddKeyResult(workspace?.id, selectedPeriodId);
+  const updateKeyResult = useUpdateKeyResult(workspace?.id, selectedPeriodId);
+  const createPeriod = useCreatePeriod(workspace?.id);
 
   const toggleExpanded = (id: string) => {
     setExpandedIds((prev) => {
@@ -117,83 +110,81 @@ export function ObjectivesPage() {
     });
   };
 
-  const handleCreateObjective = async () => {
+  const handleCreateObjective = () => {
     if (!workspace || !user || !newTitle.trim()) return;
-    const { data } = await objectivesApi.create(workspace.id, {
-      title: newTitle.trim(),
-      description: newDescription.trim() || null,
-      category: newCategory,
-      weight: newWeight,
-      review_period_id: selectedPeriodId || null,
-      user_id: user.id,
-    });
-    setObjectives((prev) => [...prev, data]);
-    setNewTitle('');
-    setNewDescription('');
-    setNewCategory('personal');
-    setNewWeight(100);
-    setShowNewObjective(false);
+    createObjective.mutate(
+      {
+        title: newTitle.trim(),
+        description: newDescription.trim() || null,
+        category: newCategory,
+        weight: newWeight,
+        review_period_id: selectedPeriodId || null,
+        user_id: user.id,
+      },
+      {
+        onSuccess: () => {
+          setNewTitle('');
+          setNewDescription('');
+          setNewCategory('personal');
+          setNewWeight(100);
+          setShowNewObjective(false);
+        },
+      },
+    );
   };
 
-  const handleAddKeyResult = async (objectiveId: string) => {
+  const handleAddKeyResult = (objectiveId: string) => {
     if (!workspace || !krTitle.trim() || !krTarget) return;
-    const { data } = await objectivesApi.addKeyResult(workspace.id, objectiveId, {
-      title: krTitle.trim(),
-      target_value: parseFloat(krTarget),
-      unit: krUnit.trim() || null,
-      measurement_type: krMeasurement,
-    });
-    setObjectives((prev) =>
-      prev.map((obj) =>
-        obj.id === objectiveId
-          ? {
-              ...obj,
-              key_results: [...obj.key_results, data],
-              progress: calcProgress([...obj.key_results, data]),
-            }
-          : obj,
-      ),
-    );
-    setKrTitle('');
-    setKrTarget('');
-    setKrUnit('');
-    setKrMeasurement('numeric');
-    setAddingKrForId(null);
-  };
-
-  const handleUpdateKrValue = async (objectiveId: string, kr: KeyResult, newValue: number) => {
-    if (!workspace) return;
-    const { data } = await objectivesApi.updateKeyResult(workspace.id, objectiveId, kr.id, {
-      current_value: newValue,
-    });
-    setObjectives((prev) =>
-      prev.map((obj) => {
-        if (obj.id !== objectiveId) return obj;
-        const updatedKrs = obj.key_results.map((k) => (k.id === kr.id ? data : k));
-        return { ...obj, key_results: updatedKrs, progress: calcProgress(updatedKrs) };
-      }),
+    addKeyResult.mutate(
+      {
+        objectiveId,
+        data: {
+          title: krTitle.trim(),
+          target_value: parseFloat(krTarget),
+          unit: krUnit.trim() || null,
+          measurement_type: krMeasurement,
+        },
+      },
+      {
+        onSuccess: () => {
+          setKrTitle('');
+          setKrTarget('');
+          setKrUnit('');
+          setKrMeasurement('numeric');
+          setAddingKrForId(null);
+        },
+      },
     );
   };
 
-  const handleUpdateStatus = async (objectiveId: string, status: Status) => {
+  const handleUpdateKrValue = (objectiveId: string, kr: KeyResult, newValue: number) => {
     if (!workspace) return;
-    const { data } = await objectivesApi.update(workspace.id, objectiveId, { status });
-    setObjectives((prev) => prev.map((obj) => (obj.id === objectiveId ? data : obj)));
+    updateKeyResult.mutate({ objectiveId, krId: kr.id, data: { current_value: newValue } });
   };
 
-  const handleCreatePeriod = async () => {
+  const handleUpdateStatus = (objectiveId: string, status: Status) => {
+    if (!workspace) return;
+    updateObjective.mutate({ objectiveId, data: { status } });
+  };
+
+  const handleCreatePeriod = () => {
     if (!workspace || !periodName.trim() || !periodStart || !periodEnd) return;
-    const { data } = await objectivesApi.createPeriod(workspace.id, {
-      name: periodName.trim(),
-      start_date: periodStart,
-      end_date: periodEnd,
-    });
-    setPeriods((prev) => [...prev, data]);
-    setSelectedPeriodId(data.id);
-    setPeriodName('');
-    setPeriodStart('');
-    setPeriodEnd('');
-    setShowPeriodModal(false);
+    createPeriod.mutate(
+      {
+        name: periodName.trim(),
+        start_date: periodStart,
+        end_date: periodEnd,
+      },
+      {
+        onSuccess: (data) => {
+          setSelectedPeriodId(data.id);
+          setPeriodName('');
+          setPeriodStart('');
+          setPeriodEnd('');
+          setShowPeriodModal(false);
+        },
+      },
+    );
   };
 
   const avgProgress =
@@ -267,7 +258,7 @@ export function ObjectivesPage() {
       </div>
 
       {/* Stat cards */}
-      {!loading && objectives.length > 0 && (
+      {objectivesQuery.isSuccess && objectives.length > 0 && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <StatCard
             label="Total Objectives"
@@ -297,7 +288,7 @@ export function ObjectivesPage() {
       )}
 
       {/* Status distribution */}
-      {!loading && objectives.length > 0 && (
+      {objectivesQuery.isSuccess && objectives.length > 0 && (
         <div
           className="rounded-xl border p-5 mb-6"
           style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
@@ -426,8 +417,8 @@ export function ObjectivesPage() {
         </div>
       )}
 
-      {/* Objectives list */}
-      {loading ? (
+      {/* Objectives list — four states: pending / error / empty / success */}
+      {objectivesQuery.isPending ? (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
             <div
@@ -439,6 +430,34 @@ export function ObjectivesPage() {
               }}
             />
           ))}
+        </div>
+      ) : objectivesQuery.isError ? (
+        <div
+          className="rounded-xl border p-10 text-center"
+          style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+        >
+          <AlertTriangle
+            size={48}
+            style={{ color: 'var(--color-danger)' }}
+            className="mx-auto mb-3"
+          />
+          <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+            Couldn&apos;t load objectives
+          </p>
+          <p className="text-xs mt-1 mb-4" style={{ color: 'var(--color-text-secondary)' }}>
+            {objectivesQuery.error instanceof Error
+              ? objectivesQuery.error.message
+              : 'Something went wrong fetching your objectives.'}
+          </p>
+          <button
+            onClick={() => objectivesQuery.refetch()}
+            disabled={objectivesQuery.isFetching}
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-medium text-white disabled:opacity-50"
+            style={{ backgroundColor: 'var(--color-primary)' }}
+          >
+            <RefreshCw size={14} className={objectivesQuery.isFetching ? 'animate-spin' : ''} />
+            Retry
+          </button>
         </div>
       ) : objectives.length === 0 ? (
         <div
@@ -453,9 +472,17 @@ export function ObjectivesPage() {
           <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
             No objectives yet
           </p>
-          <p className="text-xs mt-1" style={{ color: 'var(--color-text-secondary)' }}>
+          <p className="text-xs mt-1 mb-4" style={{ color: 'var(--color-text-secondary)' }}>
             Create your first objective to start tracking key results.
           </p>
+          <button
+            onClick={() => setShowNewObjective(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-white"
+            style={{ backgroundColor: 'var(--color-primary)' }}
+          >
+            <Plus size={16} />
+            New Objective
+          </button>
         </div>
       ) : (
         <div className="space-y-3">

@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   GraduationCap,
   Plus,
@@ -16,14 +17,30 @@ import {
   Trash2,
   AlertTriangle,
   DollarSign,
+  RefreshCw,
   X,
 } from 'lucide-react';
 import { useWorkspaceStore } from '../stores/workspaceStore';
 import { useAuthStore } from '../stores/authStore';
-import { developmentApi } from '../api/development';
 import type { DevelopmentPlan, DevelopmentMilestone, CareerPathway } from '../api/development';
+import {
+  useDevelopmentPlans,
+  useCareerPathways,
+  useCreatePlan,
+  useUpdatePlan,
+  useAddGoal,
+  useUpdateGoal,
+  useAddMilestone,
+  useUpdateMilestone,
+  useDeleteMilestone,
+  useAddCheckpoint,
+  useCreatePathway,
+  useDeletePathway,
+} from '../api/queries/development';
 import { membersApi } from '../api/users';
 import type { User } from '../api/users';
+import { EmptyState } from '../components/shared/EmptyState';
+import { Skeleton } from '../components/shared/Skeleton';
 import { ProgressRing } from '../components/charts/ProgressRing';
 import { BarChart } from '../components/charts/BarChart';
 
@@ -148,6 +165,28 @@ function GoalTypePill({ type }: { type: string }) {
   );
 }
 
+// Pending placeholder shaped like the plan list (a few collapsed plan rows).
+function PlansSkeleton() {
+  return (
+    <div className="space-y-3">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div
+          key={i}
+          className="rounded-xl border p-4 flex items-center gap-3"
+          style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+        >
+          <Skeleton className="h-9 w-9 rounded-full" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-3 w-56" />
+          </div>
+          <Skeleton className="h-10 w-10 rounded-full" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────
 // Main Component
 // ─────────────────────────────────────────────────────────────
@@ -157,11 +196,29 @@ export function DevelopmentPage() {
   const user = useAuthStore((s) => s.user);
 
   const [topTab, setTopTab] = useState<TopTab>('plans');
-  const [plans, setPlans] = useState<DevelopmentPlan[]>([]);
-  const [pathways, setPathways] = useState<CareerPathway[]>([]);
-  const [members, setMembers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
   const [filterUserId, setFilterUserId] = useState<string>('');
+
+  // ── Server state: TanStack Query (ADR 0003) ────────────────────────────────
+  const plansQuery = useDevelopmentPlans(workspace?.id, filterUserId || null);
+  const plans = plansQuery.data ?? [];
+  const { data: pathways = [] } = useCareerPathways(workspace?.id);
+  const { data: members = [] } = useQuery({
+    queryKey: ['members', workspace?.id],
+    queryFn: async () => (await membersApi.list(workspace!.id)).data,
+    enabled: !!workspace,
+  });
+
+  // ── Mutations ──────────────────────────────────────────────────────────────
+  const createPlan = useCreatePlan(workspace?.id);
+  const updatePlan = useUpdatePlan(workspace?.id);
+  const addGoal = useAddGoal(workspace?.id);
+  const updateGoal = useUpdateGoal(workspace?.id);
+  const addMilestone = useAddMilestone(workspace?.id);
+  const updateMilestone = useUpdateMilestone(workspace?.id);
+  const deleteMilestone = useDeleteMilestone(workspace?.id);
+  const addCheckpoint = useAddCheckpoint(workspace?.id);
+  const createPathway = useCreatePathway(workspace?.id);
+  const deletePathway = useDeletePathway(workspace?.id);
   const [expandedPlanId, setExpandedPlanId] = useState<string | null>(null);
   const [planTab, setPlanTab] = useState<PlanTab>('goals');
 
@@ -216,30 +273,6 @@ export function DevelopmentPage() {
   const [showPathwayModal, setShowPathwayModal] = useState(false);
   const [pathwayForm, setPathwayForm] = useState({ name: '', description: '' });
 
-  const loadData = async () => {
-    if (!workspace) return;
-    setLoading(true);
-    try {
-      const params = filterUserId ? { user_id: filterUserId } : undefined;
-      const [plansRes, membersRes, pathwaysRes] = await Promise.all([
-        developmentApi.list(workspace.id, params),
-        membersApi.list(workspace.id),
-        developmentApi.listPathways(workspace.id),
-      ]);
-      setPlans(plansRes.data);
-      setMembers(membersRes.data);
-      setPathways(pathwaysRes.data);
-    } catch (err) {
-      console.error('Failed to load development data:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadData();
-  }, [workspace, filterUserId]);
-
   const getMember = (userId: string): User | undefined => members.find((u) => u.id === userId);
 
   // ─── Plan actions ────────────────────────────────────────
@@ -247,7 +280,7 @@ export function DevelopmentPage() {
   const handleCreatePlan = async () => {
     if (!workspace) return;
     try {
-      await developmentApi.create(workspace.id, {
+      await createPlan.mutateAsync({
         user_id: createForm.user_id,
         career_aspiration: createForm.career_aspiration || undefined,
         horizon_years: parseInt(createForm.horizon_years) || 3,
@@ -257,7 +290,6 @@ export function DevelopmentPage() {
         total_budget: createForm.total_budget ? parseFloat(createForm.total_budget) : undefined,
       });
       setShowCreateModal(false);
-      await loadData();
     } catch (err) {
       console.error('Failed to create plan:', err);
     }
@@ -268,8 +300,7 @@ export function DevelopmentPage() {
     const next = NEXT_PLAN_STATUS[plan.status];
     if (!next) return;
     try {
-      await developmentApi.update(workspace.id, plan.id, { status: next });
-      await loadData();
+      await updatePlan.mutateAsync({ planId: plan.id, data: { status: next } });
     } catch (err) {
       console.error('Failed to update plan:', err);
     }
@@ -280,17 +311,19 @@ export function DevelopmentPage() {
   const handleAddGoal = async (planId: string) => {
     if (!workspace) return;
     try {
-      await developmentApi.addGoal(workspace.id, planId, {
-        title: addGoalForm.title,
-        description: addGoalForm.description || null,
-        goal_type: addGoalForm.goal_type,
-        target_date: addGoalForm.target_date || null,
-        cost_estimate: addGoalForm.cost_estimate ? parseFloat(addGoalForm.cost_estimate) : null,
-        priority: addGoalForm.priority,
-        year: addGoalForm.year ? parseInt(addGoalForm.year) : null,
+      await addGoal.mutateAsync({
+        planId,
+        data: {
+          title: addGoalForm.title,
+          description: addGoalForm.description || null,
+          goal_type: addGoalForm.goal_type,
+          target_date: addGoalForm.target_date || null,
+          cost_estimate: addGoalForm.cost_estimate ? parseFloat(addGoalForm.cost_estimate) : null,
+          priority: addGoalForm.priority,
+          year: addGoalForm.year ? parseInt(addGoalForm.year) : null,
+        },
       });
       setAddingGoalToPlanId(null);
-      await loadData();
     } catch (err) {
       console.error('Failed to add goal:', err);
     }
@@ -299,13 +332,16 @@ export function DevelopmentPage() {
   const handleUpdateGoal = async (planId: string, goalId: string) => {
     if (!workspace) return;
     try {
-      await developmentApi.updateGoal(workspace.id, planId, goalId, {
-        status: editGoalStatus,
-        evidence: editGoalEvidence || null,
-        progress: editGoalProgress,
+      await updateGoal.mutateAsync({
+        planId,
+        goalId,
+        data: {
+          status: editGoalStatus,
+          evidence: editGoalEvidence || null,
+          progress: editGoalProgress,
+        },
       });
       setEditingGoalId(null);
-      await loadData();
     } catch (err) {
       console.error('Failed to update goal:', err);
     }
@@ -316,15 +352,17 @@ export function DevelopmentPage() {
   const handleAddMilestone = async (planId: string) => {
     if (!workspace) return;
     try {
-      await developmentApi.addMilestone(workspace.id, planId, {
-        title: milestoneForm.title,
-        description: milestoneForm.description || null,
-        target_date: milestoneForm.target_date,
-        year: parseInt(milestoneForm.year) || 1,
+      await addMilestone.mutateAsync({
+        planId,
+        data: {
+          title: milestoneForm.title,
+          description: milestoneForm.description || null,
+          target_date: milestoneForm.target_date,
+          year: parseInt(milestoneForm.year) || 1,
+        },
       });
       setAddingMilestone(false);
       setMilestoneForm({ title: '', description: '', target_date: '', year: '1' });
-      await loadData();
     } catch (err) {
       console.error('Failed to add milestone:', err);
     }
@@ -338,11 +376,11 @@ export function DevelopmentPage() {
     if (!workspace) return;
     try {
       const completed_date = status === 'completed' ? new Date().toISOString().split('T')[0] : null;
-      await developmentApi.updateMilestone(workspace.id, planId, milestoneId, {
-        status,
-        completed_date,
-      } as Partial<DevelopmentMilestone>);
-      await loadData();
+      await updateMilestone.mutateAsync({
+        planId,
+        milestoneId,
+        data: { status, completed_date } as Partial<DevelopmentMilestone>,
+      });
     } catch (err) {
       console.error('Failed to update milestone:', err);
     }
@@ -351,8 +389,7 @@ export function DevelopmentPage() {
   const handleDeleteMilestone = async (planId: string, milestoneId: string) => {
     if (!workspace) return;
     try {
-      await developmentApi.deleteMilestone(workspace.id, planId, milestoneId);
-      await loadData();
+      await deleteMilestone.mutateAsync({ planId, milestoneId });
     } catch (err) {
       console.error('Failed to delete milestone:', err);
     }
@@ -363,14 +400,16 @@ export function DevelopmentPage() {
   const handleAddCheckpoint = async (planId: string) => {
     if (!workspace) return;
     try {
-      await developmentApi.addCheckpoint(workspace.id, planId, {
-        checkpoint_date: checkpointForm.checkpoint_date,
-        notes: checkpointForm.notes || null,
-        overall_assessment: checkpointForm.overall_assessment,
+      await addCheckpoint.mutateAsync({
+        planId,
+        data: {
+          checkpoint_date: checkpointForm.checkpoint_date,
+          notes: checkpointForm.notes || null,
+          overall_assessment: checkpointForm.overall_assessment,
+        },
       });
       setAddingCheckpoint(false);
       setCheckpointForm({ checkpoint_date: '', notes: '', overall_assessment: 'on_track' });
-      await loadData();
     } catch (err) {
       console.error('Failed to add checkpoint:', err);
     }
@@ -381,13 +420,12 @@ export function DevelopmentPage() {
   const handleCreatePathway = async () => {
     if (!workspace) return;
     try {
-      await developmentApi.createPathway(workspace.id, {
+      await createPathway.mutateAsync({
         name: pathwayForm.name,
         description: pathwayForm.description || undefined,
       } as Partial<CareerPathway>);
       setShowPathwayModal(false);
       setPathwayForm({ name: '', description: '' });
-      await loadData();
     } catch (err) {
       console.error('Failed to create pathway:', err);
     }
@@ -396,8 +434,7 @@ export function DevelopmentPage() {
   const handleDeletePathway = async (pathwayId: string) => {
     if (!workspace) return;
     try {
-      await developmentApi.deletePathway(workspace.id, pathwayId);
-      await loadData();
+      await deletePathway.mutateAsync(pathwayId);
     } catch (err) {
       console.error('Failed to delete pathway:', err);
     }
@@ -419,17 +456,6 @@ export function DevelopmentPage() {
   const overdueMilestones = allMilestones.filter(
     (m) => m.status !== 'completed' && m.target_date && new Date(m.target_date) < new Date(),
   );
-
-  if (loading && plans.length === 0) {
-    return (
-      <div className="p-6 flex items-center justify-center h-64">
-        <div
-          className="animate-spin rounded-full h-8 w-8 border-b-2"
-          style={{ borderColor: 'var(--color-primary)' }}
-        />
-      </div>
-    );
-  }
 
   const inputStyle: React.CSSProperties = {
     backgroundColor: 'var(--color-surface)',
@@ -595,12 +621,55 @@ export function DevelopmentPage() {
       {/* ─── Plans Tab ────────────────────────────────────── */}
       {topTab === 'plans' && (
         <>
-          {plans.length === 0 ? (
-            <div className="text-center py-16" style={{ color: 'var(--color-text-secondary)' }}>
-              <Target size={48} className="mx-auto mb-3 opacity-40" />
-              <p className="text-lg font-medium mb-1">No development plans yet</p>
-              <p className="text-sm">Create a plan to start tracking goals and career growth.</p>
+          {plansQuery.isPending ? (
+            <PlansSkeleton />
+          ) : plansQuery.isError ? (
+            <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+              <AlertTriangle size={48} className="mb-4" style={{ color: 'var(--color-danger)' }} />
+              <h3 className="text-base font-semibold mb-1" style={{ color: 'var(--color-text)' }}>
+                Couldn't load development plans
+              </h3>
+              <p className="text-sm max-w-xs mb-4" style={{ color: 'var(--color-text-secondary)' }}>
+                {plansQuery.error instanceof Error
+                  ? plansQuery.error.message
+                  : 'Something went wrong fetching plans.'}
+              </p>
+              <button
+                onClick={() => plansQuery.refetch()}
+                disabled={plansQuery.isFetching}
+                className="flex items-center gap-2 px-4 py-2 text-white rounded-lg text-sm font-medium disabled:opacity-50"
+                style={{ backgroundColor: 'var(--color-primary)' }}
+              >
+                <RefreshCw size={14} className={plansQuery.isFetching ? 'animate-spin' : ''} />
+                Retry
+              </button>
             </div>
+          ) : plans.length === 0 ? (
+            <EmptyState
+              icon={<Target size={48} />}
+              title="No development plans yet"
+              description="Create a plan to start tracking goals and career growth."
+              action={
+                <button
+                  onClick={() => {
+                    setCreateForm({
+                      user_id: user?.id || '',
+                      career_aspiration: '',
+                      horizon_years: '3',
+                      start_date: '',
+                      end_date: '',
+                      career_pathway_id: '',
+                      total_budget: '',
+                    });
+                    setShowCreateModal(true);
+                  }}
+                  className="flex items-center gap-1 px-3 py-1.5 text-white rounded-lg text-sm font-medium hover:opacity-90"
+                  style={{ backgroundColor: 'var(--color-primary)' }}
+                >
+                  <Plus size={16} /> New Plan
+                </button>
+              }
+            />
           ) : (
             <div className="space-y-3">
               {plans.map((plan) => {

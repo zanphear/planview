@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   Activity,
   ClipboardCheck,
@@ -9,12 +10,20 @@ import {
   Users,
   ChevronDown,
   X,
+  AlertTriangle,
 } from 'lucide-react';
 import { Toast } from '../components/shared/Toast';
 import { useWorkspaceStore } from '../stores/workspaceStore';
 import { useAuthStore } from '../stores/authStore';
-import { reviewsApi } from '../api/reviews';
 import { membersApi } from '../api/users';
+import {
+  useReviewCycles,
+  useReviews,
+  useCreateCycle,
+  useUpdateCycle,
+  useCreateReview,
+  useUpdateReview,
+} from '../api/queries/reviews';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { StatCard } from '../components/shared/StatCard';
 import { DonutChart } from '../components/charts/DonutChart';
@@ -76,56 +85,51 @@ function StarRating({ value, onChange }: { value: number | null; onChange?: (v: 
   );
 }
 
+/** Gradient CTA button used in headers and empty states. */
+function PrimaryButton({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg text-white transition-colors"
+      style={{ background: 'linear-gradient(135deg, #8A00E5, #4D217A)' }}
+    >
+      <Plus size={14} />
+      {children}
+    </button>
+  );
+}
+
 export function ReviewsPage() {
   const workspace = useWorkspaceStore((s) => s.currentWorkspace);
   const user = useAuthStore((s) => s.user);
+  const wsId = workspace?.id;
+
+  // ── Client / UI state (kept local) ──────────────────────────────────────────
   const [tab, setTab] = useState<Tab>('cycles');
-  const [cycles, setCycles] = useState<ReviewCycle[]>([]);
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [members, setMembers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedCycleId, setSelectedCycleId] = useState<string | null>(null);
   const [showCreateCycle, setShowCreateCycle] = useState(false);
   const [showCreateReview, setShowCreateReview] = useState(false);
   const [expandedReviewId, setExpandedReviewId] = useState<string | null>(null);
 
-  const loadData = async () => {
-    if (!workspace) return;
-    setLoading(true);
-    try {
-      const [cyclesRes, membersRes] = await Promise.all([
-        reviewsApi.listCycles(workspace.id),
-        membersApi.list(workspace.id),
-      ]);
-      setCycles(cyclesRes.data);
-      setMembers(membersRes.data);
+  // ── Server state (TanStack Query) ────────────────────────────────────────────
+  const cyclesQuery = useReviewCycles(wsId);
+  const reviewsQuery = useReviews(wsId, selectedCycleId ?? undefined);
+  // Members are auxiliary lookup data (name/avatar resolution), no dedicated
+  // queries module yet, so fetched inline rather than via a stores fetch-into-state.
+  const membersQuery = useQuery({
+    queryKey: ['members', wsId ?? ''],
+    queryFn: async () => (await membersApi.list(wsId!)).data,
+    enabled: !!wsId,
+  });
 
-      const params = selectedCycleId ? { cycle_id: selectedCycleId } : undefined;
-      const reviewsRes = await reviewsApi.list(workspace.id, params);
-      setReviews(reviewsRes.data);
-    } catch (err) {
-      console.error('Failed to load reviews data:', err);
-      Toast.show('Failed to load reviews data');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const createCycle = useCreateCycle(wsId);
+  const updateCycle = useUpdateCycle(wsId);
+  const createReview = useCreateReview(wsId);
+  const updateReview = useUpdateReview(wsId);
 
-  useEffect(() => {
-    loadData();
-  }, [workspace]);
-
-  useEffect(() => {
-    if (!workspace) return;
-    const params = selectedCycleId ? { cycle_id: selectedCycleId } : undefined;
-    reviewsApi
-      .list(workspace.id, params)
-      .then((res) => setReviews(res.data))
-      .catch((err) => {
-        console.error('Failed to filter reviews:', err);
-        Toast.show('Failed to load reviews');
-      });
-  }, [selectedCycleId, workspace]);
+  const cycles: ReviewCycle[] = cyclesQuery.data ?? [];
+  const reviews: Review[] = reviewsQuery.data ?? [];
+  const members: User[] = membersQuery.data ?? [];
 
   const getMember = (id: string) => members.find((m) => m.id === id);
 
@@ -138,10 +142,8 @@ export function ReviewsPage() {
   };
 
   const handleStatusUpdate = async (cycleId: string, status: string) => {
-    if (!workspace) return;
     try {
-      await reviewsApi.updateCycle(workspace.id, cycleId, { status });
-      loadData();
+      await updateCycle.mutateAsync({ cycleId, data: { status } });
     } catch (err) {
       console.error('Failed to update cycle status:', err);
       Toast.show('Failed to update cycle status');
@@ -207,8 +209,40 @@ export function ReviewsPage() {
     );
   };
 
-  if (loading) return <LoadingSpinner />;
+  // ── Four states ───────────────────────────────────────────────────────────────
+  // 1) PENDING: initial load of the page's core server data.
+  if (cyclesQuery.isPending || membersQuery.isPending) return <LoadingSpinner />;
 
+  // 2) ERROR: with a retry that refetches every query.
+  if (cyclesQuery.isError || membersQuery.isError || reviewsQuery.isError) {
+    return (
+      <div className="p-4 sm:p-6 h-full flex items-center justify-center">
+        <div className="text-center">
+          <AlertTriangle
+            size={48}
+            className="mx-auto mb-3"
+            style={{ color: COLOURS.red, opacity: 0.7 }}
+          />
+          <p className="text-sm mb-4" style={{ color: 'var(--color-text-secondary)' }}>
+            Failed to load reviews data.
+          </p>
+          <button
+            onClick={() => {
+              cyclesQuery.refetch();
+              membersQuery.refetch();
+              reviewsQuery.refetch();
+            }}
+            className="px-4 py-2 text-sm font-medium rounded-lg text-white"
+            style={{ background: 'linear-gradient(135deg, #8A00E5, #4D217A)' }}
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // 3) EMPTY-WITH-CTA (no cycles at all) and 4) SUCCESS are rendered below.
   return (
     <div className="p-4 sm:p-6 h-full flex flex-col">
       {/* Header */}
@@ -318,17 +352,11 @@ export function ReviewsPage() {
             <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
               {cycles.length} cycle{cycles.length !== 1 ? 's' : ''}
             </p>
-            <button
-              onClick={() => setShowCreateCycle(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg text-white transition-colors"
-              style={{ background: 'linear-gradient(135deg, #8A00E5, #4D217A)' }}
-            >
-              <Plus size={14} />
-              New Cycle
-            </button>
+            <PrimaryButton onClick={() => setShowCreateCycle(true)}>New Cycle</PrimaryButton>
           </div>
 
           {cycles.length === 0 ? (
+            /* EMPTY-WITH-CTA */
             <div className="flex-1 flex items-center justify-center py-16">
               <div className="text-center">
                 <Calendar
@@ -336,9 +364,12 @@ export function ReviewsPage() {
                   className="mx-auto mb-3 opacity-30"
                   style={{ color: 'var(--color-text-secondary)' }}
                 />
-                <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                <p className="text-sm mb-4" style={{ color: 'var(--color-text-secondary)' }}>
                   No review cycles yet. Create one to get started.
                 </p>
+                <div className="flex justify-center">
+                  <PrimaryButton onClick={() => setShowCreateCycle(true)}>New Cycle</PrimaryButton>
+                </div>
               </div>
             </div>
           ) : (
@@ -441,17 +472,15 @@ export function ReviewsPage() {
               />
             </div>
 
-            <button
-              onClick={() => setShowCreateReview(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg text-white transition-colors"
-              style={{ background: 'linear-gradient(135deg, #8A00E5, #4D217A)' }}
-            >
-              <Plus size={14} />
-              New Review
-            </button>
+            <PrimaryButton onClick={() => setShowCreateReview(true)}>New Review</PrimaryButton>
           </div>
 
-          {reviews.length === 0 ? (
+          {reviewsQuery.isPending ? (
+            <div className="flex-1 flex items-center justify-center py-16">
+              <LoadingSpinner />
+            </div>
+          ) : reviews.length === 0 ? (
+            /* EMPTY-WITH-CTA */
             <div className="flex-1 flex items-center justify-center py-16">
               <div className="text-center">
                 <ClipboardCheck
@@ -459,10 +488,15 @@ export function ReviewsPage() {
                   className="mx-auto mb-3 opacity-30"
                   style={{ color: 'var(--color-text-secondary)' }}
                 />
-                <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                <p className="text-sm mb-4" style={{ color: 'var(--color-text-secondary)' }}>
                   No reviews found{selectedCycleId ? ' for this cycle' : ''}. Create one to get
                   started.
                 </p>
+                <div className="flex justify-center">
+                  <PrimaryButton onClick={() => setShowCreateReview(true)}>
+                    New Review
+                  </PrimaryButton>
+                </div>
               </div>
             </div>
           ) : (
@@ -476,8 +510,7 @@ export function ReviewsPage() {
                   onToggle={() =>
                     setExpandedReviewId(expandedReviewId === review.id ? null : review.id)
                   }
-                  workspaceId={workspace!.id}
-                  onUpdated={loadData}
+                  onSave={(reviewId, data) => updateReview.mutateAsync({ reviewId, data })}
                 />
               ))}
             </div>
@@ -486,24 +519,22 @@ export function ReviewsPage() {
       )}
 
       {/* Create Cycle Modal */}
-      {showCreateCycle && workspace && (
+      {showCreateCycle && (
         <CreateCycleModal
-          workspaceId={workspace.id}
+          onCreate={(data) => createCycle.mutateAsync(data)}
           onClose={() => setShowCreateCycle(false)}
-          onCreated={loadData}
         />
       )}
 
       {/* Create Review Modal */}
-      {showCreateReview && workspace && (
+      {showCreateReview && (
         <CreateReviewModal
-          workspaceId={workspace.id}
           cycles={cycles}
           members={members}
           selectedCycleId={selectedCycleId}
           currentUserId={user?.id || null}
+          onCreate={(cycleId, data) => createReview.mutateAsync({ cycleId, data })}
           onClose={() => setShowCreateReview(false)}
-          onCreated={loadData}
         />
       )}
     </div>
@@ -517,15 +548,13 @@ function ReviewCard({
   getMember,
   expanded,
   onToggle,
-  workspaceId,
-  onUpdated,
+  onSave,
 }: {
   review: Review;
   getMember: (id: string) => User | undefined;
   expanded: boolean;
   onToggle: () => void;
-  workspaceId: string;
-  onUpdated: () => void;
+  onSave: (reviewId: string, data: Partial<Review>) => Promise<Review>;
 }) {
   const reviewee = getMember(review.user_id);
   const reviewer = getMember(review.reviewer_id);
@@ -536,41 +565,25 @@ function ReviewCard({
   const [rating, setRating] = useState(review.overall_rating);
   const [saving, setSaving] = useState(false);
 
-  const handleSave = async () => {
+  const persist = async (status: string, failMsg: string) => {
     setSaving(true);
     try {
-      await reviewsApi.update(workspaceId, review.id, {
+      await onSave(review.id, {
         strengths: strengths || null,
         areas_for_improvement: areasForImprovement || null,
         overall_rating: rating,
-        status: 'in_progress',
+        status,
       });
-      onUpdated();
     } catch (err) {
-      console.error('Failed to update review:', err);
-      Toast.show('Failed to save review');
+      console.error(failMsg, err);
+      Toast.show(failMsg);
     } finally {
       setSaving(false);
     }
   };
 
-  const handleSubmit = async () => {
-    setSaving(true);
-    try {
-      await reviewsApi.update(workspaceId, review.id, {
-        strengths: strengths || null,
-        areas_for_improvement: areasForImprovement || null,
-        overall_rating: rating,
-        status: 'submitted',
-      });
-      onUpdated();
-    } catch (err) {
-      console.error('Failed to submit review:', err);
-      Toast.show('Failed to submit review');
-    } finally {
-      setSaving(false);
-    }
-  };
+  const handleSave = () => persist('in_progress', 'Failed to save review');
+  const handleSubmit = () => persist('submitted', 'Failed to submit review');
 
   return (
     <div
@@ -695,13 +708,15 @@ function ReviewCard({
 // --- Create Cycle Modal ---
 
 function CreateCycleModal({
-  workspaceId,
+  onCreate,
   onClose,
-  onCreated,
 }: {
-  workspaceId: string;
+  onCreate: (data: {
+    name: string;
+    period_start: string;
+    period_end: string;
+  }) => Promise<ReviewCycle>;
   onClose: () => void;
-  onCreated: () => void;
 }) {
   const [name, setName] = useState('');
   const [periodStart, setPeriodStart] = useState('');
@@ -720,12 +735,7 @@ function CreateCycleModal({
     e.preventDefault();
     setSaving(true);
     try {
-      await reviewsApi.createCycle(workspaceId, {
-        name,
-        period_start: periodStart,
-        period_end: periodEnd,
-      });
-      onCreated();
+      await onCreate({ name, period_start: periodStart, period_end: periodEnd });
       onClose();
     } catch (err) {
       console.error('Failed to create cycle:', err);
@@ -851,21 +861,19 @@ function CreateCycleModal({
 // --- Create Review Modal ---
 
 function CreateReviewModal({
-  workspaceId,
   cycles,
   members,
   selectedCycleId,
   currentUserId,
+  onCreate,
   onClose,
-  onCreated,
 }: {
-  workspaceId: string;
   cycles: ReviewCycle[];
   members: User[];
   selectedCycleId: string | null;
   currentUserId: string | null;
+  onCreate: (cycleId: string, data: { user_id: string; reviewer_id: string }) => Promise<Review>;
   onClose: () => void;
-  onCreated: () => void;
 }) {
   const [cycleId, setCycleId] = useState(selectedCycleId || '');
   const [userId, setUserId] = useState('');
@@ -885,11 +893,7 @@ function CreateReviewModal({
     if (!cycleId || !userId || !reviewerId) return;
     setSaving(true);
     try {
-      await reviewsApi.create(workspaceId, cycleId, {
-        user_id: userId,
-        reviewer_id: reviewerId,
-      });
-      onCreated();
+      await onCreate(cycleId, { user_id: userId, reviewer_id: reviewerId });
       onClose();
     } catch (err) {
       console.error('Failed to create review:', err);

@@ -1,4 +1,5 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   Shield,
   AlertTriangle,
@@ -13,7 +14,12 @@ import {
 } from 'lucide-react';
 import { useWorkspaceStore } from '../stores/workspaceStore';
 import { useLookupValues } from '../stores/lookupStore';
-import { complianceApi } from '../api/compliance';
+import {
+  useComplianceItems,
+  useCreateComplianceItem,
+  useUpdateComplianceItem,
+  useDeleteComplianceItem,
+} from '../api/queries/compliance';
 import { membersApi } from '../api/users';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 import { LookupSelect } from '../components/shared/LookupSelect';
@@ -68,9 +74,8 @@ function TypeBadge({ type }: { type: string }) {
 export function CompliancePage() {
   const workspace = useWorkspaceStore((s) => s.currentWorkspace);
   const lookupValues = useLookupValues(workspace?.id, 'compliance_item_type');
-  const [items, setItems] = useState<ComplianceItem[]>([]);
-  const [members, setMembers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+
+  // Client/UI state stays local; server data comes from TanStack Query.
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -78,26 +83,16 @@ export function CompliancePage() {
   const [editingItem, setEditingItem] = useState<ComplianceItem | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  const loadData = async () => {
-    if (!workspace) return;
-    setLoading(true);
-    try {
-      const [itemsRes, membersRes] = await Promise.all([
-        complianceApi.list(workspace.id),
-        membersApi.list(workspace.id),
-      ]);
-      setItems(itemsRes.data);
-      setMembers(membersRes.data);
-    } catch (err) {
-      console.error('Failed to load compliance data:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const itemsQuery = useComplianceItems(workspace?.id);
+  const membersQuery = useQuery({
+    queryKey: ['members', workspace?.id],
+    queryFn: async () => (await membersApi.list(workspace!.id)).data,
+    enabled: !!workspace,
+  });
+  const deleteMutation = useDeleteComplianceItem(workspace?.id);
 
-  useEffect(() => {
-    loadData();
-  }, [workspace]);
+  const items = itemsQuery.data ?? [];
+  const members = membersQuery.data ?? [];
 
   const filteredItems = useMemo(() => {
     return items.filter((item) => {
@@ -139,22 +134,43 @@ export function CompliancePage() {
     [counts],
   );
 
-  const handleDelete = async (itemId: string) => {
-    if (!workspace) return;
-    try {
-      await complianceApi.delete(workspace.id, itemId);
-      setDeleteConfirm(null);
-      loadData();
-    } catch (err) {
-      console.error('Failed to delete compliance item:', err);
-    }
+  const handleDelete = (itemId: string) => {
+    deleteMutation.mutate(itemId, {
+      onSuccess: () => setDeleteConfirm(null),
+      onError: (err) => console.error('Failed to delete compliance item:', err),
+    });
   };
 
   const getMemberName = (userId: string) => {
     return members.find((m) => m.id === userId)?.name || 'Unknown';
   };
 
-  if (loading) return <LoadingSpinner />;
+  // ── Four states ────────────────────────────────────────────────────────────
+  if (itemsQuery.isPending) return <LoadingSpinner />;
+
+  if (itemsQuery.isError) {
+    return (
+      <div className="flex-1 flex items-center justify-center h-full">
+        <div className="text-center">
+          <AlertTriangle
+            size={48}
+            className="mx-auto mb-3"
+            style={{ color: 'var(--color-danger, #ef4444)' }}
+          />
+          <p className="text-sm mb-3" style={{ color: 'var(--color-text-secondary)' }}>
+            Failed to load compliance data.
+          </p>
+          <button
+            onClick={() => itemsQuery.refetch()}
+            className="px-4 py-2 text-sm font-medium rounded-lg text-white"
+            style={{ background: 'linear-gradient(135deg, #8A00E5, #4D217A)' }}
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-6 h-full flex flex-col">
@@ -311,11 +327,24 @@ export function CompliancePage() {
               className="mx-auto mb-3 opacity-30"
               style={{ color: 'var(--color-text-secondary)' }}
             />
-            <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+            <p className="text-sm mb-3" style={{ color: 'var(--color-text-secondary)' }}>
               {items.length === 0
                 ? 'No compliance items yet. Add one to get started.'
                 : 'No items match your filters.'}
             </p>
+            {items.length === 0 && (
+              <button
+                onClick={() => {
+                  setEditingItem(null);
+                  setShowModal(true);
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg text-white transition-colors"
+                style={{ background: 'linear-gradient(135deg, #8A00E5, #4D217A)' }}
+              >
+                <Plus size={14} />
+                Add Item
+              </button>
+            )}
           </div>
         </div>
       ) : (
@@ -550,7 +579,6 @@ export function CompliancePage() {
             setShowModal(false);
             setEditingItem(null);
           }}
-          onSaved={loadData}
         />
       )}
     </div>
@@ -600,13 +628,11 @@ function ComplianceModal({
   members,
   workspaceId,
   onClose,
-  onSaved,
 }: {
   item: ComplianceItem | null;
   members: User[];
   workspaceId: string;
   onClose: () => void;
-  onSaved: () => void;
 }) {
   const isEdit = !!item;
   const [userId, setUserId] = useState(item?.user_id || '');
@@ -616,33 +642,32 @@ function ComplianceModal({
   const [issueDate, setIssueDate] = useState(item?.issue_date?.slice(0, 10) || '');
   const [expiryDate, setExpiryDate] = useState(item?.expiry_date?.slice(0, 10) || '');
   const [notes, setNotes] = useState(item?.notes || '');
-  const [saving, setSaving] = useState(false);
+
+  const createMutation = useCreateComplianceItem(workspaceId);
+  const updateMutation = useUpdateComplianceItem(workspaceId);
+  const saving = createMutation.isPending || updateMutation.isPending;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userId || !title.trim()) return;
-    setSaving(true);
+    const payload: Partial<ComplianceItem> = {
+      user_id: userId,
+      item_type: itemType,
+      title: title.trim(),
+      reference_number: referenceNumber.trim() || null,
+      issue_date: issueDate || null,
+      expiry_date: expiryDate || null,
+      notes: notes.trim() || null,
+    };
     try {
-      const payload: Partial<ComplianceItem> = {
-        user_id: userId,
-        item_type: itemType,
-        title: title.trim(),
-        reference_number: referenceNumber.trim() || null,
-        issue_date: issueDate || null,
-        expiry_date: expiryDate || null,
-        notes: notes.trim() || null,
-      };
       if (isEdit && item) {
-        await complianceApi.update(workspaceId, item.id, payload);
+        await updateMutation.mutateAsync({ itemId: item.id, data: payload });
       } else {
-        await complianceApi.create(workspaceId, payload);
+        await createMutation.mutateAsync(payload);
       }
-      onSaved();
       onClose();
     } catch (err) {
       console.error('Failed to save compliance item:', err);
-    } finally {
-      setSaving(false);
     }
   };
 

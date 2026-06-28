@@ -12,18 +12,26 @@ import {
   Users,
   TrendingUp,
   Award,
+  AlertTriangle,
+  RefreshCw,
 } from 'lucide-react';
 import { useWorkspaceStore } from '../stores/workspaceStore';
 import { useAuthStore } from '../stores/authStore';
 import { useLookupValues } from '../stores/lookupStore';
-import { candidatesApi } from '../api/candidates';
-import type { Candidate } from '../api/candidates';
-import { membersApi } from '../api/users';
-import type { User } from '../api/users';
 import { Toast } from '../components/shared/Toast';
 import { LookupSelect } from '../components/shared/LookupSelect';
 import { StatCard } from '../components/shared/StatCard';
+import { EmptyState } from '../components/shared/EmptyState';
+import { Skeleton } from '../components/shared/Skeleton';
 import { COLOURS } from '../utils/colours';
+import {
+  useCandidates,
+  useMembers,
+  useCreateCandidate,
+  useUpdateCandidateStatus,
+  useDeleteCandidate,
+  useAddCandidateEvent,
+} from '../api/queries/recruitment';
 
 const PIPELINE_COLUMNS = [
   { key: 'applied', label: 'Applied', colour: '#6b7280' },
@@ -92,14 +100,28 @@ export function RecruitmentPage() {
   const workspace = useWorkspaceStore((s) => s.currentWorkspace);
   const user = useAuthStore((s) => s.user);
 
-  const [candidates, setCandidates] = useState<Candidate[]>([]);
-  const [members, setMembers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
+  // ── Server state: TanStack Query (ADR 0003) ────────────────────────────────
+  const candidatesQuery = useCandidates(workspace?.id);
+  const candidates = useMemo(() => candidatesQuery.data ?? [], [candidatesQuery.data]);
+  const { data: members = [] } = useMembers(workspace?.id);
+
+  const createCandidate = useCreateCandidate(workspace?.id);
+  const updateStatus = useUpdateCandidateStatus(workspace?.id);
+  const deleteCandidate = useDeleteCandidate(workspace?.id);
+  const addEvent = useAddCandidateEvent(workspace?.id);
+
+  // ── Client/UI state stays local ────────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState('');
   const [filterSource, setFilterSource] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
 
-  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
+  // Track the selected candidate by id so the detail panel always derives from
+  // the live Query cache (status / events stay in sync after mutations).
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selectedCandidate = useMemo(
+    () => candidates.find((c) => c.id === selectedId) ?? null,
+    [candidates, selectedId],
+  );
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEventModal, setShowEventModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -122,21 +144,6 @@ export function RecruitmentPage() {
     () => new Set(candidates.map((c) => c.source).filter(Boolean)).size,
     [candidates],
   );
-
-  useEffect(() => {
-    if (!workspace) return;
-    setLoading(true);
-    Promise.all([candidatesApi.list(workspace.id), membersApi.list(workspace.id)])
-      .then(([candRes, membRes]) => {
-        setCandidates(candRes.data);
-        setMembers(membRes.data);
-      })
-      .catch((err) => {
-        console.error('Failed to load recruitment data:', err);
-        Toast.show('Failed to load recruitment data');
-      })
-      .finally(() => setLoading(false));
-  }, [workspace]);
 
   // Escape key handlers for modals
   useEffect(() => {
@@ -200,7 +207,7 @@ export function RecruitmentPage() {
   const handleCreateCandidate = async () => {
     if (!workspace || !createForm.name.trim() || !createForm.position_applied.trim()) return;
     try {
-      const { data } = await candidatesApi.create(workspace.id, {
+      await createCandidate.mutateAsync({
         name: createForm.name.trim(),
         email: createForm.email.trim() || null,
         phone: createForm.phone.trim() || null,
@@ -209,7 +216,6 @@ export function RecruitmentPage() {
         notes: createForm.notes.trim() || null,
         status: 'applied',
       });
-      setCandidates((prev) => [...prev, data]);
       setCreateForm(emptyCandidate);
       setShowCreateModal(false);
     } catch (err) {
@@ -221,9 +227,7 @@ export function RecruitmentPage() {
   const handleUpdateStatus = async (candidateId: string, status: string) => {
     if (!workspace) return;
     try {
-      const { data } = await candidatesApi.update(workspace.id, candidateId, { status });
-      setCandidates((prev) => prev.map((c) => (c.id === candidateId ? data : c)));
-      if (selectedCandidate?.id === candidateId) setSelectedCandidate(data);
+      await updateStatus.mutateAsync({ candidateId, status });
     } catch (err) {
       console.error('Failed to update status:', err);
       Toast.show('Failed to update candidate status');
@@ -233,9 +237,8 @@ export function RecruitmentPage() {
   const handleDeleteCandidate = async () => {
     if (!workspace || !selectedCandidate) return;
     try {
-      await candidatesApi.delete(workspace.id, selectedCandidate.id);
-      setCandidates((prev) => prev.filter((c) => c.id !== selectedCandidate.id));
-      setSelectedCandidate(null);
+      await deleteCandidate.mutateAsync(selectedCandidate.id);
+      setSelectedId(null);
       setShowDeleteConfirm(false);
     } catch (err) {
       console.error('Failed to delete candidate:', err);
@@ -246,19 +249,16 @@ export function RecruitmentPage() {
   const handleAddEvent = async () => {
     if (!workspace || !selectedCandidate || !eventForm.event_type) return;
     try {
-      const { data } = await candidatesApi.addEvent(workspace.id, selectedCandidate.id, {
-        event_type: eventForm.event_type,
-        event_date: eventForm.event_date,
-        interviewer_id: eventForm.interviewer_id || null,
-        outcome: eventForm.outcome.trim() || null,
-        notes: eventForm.notes.trim() || null,
+      await addEvent.mutateAsync({
+        candidateId: selectedCandidate.id,
+        data: {
+          event_type: eventForm.event_type,
+          event_date: eventForm.event_date,
+          interviewer_id: eventForm.interviewer_id || null,
+          outcome: eventForm.outcome.trim() || null,
+          notes: eventForm.notes.trim() || null,
+        },
       });
-      const updated = {
-        ...selectedCandidate,
-        events: [...selectedCandidate.events, data],
-      };
-      setCandidates((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
-      setSelectedCandidate(updated);
       setEventForm(emptyEvent);
       setShowEventModal(false);
     } catch (err) {
@@ -273,16 +273,188 @@ export function RecruitmentPage() {
     return member?.name ?? null;
   };
 
-  if (loading) {
-    return (
-      <div className="h-full flex items-center justify-center">
-        <div
-          className="animate-spin rounded-full h-8 w-8 border-b-2"
-          style={{ borderColor: 'var(--color-primary)' }}
+  // ── Pipeline render: four explicit states (pending / error / empty / success) ──
+  const renderPipeline = () => {
+    if (candidatesQuery.isPending) {
+      return (
+        <div className="flex gap-4 h-full min-w-max">
+          {PIPELINE_COLUMNS.map((col) => (
+            <div
+              key={col.key}
+              className="w-72 flex flex-col rounded-xl"
+              style={{ backgroundColor: 'var(--color-grey-1)' }}
+            >
+              <div className="px-3 py-3 flex-shrink-0">
+                <Skeleton className="h-5 w-24" />
+              </div>
+              <div className="px-2 pb-2 space-y-2">
+                {Array.from({ length: 3 }).map((_, card) => (
+                  <div
+                    key={card}
+                    className="rounded-lg border p-3 space-y-2"
+                    style={{
+                      backgroundColor: 'var(--color-surface)',
+                      borderColor: 'var(--color-border)',
+                    }}
+                  >
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-3 w-1/2" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    if (candidatesQuery.isError) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full text-center px-6">
+          <AlertTriangle size={48} className="mb-4" style={{ color: 'var(--color-danger)' }} />
+          <h3 className="text-base font-semibold mb-1" style={{ color: 'var(--color-text)' }}>
+            Couldn't load candidates
+          </h3>
+          <p className="text-sm max-w-xs mb-4" style={{ color: 'var(--color-text-secondary)' }}>
+            {candidatesQuery.error instanceof Error
+              ? candidatesQuery.error.message
+              : 'Something went wrong fetching the recruitment pipeline.'}
+          </p>
+          <button
+            onClick={() => candidatesQuery.refetch()}
+            disabled={candidatesQuery.isFetching}
+            className="flex items-center gap-2 px-4 py-2 text-white rounded-lg text-sm font-medium disabled:opacity-50"
+            style={{ backgroundColor: 'var(--color-primary)' }}
+          >
+            <RefreshCw size={14} className={candidatesQuery.isFetching ? 'animate-spin' : ''} />
+            Retry
+          </button>
+        </div>
+      );
+    }
+
+    if (candidates.length === 0) {
+      return (
+        <EmptyState
+          icon={<UserPlus size={48} />}
+          title="No candidates yet"
+          description="Add your first candidate to start tracking them through the hiring pipeline."
+          action={
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-white rounded-lg text-sm font-medium hover:opacity-90"
+              style={{ backgroundColor: 'var(--color-primary)' }}
+            >
+              <Plus size={16} />
+              Add Candidate
+            </button>
+          }
         />
+      );
+    }
+
+    return (
+      <div className="flex gap-4 h-full min-w-max">
+        {PIPELINE_COLUMNS.map((col) => {
+          const colCandidates = filteredCandidates.filter((c) => c.status === col.key);
+          return (
+            <div
+              key={col.key}
+              className="w-72 flex flex-col rounded-xl"
+              style={{ backgroundColor: 'var(--color-grey-1)' }}
+            >
+              {/* Column header */}
+              <div className="px-3 py-3 flex items-center justify-between flex-shrink-0">
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-2.5 h-2.5 rounded-full"
+                    style={{ backgroundColor: col.colour }}
+                  />
+                  <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+                    {col.label}
+                  </span>
+                </div>
+                <span
+                  className="text-xs font-medium px-1.5 py-0.5 rounded-full min-w-[20px] text-center"
+                  style={{ backgroundColor: col.colour + '20', color: col.colour }}
+                >
+                  {columnCounts[col.key]}
+                </span>
+              </div>
+
+              {/* Candidate cards */}
+              <div className="flex-1 overflow-y-auto px-2 pb-2 space-y-2">
+                {colCandidates.map((candidate) => (
+                  <button
+                    key={candidate.id}
+                    onClick={() => setSelectedId(candidate.id)}
+                    className="w-full text-left p-3 rounded-lg border transition-colors hover:shadow-md group"
+                    style={{
+                      backgroundColor: 'var(--color-surface)',
+                      borderColor: 'var(--color-border)',
+                    }}
+                  >
+                    <div className="flex items-start justify-between">
+                      <p
+                        className="text-sm font-medium truncate"
+                        style={{ color: 'var(--color-text)' }}
+                      >
+                        {candidate.name}
+                      </p>
+                      <ChevronRight
+                        size={14}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-0.5"
+                        style={{ color: 'var(--color-text-secondary)' }}
+                      />
+                    </div>
+                    <p
+                      className="text-xs mt-1 truncate"
+                      style={{ color: 'var(--color-text-secondary)' }}
+                    >
+                      {candidate.position_applied}
+                    </p>
+                    <div className="flex items-center justify-between mt-2">
+                      {candidate.source &&
+                        (() => {
+                          const sourceColour =
+                            lookupValues.find((v) => v.value === candidate.source)?.colour ||
+                            '#64748b';
+                          return (
+                            <span
+                              className="text-[10px] font-medium px-1.5 py-0.5 rounded-full capitalize"
+                              style={{
+                                backgroundColor: sourceColour + '18',
+                                color: sourceColour,
+                              }}
+                            >
+                              {candidate.source}
+                            </span>
+                          );
+                        })()}
+                      <span
+                        className="text-[10px]"
+                        style={{ color: 'var(--color-text-secondary)' }}
+                      >
+                        {new Date(candidate.applied_date).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+                {colCandidates.length === 0 && (
+                  <p
+                    className="text-xs text-center py-4"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                  >
+                    No candidates
+                  </p>
+                )}
+              </div>
+            </div>
+          );
+        })}
       </div>
     );
-  }
+  };
 
   return (
     <div className="h-full flex flex-col">
@@ -412,116 +584,13 @@ export function RecruitmentPage() {
         </div>
       )}
 
-      {/* Pipeline columns */}
-      <div className="flex-1 overflow-x-auto px-6 pb-6">
-        <div className="flex gap-4 h-full min-w-max">
-          {PIPELINE_COLUMNS.map((col) => {
-            const colCandidates = filteredCandidates.filter((c) => c.status === col.key);
-            return (
-              <div
-                key={col.key}
-                className="w-72 flex flex-col rounded-xl"
-                style={{ backgroundColor: 'var(--color-grey-1)' }}
-              >
-                {/* Column header */}
-                <div className="px-3 py-3 flex items-center justify-between flex-shrink-0">
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-2.5 h-2.5 rounded-full"
-                      style={{ backgroundColor: col.colour }}
-                    />
-                    <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
-                      {col.label}
-                    </span>
-                  </div>
-                  <span
-                    className="text-xs font-medium px-1.5 py-0.5 rounded-full min-w-[20px] text-center"
-                    style={{ backgroundColor: col.colour + '20', color: col.colour }}
-                  >
-                    {columnCounts[col.key]}
-                  </span>
-                </div>
-
-                {/* Candidate cards */}
-                <div className="flex-1 overflow-y-auto px-2 pb-2 space-y-2">
-                  {colCandidates.map((candidate) => (
-                    <button
-                      key={candidate.id}
-                      onClick={() => setSelectedCandidate(candidate)}
-                      className="w-full text-left p-3 rounded-lg border transition-colors hover:shadow-md group"
-                      style={{
-                        backgroundColor: 'var(--color-surface)',
-                        borderColor: 'var(--color-border)',
-                      }}
-                    >
-                      <div className="flex items-start justify-between">
-                        <p
-                          className="text-sm font-medium truncate"
-                          style={{ color: 'var(--color-text)' }}
-                        >
-                          {candidate.name}
-                        </p>
-                        <ChevronRight
-                          size={14}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-0.5"
-                          style={{ color: 'var(--color-text-secondary)' }}
-                        />
-                      </div>
-                      <p
-                        className="text-xs mt-1 truncate"
-                        style={{ color: 'var(--color-text-secondary)' }}
-                      >
-                        {candidate.position_applied}
-                      </p>
-                      <div className="flex items-center justify-between mt-2">
-                        {candidate.source &&
-                          (() => {
-                            const sourceColour =
-                              lookupValues.find((v) => v.value === candidate.source)?.colour ||
-                              '#64748b';
-                            return (
-                              <span
-                                className="text-[10px] font-medium px-1.5 py-0.5 rounded-full capitalize"
-                                style={{
-                                  backgroundColor: sourceColour + '18',
-                                  color: sourceColour,
-                                }}
-                              >
-                                {candidate.source}
-                              </span>
-                            );
-                          })()}
-                        <span
-                          className="text-[10px]"
-                          style={{ color: 'var(--color-text-secondary)' }}
-                        >
-                          {new Date(candidate.applied_date).toLocaleDateString()}
-                        </span>
-                      </div>
-                    </button>
-                  ))}
-                  {colCandidates.length === 0 && (
-                    <p
-                      className="text-xs text-center py-4"
-                      style={{ color: 'var(--color-text-secondary)' }}
-                    >
-                      No candidates
-                    </p>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      {/* Pipeline columns (four states: pending / error / empty / success) */}
+      <div className="flex-1 overflow-x-auto px-6 pb-6">{renderPipeline()}</div>
 
       {/* Detail panel - slides in from right */}
       {selectedCandidate && (
         <>
-          <div
-            className="fixed inset-0 bg-black/30 z-40"
-            onClick={() => setSelectedCandidate(null)}
-          />
+          <div className="fixed inset-0 bg-black/30 z-40" onClick={() => setSelectedId(null)} />
           <div
             className="fixed top-0 right-0 h-full w-[480px] max-w-full z-50 shadow-2xl overflow-y-auto animate-slide-in-right"
             style={{ backgroundColor: 'var(--color-surface)' }}
@@ -538,7 +607,7 @@ export function RecruitmentPage() {
                 Candidate Details
               </h2>
               <button
-                onClick={() => setSelectedCandidate(null)}
+                onClick={() => setSelectedId(null)}
                 className="p-1 rounded-lg hover:bg-muted transition-colors"
                 style={{ color: 'var(--color-text-secondary)' }}
               >
