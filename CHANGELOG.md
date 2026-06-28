@@ -42,5 +42,5 @@ All notable changes to Planview. Format loosely follows Keep a Changelog; dates 
 - Second repository aggregate (projects) landed; PeoplePage migrated and peopleStore deleted; 53 safe text/border raw-palette utilities mapped to semantic tokens.
 
 ### Notes
-- Still deferred: deleting the now-legacy Zustand server-data stores once their last consumers move to hooks, the raw-palette and font-size cleanup plus shadcn primitives (0004), the rest of the repository-layer aggregates (0005), and the blocking mypy gate (0007).
-- None of the round-2 code was runtime-verified in the authoring environment (no node, partial backend venv). CI and review are the gate.
+- Still deferred (need a running app + visual QA, or are mechanical follow-on): deleting the realtime-coupled Zustand stores (task/project/team), the bg-tint/blue raw-palette and `text-xs` cleanup plus shadcn primitives (0004), and the remaining repository-layer aggregates one PR at a time (0005).
+- The whole branch is verified locally green using the on-box toolchain: frontend build + lint (0 errors) + Prettier, backend mypy (153 files) + app import, and the dash guard. Backend integration tests run in CI against an ephemeral Postgres (the only local Postgres is the fleet memory DB, so they are not run here).
