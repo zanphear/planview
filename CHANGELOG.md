@@ -4,6 +4,15 @@ All notable changes to Planview. Format loosely follows Keep a Changelog; dates 
 
 ## [Unreleased]
 
+### Deployment and field fixes (2026-06-28)
+- Redeployed fresh to lxc-testbed (`/opt/stacks/planview`, Dockge) from this branch with fresh secrets and a fresh database after the previous deploy's nginx died (its bind-mounted `nginx.conf` had become an empty directory).
+- **AI Assistant and AI Reports fixed:** the services appended `/v1/chat/completions` to a base URL that already ended in `/v1`, so every call hit `/v1/v1/...` and 404'd. Added `settings.ai_chat_url` (strips a trailing `/v1`) and pointed the default at the analyst load balancer. Chat and report generation verified working.
+- **Absence calendar and resource utilisation fixed:** the date-range params were typed `str` and compared to `timestamptz`/`date` columns, so Postgres raised "operator does not exist". Typed them as `date`.
+- **Owner role fix:** `LeavePage` excluded the workspace owner (the top role) from the manager check; owner now gets leave management.
+- **All Tasks page:** new workspace-wide task list grouped by project with an "Unassigned" group, inline project (re)assignment, bulk move, and URL filters, so project-less tasks are visible and manageable. Backend gains an `unassigned` (project_id IS NULL) task filter.
+- **Service worker auto-versioning:** `public/sw.js` cache name is stamped with a unique build id by a vite plugin on every `npm run build`, so each deploy invalidates the old cache and clients update without a manual refresh (no more manual CACHE_NAME bumps).
+- **nginx healthcheck:** use `127.0.0.1` (the container listens on IPv4; `localhost` resolved to `::1` and reported unhealthy).
+
 ### Security
 - Fixed two cross-tenant IDOR holes: `early_talent.py` and `attachments.py` now scope every read and write by `workspace_id` (or a parent join), and verify the parent resource belongs to the workspace on nested create/list routes.
 - Removed the committed `deploy/.env.production` (real JWT signing key plus DB/Redis passwords) from version control, gitignored it, and added `deploy/.env.production.example`. NB: the secret remains in git history and must be rotated and purged (see release notes).

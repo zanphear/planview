@@ -1,4 +1,7 @@
-const CACHE_NAME = 'planview-v15';
+// CACHE_NAME is stamped with a unique build id by the stamp-sw vite plugin on every
+// `npm run build`, so a new deploy always invalidates the old cache (the activate
+// handler below deletes any cache that is not the current one). No manual bumping.
+const CACHE_NAME = 'planview-__BUILD_ID__';
 const PRECACHE_URLS = [
   '/',
   '/favicon.png',
