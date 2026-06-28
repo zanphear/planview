@@ -11,6 +11,7 @@ from sqlalchemy.orm import selectinload
 from app.config import settings
 from app.database import get_db
 from app.models.attachment import Attachment
+from app.models.task import Task
 from app.models.user import User
 from app.schemas.attachment import AttachmentResponse
 from app.utils.auth import get_workspace_user
@@ -19,6 +20,19 @@ router = APIRouter(
     prefix="/workspaces/{workspace_id}/tasks/{task_id}/attachments",
     tags=["attachments"],
 )
+
+
+async def _task_in_workspace(
+    db: AsyncSession, workspace_id: uuid.UUID, task_id: uuid.UUID
+) -> Task:
+    """Guard against cross-tenant access: the task must belong to this workspace."""
+    result = await db.execute(
+        select(Task).where(Task.id == task_id, Task.workspace_id == workspace_id)
+    )
+    task = result.scalar_one_or_none()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return task
 
 # Map extensions to expected MIME prefixes for magic-byte validation
 _EXT_MIME_MAP = {
@@ -50,6 +64,7 @@ async def list_attachments(
     current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
+    await _task_in_workspace(db, workspace_id, task_id)
     result = await db.execute(
         select(Attachment)
         .where(Attachment.task_id == task_id)
@@ -82,6 +97,7 @@ async def upload_attachment(
     current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
+    await _task_in_workspace(db, workspace_id, task_id)
     ext = os.path.splitext(file.filename or "")[1].lower()
     if ext in BLOCKED_EXTENSIONS:
         raise HTTPException(status_code=400, detail=f"File type {ext} is not allowed")
@@ -132,20 +148,28 @@ async def download_attachment(
     current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
+    await _task_in_workspace(db, workspace_id, task_id)
     result = await db.execute(
         select(Attachment).where(Attachment.id == attachment_id, Attachment.task_id == task_id)
     )
     attachment = result.scalar_one_or_none()
     if not attachment:
         raise HTTPException(status_code=404, detail="Attachment not found")
-    if not os.path.exists(attachment.file_path):
+    # Defence in depth: ensure the stored path is contained within the upload dir.
+    upload_root = os.path.realpath(settings.upload_dir)
+    real_path = os.path.realpath(attachment.file_path)
+    if not real_path.startswith(upload_root + os.sep):
+        raise HTTPException(status_code=404, detail="File not found")
+    if not os.path.exists(real_path):
         raise HTTPException(status_code=404, detail="File not found on disk")
 
+    # Let Starlette encode Content-Disposition safely (avoids CR/LF header injection
+    # from a user-controlled filename); force attachment, never inline.
     return FileResponse(
-        attachment.file_path,
+        real_path,
         filename=attachment.filename,
         media_type="application/octet-stream",
-        headers={"Content-Disposition": f'attachment; filename="{attachment.filename}"'},
+        content_disposition_type="attachment",
     )
 
 
@@ -157,6 +181,7 @@ async def delete_attachment(
     current_user: User = Depends(get_workspace_user),
     db: AsyncSession = Depends(get_db),
 ):
+    await _task_in_workspace(db, workspace_id, task_id)
     result = await db.execute(
         select(Attachment).where(Attachment.id == attachment_id, Attachment.task_id == task_id)
     )

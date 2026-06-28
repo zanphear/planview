@@ -1,4 +1,17 @@
-import { addDays, differenceInDays, format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addWeeks, addMonths, isWeekend, isToday, parseISO } from 'date-fns';
+import {
+  addDays,
+  differenceInDays,
+  format,
+  startOfWeek,
+  endOfWeek,
+  startOfMonth,
+  endOfMonth,
+  addWeeks,
+  addMonths,
+  isWeekend,
+  isToday,
+  parseISO,
+} from 'date-fns';
 
 export type ZoomLevel = 'W' | 'M' | 'Q' | 'A';
 
@@ -24,7 +37,11 @@ export function getDateOffset(date: Date, rangeStart: Date): number {
   return differenceInDays(date, rangeStart);
 }
 
-export function getTaskSpan(dateFrom: string, dateTo: string, rangeStart: Date): { left: number; width: number } {
+export function getTaskSpan(
+  dateFrom: string,
+  dateTo: string,
+  rangeStart: Date,
+): { left: number; width: number } {
   const start = parseISO(dateFrom);
   const end = parseISO(dateTo);
   const left = getDateOffset(start, rangeStart);
@@ -32,4 +49,17 @@ export function getTaskSpan(dateFrom: string, dateTo: string, rangeStart: Date):
   return { left, width };
 }
 
-export { addDays, differenceInDays, format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addWeeks, addMonths, isWeekend, isToday, parseISO };
+export {
+  addDays,
+  differenceInDays,
+  format,
+  startOfWeek,
+  endOfWeek,
+  startOfMonth,
+  endOfMonth,
+  addWeeks,
+  addMonths,
+  isWeekend,
+  isToday,
+  parseISO,
+};

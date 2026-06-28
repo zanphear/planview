@@ -1,0 +1,55 @@
+# Changelog
+
+All notable changes to Planview. Format loosely follows Keep a Changelog; dates are UTC.
+
+## [Unreleased]
+
+### Deployment and field fixes (2026-06-28)
+- Redeployed fresh to lxc-testbed (`/opt/stacks/planview`, Dockge) from this branch with fresh secrets and a fresh database after the previous deploy's nginx died (its bind-mounted `nginx.conf` had become an empty directory).
+- **AI Assistant and AI Reports fixed:** the services appended `/v1/chat/completions` to a base URL that already ended in `/v1`, so every call hit `/v1/v1/...` and 404'd. Added `settings.ai_chat_url` (strips a trailing `/v1`) and pointed the default at the analyst load balancer. Chat and report generation verified working.
+- **Absence calendar and resource utilisation fixed:** the date-range params were typed `str` and compared to `timestamptz`/`date` columns, so Postgres raised "operator does not exist". Typed them as `date`.
+- **Owner role fix:** `LeavePage` excluded the workspace owner (the top role) from the manager check; owner now gets leave management.
+- **All Tasks page:** new workspace-wide task list grouped by project with an "Unassigned" group, inline project (re)assignment, bulk move, and URL filters, so project-less tasks are visible and manageable. Backend gains an `unassigned` (project_id IS NULL) task filter.
+- **Service worker auto-versioning:** `public/sw.js` cache name is stamped with a unique build id by a vite plugin on every `npm run build`, so each deploy invalidates the old cache and clients update without a manual refresh (no more manual CACHE_NAME bumps).
+- **nginx healthcheck:** use `127.0.0.1` (the container listens on IPv4; `localhost` resolved to `::1` and reported unhealthy).
+
+### Security
+- Fixed two cross-tenant IDOR holes: `early_talent.py` and `attachments.py` now scope every read and write by `workspace_id` (or a parent join), and verify the parent resource belongs to the workspace on nested create/list routes.
+- Removed the committed `deploy/.env.production` (real JWT signing key plus DB/Redis passwords) from version control, gitignored it, and added `deploy/.env.production.example`. NB: the secret remains in git history and must be rotated and purged (see release notes).
+- Hardened attachment download: realpath containment check and safe `Content-Disposition` encoding (no header injection from filenames).
+
+### Added
+- Structured JSON logging (`structlog`) with a request-scoped `request_id` bound via contextvars (`app/logging_config.py`).
+- RFC 9457 problem+json error handlers for HTTPException, validation, and the catch-all 500; the 500 handler never leaks a traceback and carries the request id in `instance` (`app/errors.py`).
+- CI gates: pytest (against an ephemeral PostgreSQL service), ESLint, Prettier check, mypy config, em/en dash guard (`scripts/check-no-dashes.sh`), and a frontend bundle budget (`scripts/check-bundle-budget.mjs`).
+- `.pre-commit-config.yaml` (ruff, prettier, dash guard, private-key and prod-env guards).
+- Semantic design-token layer in `globals.css` (`@theme inline`: `bg-background`, `text-foreground`, `bg-card`, etc.) with OKLCH `-foreground` partners and a global `:focus-visible` ring.
+- Project docs: `ARCHITECTURE.md` (Mermaid), `AGENTS.md`, `docs/adr/` (ADRs 0001-0007), this changelog, and a playbook reference in `CLAUDE.md`.
+
+### Changed
+- Removed all 432 em dashes and 5 en dashes across the codebase, docs, and UI copy (fleet law).
+- Lazy-loaded all 13 previously-eager router pages; added vite `manualChunks` to split react/tiptap/dnd/markdown out of the initial chunk.
+- Replaced 29 `transition-all` usages with `transition-colors` (no layout-property transitions).
+- Replaced silent `except` swallows in `people_stats.py` (12) and the auth logout path with loud structured logging.
+- Switched `auth.py` from stdlib sentence logging to structlog events.
+- Corrected docs: realtime fan-out and rate limiting are in-process (single-worker), not Redis pub/sub as previously claimed.
+
+### ADR follow-through (round 2)
+- **0002:** implemented the Redis pub/sub WebSocket backplane in `manager.py` (broadcast publishes to `ws:{workspace_id}`, each worker subscribes and relays to its local sockets) and moved the rate limiter to a Redis fixed-window counter. Multi-worker realtime now works; a Redis blip on broadcast is logged loudly but never fails the primary write.
+- **0003:** TanStack Query foundation (`QueryClientProvider`, `src/lib/queryClient.ts`) plus the project-board pilot: `src/api/queries/{projects,tasks}.ts` hooks (optimistic move/reorder with rollback) and `ProjectBoardPage` rendering all four async states. Remaining slices follow the same template.
+- **0004:** swept 226 `bg-[var(--color-...)]` arbitrary literals to semantic utilities (`bg-background`, `bg-card`, `text-muted-foreground`, `bg-sidebar`, ...) with a 1:1 same-var mapping, so rendering is unchanged. Raw palette utilities and the `text-xs` floor and shadcn remain (need visual QA).
+- **0005:** introduced `app/repositories/` (`WorkspaceRepository` base) and migrated the teams aggregate to thin router -> `TeamService` -> `TeamRepository` as the strangler template. Remaining aggregates follow.
+- **0006:** added `backend/scripts/dump_openapi.py` and a CI `openapi-types` job that generates `schema.ts` from the schema. Fetcher migration to the generated types is the remaining tail.
+- **0007:** added `tests/test_idor.py` (cross-tenant regression tests for the early-talent and attachment fixes), `tests/test_projects.py`, `tests/test_tasks.py`. Backend tests now run in CI against an ephemeral Postgres.
+
+### TanStack Query migration complete (0003)
+- Migrated all ~25 fetch-into-useState surfaces to TanStack Query across three verified waves (people-management pages, dashboards, MyWork, SettingsPage, the task-detail component subtree, and the global widgets). Each renders the four async states; mutations invalidate query keys; optimistic add/delete with rollback where applicable.
+- `set-state-in-effect` is now a CI-blocking error (was 22 violations, now 0), so a new fetch-into-useState fails the build. The OpenAPI drift gate (0006) and the committed `schema.ts` also landed, and the whole frontend was verified locally green (build + lint + format) using the on-box node toolchain.
+
+### Round 4 (mypy gate, repository layer, store + palette)
+- mypy is clean (153 files) and a blocking CI gate; the first pass fixed 40 errors including a real burndown crash (stats.py used the tuple `.count` method) and a date `.replace` bug.
+- Second repository aggregate (projects) landed; PeoplePage migrated and peopleStore deleted; 53 safe text/border raw-palette utilities mapped to semantic tokens.
+
+### Notes
+- Still deferred (need a running app + visual QA, or are mechanical follow-on): deleting the realtime-coupled Zustand stores (task/project/team), the bg-tint/blue raw-palette and `text-xs` cleanup plus shadcn primitives (0004), and the remaining repository-layer aggregates one PR at a time (0005).
+- The whole branch is verified locally green using the on-box toolchain: frontend build + lint (0 errors) + Prettier, backend mypy (153 files) + app import, and the dash guard. Backend integration tests run in CI against an ephemeral Postgres (the only local Postgres is the fleet memory DB, so they are not run here).

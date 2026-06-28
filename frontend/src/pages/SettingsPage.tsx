@@ -1,23 +1,110 @@
 import { useState, useEffect, useRef } from 'react';
-import { User, Palette, Bell, Shield, LogOut, Sun, Moon, Users, UserPlus, Trash2, Copy, Check, Download, Upload, AlertTriangle, Webhook, Lock, Sliders, Plus, ToggleLeft, Database, ChevronDown, ChevronRight, X, MessageSquare, Bug, Lightbulb } from 'lucide-react';
+import {
+  User,
+  Palette,
+  Bell,
+  Shield,
+  LogOut,
+  Sun,
+  Moon,
+  Users,
+  UserPlus,
+  Trash2,
+  Copy,
+  Check,
+  Download,
+  Upload,
+  AlertTriangle,
+  Webhook,
+  Lock,
+  Sliders,
+  Plus,
+  ToggleLeft,
+  Database,
+  ChevronDown,
+  ChevronRight,
+  X,
+  MessageSquare,
+  Bug,
+  Lightbulb,
+} from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { useWorkspaceStore } from '../stores/workspaceStore';
 import { useUIStore } from '../stores/uiStore';
 import { authApi, membersApi, type User as UserType } from '../api/users';
 import { workspacesApi } from '../api/workspaces';
 import { importsApi } from '../api/imports';
-import { webhooksApi, type Webhook as WebhookType } from '../api/webhooks';
-import { customFieldsApi, type CustomField } from '../api/customFields';
-import { templatesApi, type TaskTemplate } from '../api/templates';
+import { type Webhook as WebhookType } from '../api/webhooks';
 import { api } from '../api/client';
-import { lookupsApi, type LookupValue } from '../api/lookups';
+import { type LookupValue } from '../api/lookups';
 import { useLookupStore } from '../stores/lookupStore';
 import { ColourPicker } from '../components/task/ColourPicker';
 import { Avatar } from '../components/shared/Avatar';
 import { Toast } from '../components/shared/Toast';
-import { feedbackApi, type FeedbackItem } from '../api/feedback';
+import {
+  useWorkspaceMembers,
+  useInviteMember,
+  useAddMember,
+  useUpdateMember,
+  useRemoveMember,
+  useWebhooks,
+  useCreateWebhook,
+  useUpdateWebhook,
+  useDeleteWebhook,
+  useCustomFields,
+  useCreateCustomField,
+  useDeleteCustomField,
+  useTaskTemplates,
+  useCreateTemplate,
+  useDeleteTemplate,
+  useReferenceData,
+  useCreateLookup,
+  useUpdateLookup,
+  useDeleteLookup,
+  useFeedback,
+} from '../api/queries/settings';
 
-type Tab = 'profile' | 'workspace' | 'members' | 'appearance' | 'notifications' | 'data' | 'security' | 'webhooks' | 'fields' | 'templates' | 'modules' | 'reference_data' | 'feedback';
+type Tab =
+  | 'profile'
+  | 'workspace'
+  | 'members'
+  | 'appearance'
+  | 'notifications'
+  | 'data'
+  | 'security'
+  | 'webhooks'
+  | 'fields'
+  | 'templates'
+  | 'modules'
+  | 'reference_data'
+  | 'feedback';
+
+// ── Async section states (ADR 0003: pending / error-with-retry) ──────────────
+// Empty-with-CTA and success are rendered inline by each tab.
+function SectionLoading({ label = 'Loading...' }: { label?: string }) {
+  return (
+    <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+      {label}
+    </p>
+  );
+}
+
+function SectionError({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="text-sm" style={{ color: 'var(--color-danger, #ef4444)' }}>
+        Failed to load. Please try again.
+      </span>
+      <button
+        onClick={onRetry}
+        className="px-3 py-1.5 text-xs font-medium border rounded-lg hover:bg-subtle transition-colors"
+        style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
+      >
+        Retry
+      </button>
+    </div>
+  );
+}
 
 export function SettingsPage() {
   const user = useAuthStore((s) => s.user);
@@ -32,7 +119,12 @@ export function SettingsPage() {
   const [colour, setColour] = useState(user?.colour || '#8A00E5');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [members, setMembers] = useState<UserType[]>([]);
+  const membersQuery = useWorkspaceMembers(workspace?.id);
+  const members = membersQuery.data ?? [];
+  const inviteMember = useInviteMember(workspace?.id);
+  const addMember = useAddMember(workspace?.id);
+  const updateMember = useUpdateMember(workspace?.id);
+  const removeMember = useRemoveMember(workspace?.id);
   const [inviting, setInviting] = useState(false);
   const [inviteName, setInviteName] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
@@ -42,6 +134,7 @@ export function SettingsPage() {
   const [adding, setAdding] = useState(false);
   const [addName, setAddName] = useState('');
 
+  /* eslint-disable react-hooks/set-state-in-effect -- seeds the profile form from the loaded user, not server data */
   useEffect(() => {
     if (user) {
       setName(user.name);
@@ -49,12 +142,17 @@ export function SettingsPage() {
       setColour(user.colour);
     }
   }, [user]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleSaveProfile = async () => {
     if (!workspace || !user) return;
     setSaving(true);
     try {
-      await membersApi.update(workspace.id, user.id, { name, colour, initials: initials || undefined });
+      await membersApi.update(workspace.id, user.id, {
+        name,
+        colour,
+        initials: initials || undefined,
+      });
       await fetchMe();
       setSaved(true);
       Toast.show('Profile updated');
@@ -65,21 +163,14 @@ export function SettingsPage() {
     setSaving(false);
   };
 
-  useEffect(() => {
-    if (workspace) {
-      membersApi.list(workspace.id).then((res) => setMembers(res.data));
-    }
-  }, [workspace]);
-
   const handleInvite = async () => {
     if (!workspace || !inviteName.trim() || !inviteEmail.trim()) return;
     try {
-      const { data } = await membersApi.invite(workspace.id, {
+      const data = await inviteMember.mutateAsync({
         name: inviteName.trim(),
         email: inviteEmail.trim(),
         role: inviteRole,
       });
-      setMembers((prev) => [...prev, data.user]);
       setTempPassword(data.temp_password);
       setInviteName('');
       setInviteEmail('');
@@ -93,8 +184,7 @@ export function SettingsPage() {
   const handleRemoveMember = async (memberId: string) => {
     if (!workspace) return;
     try {
-      await membersApi.remove(workspace.id, memberId);
-      setMembers((prev) => prev.filter((m) => m.id !== memberId));
+      await removeMember.mutateAsync(memberId);
       Toast.show('Member removed');
     } catch {
       Toast.show('Failed to remove member');
@@ -104,8 +194,7 @@ export function SettingsPage() {
   const handleAddMember = async () => {
     if (!workspace || !addName.trim()) return;
     try {
-      const { data } = await membersApi.add(workspace.id, { name: addName.trim() });
-      setMembers((prev) => [...prev, data]);
+      await addMember.mutateAsync({ name: addName.trim() });
       setAddName('');
       setAdding(false);
       Toast.show('Member added');
@@ -156,7 +245,9 @@ export function SettingsPage() {
 
   return (
     <div className="max-w-3xl mx-auto p-6">
-      <h2 className="text-xl font-semibold mb-6" style={{ color: 'var(--color-text)' }}>Settings</h2>
+      <h2 className="text-xl font-semibold mb-6" style={{ color: 'var(--color-text)' }}>
+        Settings
+      </h2>
 
       <div className="flex flex-col sm:flex-row gap-6">
         {/* Sidebar */}
@@ -168,8 +259,8 @@ export function SettingsPage() {
                 onClick={() => setTab(t.id)}
                 className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2.5 transition-colors ${
                   tab === t.id
-                    ? 'bg-[var(--color-primary-light)] font-medium'
-                    : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-grey-2)]'
+                    ? 'bg-accent-subtle font-medium'
+                    : 'text-muted-foreground hover:bg-muted'
                 }`}
                 style={tab === t.id ? { color: 'var(--color-primary)' } : undefined}
               >
@@ -180,7 +271,7 @@ export function SettingsPage() {
             <hr className="my-3" style={{ borderColor: 'var(--color-border)' }} />
             <button
               onClick={logout}
-              className="w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+              className="w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2.5 text-destructive hover:bg-red-50 dark:hover:bg-red-950/30"
             >
               <LogOut size={16} />
               Sign out
@@ -189,10 +280,12 @@ export function SettingsPage() {
         </div>
 
         {/* Content */}
-        <div className="flex-1 bg-[var(--color-surface)] rounded-xl shadow-sm border border-[var(--color-border)] p-6">
+        <div className="flex-1 bg-card rounded-xl shadow-sm border border-outline p-6">
           {tab === 'profile' && (
             <div className="space-y-5">
-              <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>Profile Settings</h3>
+              <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>
+                Profile Settings
+              </h3>
 
               {/* Avatar preview */}
               <div className="flex items-center gap-4">
@@ -214,15 +307,19 @@ export function SettingsPage() {
                   </label>
                 </div>
                 <div>
-                  <p className="font-medium" style={{ color: 'var(--color-text)' }}>{name || user?.name}</p>
-                  <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>{user?.email}</p>
+                  <p className="font-medium" style={{ color: 'var(--color-text)' }}>
+                    {name || user?.name}
+                  </p>
+                  <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                    {user?.email}
+                  </p>
                   <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-secondary)' }}>
                     Role: {user?.role || 'member'}
                   </p>
                   {user?.avatar_url && (
                     <button
                       onClick={handleAvatarDelete}
-                      className="text-xs mt-1 text-red-500 hover:text-red-600"
+                      className="text-xs mt-1 text-destructive hover:text-destructive"
                     >
                       Remove photo
                     </button>
@@ -231,43 +328,75 @@ export function SettingsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Display Name</label>
+                <label
+                  className="block text-sm font-medium mb-1"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
+                  Display Name
+                </label>
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 text-sm bg-[var(--color-surface)] text-[var(--color-text)]"
-                  style={{ borderColor: 'var(--color-border)', '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
+                  className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 text-sm bg-card text-foreground"
+                  style={
+                    {
+                      borderColor: 'var(--color-border)',
+                      '--tw-ring-color': 'var(--color-primary)',
+                    } as React.CSSProperties
+                  }
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Initials (2 chars)</label>
+                <label
+                  className="block text-sm font-medium mb-1"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
+                  Initials (2 chars)
+                </label>
                 <input
                   value={initials}
                   onChange={(e) => setInitials(e.target.value.slice(0, 2).toUpperCase())}
                   maxLength={2}
                   placeholder="Auto"
-                  className="w-24 px-3 py-2 border rounded-lg outline-none focus:ring-2 text-sm bg-[var(--color-surface)] text-[var(--color-text)]"
-                  style={{ borderColor: 'var(--color-border)', '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
+                  className="w-24 px-3 py-2 border rounded-lg outline-none focus:ring-2 text-sm bg-card text-foreground"
+                  style={
+                    {
+                      borderColor: 'var(--color-border)',
+                      '--tw-ring-color': 'var(--color-primary)',
+                    } as React.CSSProperties
+                  }
                 />
-                <p className="text-xs mt-1" style={{ color: 'var(--color-text-secondary)' }}>Leave blank for auto-generated</p>
+                <p className="text-xs mt-1" style={{ color: 'var(--color-text-secondary)' }}>
+                  Leave blank for auto-generated
+                </p>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Email</label>
+                <label
+                  className="block text-sm font-medium mb-1"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
+                  Email
+                </label>
                 <input
                   value={user?.email || ''}
                   disabled
-                  className="w-full px-3 py-2 border rounded-lg text-sm opacity-60 bg-[var(--color-grey-1)] text-[var(--color-text)]"
+                  className="w-full px-3 py-2 border rounded-lg text-sm opacity-60 bg-subtle text-foreground"
                   style={{ borderColor: 'var(--color-border)' }}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>Profile Colour</label>
+                <label
+                  className="block text-sm font-medium mb-2"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
+                  Profile Colour
+                </label>
                 <ColourPicker value={colour} onChange={setColour} />
               </div>
               <button
                 onClick={handleSaveProfile}
                 disabled={saving}
-                className="px-4 py-2 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-all hover:shadow-lg"
+                className="px-4 py-2 text-white rounded-lg text-sm font-medium disabled:opacity-50 transition-colors hover:shadow-lg"
                 style={{ background: 'var(--color-primary)' }}
               >
                 {saving ? 'Saving...' : saved ? 'Saved!' : 'Save Changes'}
@@ -285,19 +414,30 @@ export function SettingsPage() {
           {tab === 'members' && (
             <div className="space-y-5">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>Members</h3>
+                <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>
+                  Members
+                </h3>
                 {(user?.role === 'owner' || user?.role === 'admin') && (
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => { setAdding(true); setInviting(false); }}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-[var(--color-grey-2)] transition-colors"
-                      style={{ color: 'var(--color-text-secondary)', border: '1px solid var(--color-border)' }}
+                      onClick={() => {
+                        setAdding(true);
+                        setInviting(false);
+                      }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-muted transition-colors"
+                      style={{
+                        color: 'var(--color-text-secondary)',
+                        border: '1px solid var(--color-border)',
+                      }}
                     >
                       <UserPlus size={14} />
                       Add
                     </button>
                     <button
-                      onClick={() => { setInviting(true); setAdding(false); }}
+                      onClick={() => {
+                        setInviting(true);
+                        setAdding(false);
+                      }}
                       className="flex items-center gap-1.5 px-3 py-1.5 text-white rounded-lg text-sm font-medium hover:opacity-90"
                       style={{ backgroundColor: 'var(--color-primary)' }}
                     >
@@ -312,10 +452,14 @@ export function SettingsPage() {
               {adding && (
                 <div
                   className="p-4 rounded-lg border space-y-3"
-                  style={{ backgroundColor: 'var(--color-grey-1)', borderColor: 'var(--color-border)' }}
+                  style={{
+                    backgroundColor: 'var(--color-grey-1)',
+                    borderColor: 'var(--color-border)',
+                  }}
                 >
                   <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
-                    Add a member who won't need to log in. They'll appear in timelines and can be assigned tasks.
+                    Add a member who won't need to log in. They'll appear in timelines and can be
+                    assigned tasks.
                   </p>
                   <div className="flex items-center gap-3">
                     <input
@@ -325,7 +469,14 @@ export function SettingsPage() {
                       onKeyDown={(e) => e.key === 'Enter' && handleAddMember()}
                       placeholder="Full name"
                       className="flex-1 px-3 py-2 text-sm border rounded-lg outline-none focus:ring-2"
-                      style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
+                      style={
+                        {
+                          borderColor: 'var(--color-border)',
+                          backgroundColor: 'var(--color-surface)',
+                          color: 'var(--color-text)',
+                          '--tw-ring-color': 'var(--color-primary)',
+                        } as React.CSSProperties
+                      }
                     />
                     <button
                       onClick={handleAddMember}
@@ -336,7 +487,10 @@ export function SettingsPage() {
                       Add Member
                     </button>
                     <button
-                      onClick={() => { setAdding(false); setAddName(''); }}
+                      onClick={() => {
+                        setAdding(false);
+                        setAddName('');
+                      }}
                       className="px-3 py-2 text-sm rounded-lg"
                       style={{ color: 'var(--color-text-secondary)' }}
                     >
@@ -350,7 +504,10 @@ export function SettingsPage() {
               {inviting && (
                 <div
                   className="p-4 rounded-lg border space-y-3"
-                  style={{ backgroundColor: 'var(--color-grey-1)', borderColor: 'var(--color-border)' }}
+                  style={{
+                    backgroundColor: 'var(--color-grey-1)',
+                    borderColor: 'var(--color-border)',
+                  }}
                 >
                   <div className="grid grid-cols-2 gap-3">
                     <input
@@ -359,7 +516,14 @@ export function SettingsPage() {
                       onChange={(e) => setInviteName(e.target.value)}
                       placeholder="Name"
                       className="px-3 py-2 text-sm border rounded-lg outline-none focus:ring-2"
-                      style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
+                      style={
+                        {
+                          borderColor: 'var(--color-border)',
+                          backgroundColor: 'var(--color-surface)',
+                          color: 'var(--color-text)',
+                          '--tw-ring-color': 'var(--color-primary)',
+                        } as React.CSSProperties
+                      }
                     />
                     <input
                       value={inviteEmail}
@@ -367,7 +531,14 @@ export function SettingsPage() {
                       placeholder="Email"
                       type="email"
                       className="px-3 py-2 text-sm border rounded-lg outline-none focus:ring-2"
-                      style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
+                      style={
+                        {
+                          borderColor: 'var(--color-border)',
+                          backgroundColor: 'var(--color-surface)',
+                          color: 'var(--color-text)',
+                          '--tw-ring-color': 'var(--color-primary)',
+                        } as React.CSSProperties
+                      }
                     />
                   </div>
                   <div className="flex items-center gap-3">
@@ -375,7 +546,11 @@ export function SettingsPage() {
                       value={inviteRole}
                       onChange={(e) => setInviteRole(e.target.value)}
                       className="px-3 py-2 text-sm border rounded-lg outline-none"
-                      style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+                      style={{
+                        borderColor: 'var(--color-border)',
+                        backgroundColor: 'var(--color-surface)',
+                        color: 'var(--color-text)',
+                      }}
                     >
                       <option value="member">Member</option>
                       <option value="admin">Admin</option>
@@ -389,7 +564,11 @@ export function SettingsPage() {
                       Send Invite
                     </button>
                     <button
-                      onClick={() => { setInviting(false); setInviteName(''); setInviteEmail(''); }}
+                      onClick={() => {
+                        setInviting(false);
+                        setInviteName('');
+                        setInviteEmail('');
+                      }}
                       className="px-3 py-2 text-sm rounded-lg"
                       style={{ color: 'var(--color-text-secondary)' }}
                     >
@@ -403,7 +582,10 @@ export function SettingsPage() {
               {tempPassword && (
                 <div
                   className="p-4 rounded-lg border"
-                  style={{ backgroundColor: 'var(--color-primary-light)', borderColor: 'var(--color-primary)' }}
+                  style={{
+                    backgroundColor: 'var(--color-primary-light)',
+                    borderColor: 'var(--color-primary)',
+                  }}
                 >
                   <p className="text-sm font-medium mb-2" style={{ color: 'var(--color-text)' }}>
                     Member invited! Share this temporary password:
@@ -411,7 +593,10 @@ export function SettingsPage() {
                   <div className="flex items-center gap-2">
                     <code
                       className="px-3 py-1.5 rounded text-sm font-mono flex-1"
-                      style={{ backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+                      style={{
+                        backgroundColor: 'var(--color-surface)',
+                        color: 'var(--color-text)',
+                      }}
                     >
                       {tempPassword}
                     </code>
@@ -421,14 +606,17 @@ export function SettingsPage() {
                         setCopiedPw(true);
                         setTimeout(() => setCopiedPw(false), 2000);
                       }}
-                      className="p-1.5 rounded-lg hover:bg-[var(--color-grey-2)]"
+                      className="p-1.5 rounded-lg hover:bg-muted"
                       style={{ color: 'var(--color-primary)' }}
                     >
                       {copiedPw ? <Check size={16} /> : <Copy size={16} />}
                     </button>
                   </div>
                   <button
-                    onClick={() => { setTempPassword(null); setCopiedPw(false); }}
+                    onClick={() => {
+                      setTempPassword(null);
+                      setCopiedPw(false);
+                    }}
                     className="text-xs mt-2 underline"
                     style={{ color: 'var(--color-text-secondary)' }}
                   >
@@ -438,76 +626,138 @@ export function SettingsPage() {
               )}
 
               {/* Member list */}
-              <div className="space-y-1">
-                {members.map((m) => (
-                  <div
-                    key={m.id}
-                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-[var(--color-grey-1)] transition-colors group"
-                  >
-                    <Avatar name={m.name} initials={m.initials || undefined} colour={m.colour} size={36} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate" style={{ color: 'var(--color-text)' }}>
-                        {m.name}
-                        {m.id === user?.id && (
-                          <span className="text-xs ml-2" style={{ color: 'var(--color-text-secondary)' }}>(you)</span>
+              {membersQuery.isPending ? (
+                <SectionLoading label="Loading members..." />
+              ) : membersQuery.isError ? (
+                <SectionError onRetry={() => membersQuery.refetch()} />
+              ) : members.length === 0 ? (
+                <div className="py-6 text-center">
+                  <p className="text-sm mb-3" style={{ color: 'var(--color-text-secondary)' }}>
+                    No members yet.
+                  </p>
+                  {(user?.role === 'owner' || user?.role === 'admin') && (
+                    <button
+                      onClick={() => {
+                        setAdding(true);
+                        setInviting(false);
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-white rounded-lg text-sm font-medium"
+                      style={{ backgroundColor: 'var(--color-primary)' }}
+                    >
+                      <UserPlus size={14} />
+                      Add your first member
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {members.map((m) => (
+                    <div
+                      key={m.id}
+                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-subtle transition-colors group"
+                    >
+                      <Avatar
+                        name={m.name}
+                        initials={m.initials || undefined}
+                        colour={m.colour}
+                        size={36}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p
+                          className="text-sm font-medium truncate"
+                          style={{ color: 'var(--color-text)' }}
+                        >
+                          {m.name}
+                          {m.id === user?.id && (
+                            <span
+                              className="text-xs ml-2"
+                              style={{ color: 'var(--color-text-secondary)' }}
+                            >
+                              (you)
+                            </span>
+                          )}
+                        </p>
+                        <p
+                          className="text-xs truncate"
+                          style={{ color: 'var(--color-text-secondary)' }}
+                        >
+                          {m.email}
+                        </p>
+                      </div>
+                      {/* Role badge or dropdown */}
+                      {m.role === 'owner' ||
+                      m.id === user?.id ||
+                      !['owner', 'admin'].includes(user?.role || '') ? (
+                        <span
+                          className="text-xs px-2 py-0.5 rounded-full"
+                          style={{
+                            backgroundColor:
+                              m.role === 'owner'
+                                ? 'var(--color-primary-light)'
+                                : 'var(--color-grey-2)',
+                            color:
+                              m.role === 'owner'
+                                ? 'var(--color-primary)'
+                                : 'var(--color-text-secondary)',
+                          }}
+                        >
+                          {m.role}
+                        </span>
+                      ) : (
+                        <select
+                          value={m.role}
+                          onChange={async (e) => {
+                            if (!workspace) return;
+                            try {
+                              await updateMember.mutateAsync({
+                                userId: m.id,
+                                data: { role: e.target.value } as Partial<UserType>,
+                              });
+                            } catch (err) {
+                              console.error('Failed to change role:', err);
+                            }
+                          }}
+                          className="text-xs px-2 py-0.5 rounded-full border-0 outline-none cursor-pointer"
+                          style={{
+                            backgroundColor: 'var(--color-grey-2)',
+                            color: 'var(--color-text-secondary)',
+                          }}
+                        >
+                          <option value="member">member</option>
+                          <option value="admin">admin</option>
+                        </select>
+                      )}
+                      {(user?.role === 'owner' || user?.role === 'admin') &&
+                        m.id !== user?.id &&
+                        m.role !== 'owner' && (
+                          <button
+                            onClick={() => handleRemoveMember(m.id)}
+                            className="p-1.5 rounded-lg hover:bg-muted opacity-0 group-hover:opacity-100 transition-opacity"
+                            style={{ color: 'var(--color-danger, #ef4444)' }}
+                            title="Remove member"
+                          >
+                            <Trash2 size={14} />
+                          </button>
                         )}
-                      </p>
-                      <p className="text-xs truncate" style={{ color: 'var(--color-text-secondary)' }}>{m.email}</p>
                     </div>
-                    {/* Role badge or dropdown */}
-                    {m.role === 'owner' || m.id === user?.id || !['owner', 'admin'].includes(user?.role || '') ? (
-                      <span
-                        className="text-xs px-2 py-0.5 rounded-full"
-                        style={{
-                          backgroundColor: m.role === 'owner' ? 'var(--color-primary-light)' : 'var(--color-grey-2)',
-                          color: m.role === 'owner' ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-                        }}
-                      >
-                        {m.role}
-                      </span>
-                    ) : (
-                      <select
-                        value={m.role}
-                        onChange={async (e) => {
-                          if (!workspace) return;
-                          try {
-                            const { data } = await membersApi.update(workspace.id, m.id, { role: e.target.value } as Partial<UserType>);
-                            setMembers((prev) => prev.map((p) => (p.id === m.id ? data : p)));
-                          } catch (err) {
-                            console.error('Failed to change role:', err);
-                          }
-                        }}
-                        className="text-xs px-2 py-0.5 rounded-full border-0 outline-none cursor-pointer"
-                        style={{
-                          backgroundColor: 'var(--color-grey-2)',
-                          color: 'var(--color-text-secondary)',
-                        }}
-                      >
-                        <option value="member">member</option>
-                        <option value="admin">admin</option>
-                      </select>
-                    )}
-                    {(user?.role === 'owner' || user?.role === 'admin') && m.id !== user?.id && m.role !== 'owner' && (
-                      <button
-                        onClick={() => handleRemoveMember(m.id)}
-                        className="p-1.5 rounded-lg hover:bg-[var(--color-grey-2)] opacity-0 group-hover:opacity-100 transition-opacity"
-                        style={{ color: 'var(--color-danger, #ef4444)' }}
-                        title="Remove member"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
           {tab === 'appearance' && (
             <div className="space-y-5">
-              <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>Appearance</h3>
+              <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>
+                Appearance
+              </h3>
               <div>
-                <label className="block text-sm font-medium mb-3" style={{ color: 'var(--color-text-secondary)' }}>Theme</label>
+                <label
+                  className="block text-sm font-medium mb-3"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
+                  Theme
+                </label>
                 <div className="flex gap-3">
                   {[
                     { id: 'light', label: 'Light', icon: <Sun size={20} />, active: !darkMode },
@@ -516,16 +766,24 @@ export function SettingsPage() {
                     <button
                       key={theme.id}
                       onClick={() => setDarkMode(theme.id === 'dark')}
-                      className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all w-32 ${
+                      className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-colors w-32 ${
                         theme.active
-                          ? 'border-[var(--color-primary)] bg-[var(--color-primary-light)]'
-                          : 'border-[var(--color-border)] hover:border-[var(--color-text-secondary)]'
+                          ? 'border-accent bg-accent-subtle'
+                          : 'border-outline hover:border-muted-foreground'
                       }`}
                     >
-                      <span style={{ color: theme.active ? 'var(--color-primary)' : 'var(--color-text-secondary)' }}>
+                      <span
+                        style={{
+                          color: theme.active
+                            ? 'var(--color-primary)'
+                            : 'var(--color-text-secondary)',
+                        }}
+                      >
                         {theme.icon}
                       </span>
-                      <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>{theme.label}</span>
+                      <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+                        {theme.label}
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -542,37 +800,26 @@ export function SettingsPage() {
             <NotificationPrefsTab user={user} workspace={workspace} fetchMe={fetchMe} />
           )}
 
-          {tab === 'data' && (
-            <DataTab workspaceId={workspace?.id} />
-          )}
+          {tab === 'data' && <DataTab workspaceId={workspace?.id} />}
 
-          {tab === 'security' && (
-            <TwoFactorTab />
-          )}
+          {tab === 'security' && <TwoFactorTab />}
 
-          {tab === 'webhooks' && (
-            <WebhooksTab workspaceId={workspace?.id} />
-          )}
+          {tab === 'webhooks' && <WebhooksTab workspaceId={workspace?.id} />}
 
-          {tab === 'fields' && (
-            <CustomFieldsTab workspaceId={workspace?.id} />
-          )}
+          {tab === 'fields' && <CustomFieldsTab workspaceId={workspace?.id} />}
 
-          {tab === 'templates' && (
-            <TemplatesTab workspaceId={workspace?.id} />
-          )}
+          {tab === 'templates' && <TemplatesTab workspaceId={workspace?.id} />}
 
           {tab === 'modules' && (
-            <ModulesTab workspaceId={workspace?.id} enabledModules={workspace?.enabled_modules ?? null} />
+            <ModulesTab
+              workspaceId={workspace?.id}
+              enabledModules={workspace?.enabled_modules ?? null}
+            />
           )}
 
-          {tab === 'reference_data' && (
-            <ReferenceDataTab workspaceId={workspace?.id} />
-          )}
+          {tab === 'reference_data' && <ReferenceDataTab workspaceId={workspace?.id} />}
 
-          {tab === 'feedback' && (
-            <FeedbackTab workspaceId={workspace?.id} />
-          )}
+          {tab === 'feedback' && <FeedbackTab workspaceId={workspace?.id} />}
         </div>
       </div>
     </div>
@@ -588,8 +835,14 @@ function ChangePasswordForm() {
 
   const handleSubmit = async () => {
     setError(null);
-    if (newPw.length < 6) { setError('Password must be at least 6 characters'); return; }
-    if (newPw !== confirmPw) { setError('Passwords do not match'); return; }
+    if (newPw.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+    if (newPw !== confirmPw) {
+      setError('Passwords do not match');
+      return;
+    }
     setSaving(true);
     try {
       await authApi.changePassword({ current_password: currentPw, new_password: newPw });
@@ -605,14 +858,23 @@ function ChangePasswordForm() {
 
   return (
     <div className="pt-5 border-t space-y-3" style={{ borderColor: 'var(--color-border)' }}>
-      <h4 className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>Change Password</h4>
+      <h4 className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
+        Change Password
+      </h4>
       <input
         type="password"
         value={currentPw}
         onChange={(e) => setCurrentPw(e.target.value)}
         placeholder="Current password"
         className="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2"
-        style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
+        style={
+          {
+            borderColor: 'var(--color-border)',
+            backgroundColor: 'var(--color-surface)',
+            color: 'var(--color-text)',
+            '--tw-ring-color': 'var(--color-primary)',
+          } as React.CSSProperties
+        }
       />
       <div className="grid grid-cols-2 gap-3">
         <input
@@ -621,7 +883,14 @@ function ChangePasswordForm() {
           onChange={(e) => setNewPw(e.target.value)}
           placeholder="New password"
           className="px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2"
-          style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
+          style={
+            {
+              borderColor: 'var(--color-border)',
+              backgroundColor: 'var(--color-surface)',
+              color: 'var(--color-text)',
+              '--tw-ring-color': 'var(--color-primary)',
+            } as React.CSSProperties
+          }
         />
         <input
           type="password"
@@ -629,10 +898,17 @@ function ChangePasswordForm() {
           onChange={(e) => setConfirmPw(e.target.value)}
           placeholder="Confirm new password"
           className="px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2"
-          style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
+          style={
+            {
+              borderColor: 'var(--color-border)',
+              backgroundColor: 'var(--color-surface)',
+              color: 'var(--color-text)',
+              '--tw-ring-color': 'var(--color-primary)',
+            } as React.CSSProperties
+          }
         />
       </div>
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      {error && <p className="text-xs text-destructive">{error}</p>}
       <button
         onClick={handleSubmit}
         disabled={saving || !currentPw || !newPw || !confirmPw}
@@ -646,13 +922,37 @@ function ChangePasswordForm() {
 }
 
 const NOTIFICATION_OPTIONS = [
-  { key: 'task_assigned', label: 'Task assigned to me', desc: 'Get notified when someone assigns you to a task' },
-  { key: 'comment_added', label: 'Comment on my tasks', desc: 'Get notified when someone comments on a task you\'re assigned to' },
-  { key: 'status_changed', label: 'Task status changes', desc: 'Get notified when a task you\'re assigned to changes status' },
-  { key: 'milestone_approaching', label: 'Milestone reminders', desc: 'Get notified when a milestone deadline is approaching' },
+  {
+    key: 'task_assigned',
+    label: 'Task assigned to me',
+    desc: 'Get notified when someone assigns you to a task',
+  },
+  {
+    key: 'comment_added',
+    label: 'Comment on my tasks',
+    desc: "Get notified when someone comments on a task you're assigned to",
+  },
+  {
+    key: 'status_changed',
+    label: 'Task status changes',
+    desc: "Get notified when a task you're assigned to changes status",
+  },
+  {
+    key: 'milestone_approaching',
+    label: 'Milestone reminders',
+    desc: 'Get notified when a milestone deadline is approaching',
+  },
 ];
 
-function NotificationPrefsTab({ user, workspace, fetchMe }: { user: UserType | null; workspace: { id: string } | null; fetchMe: () => Promise<void> }) {
+function NotificationPrefsTab({
+  user,
+  workspace,
+  fetchMe,
+}: {
+  user: UserType | null;
+  workspace: { id: string } | null;
+  fetchMe: () => Promise<void>;
+}) {
   const prefs = user?.notification_prefs || {};
   const getChecked = (key: string) => prefs[key] !== false; // default true
 
@@ -660,7 +960,9 @@ function NotificationPrefsTab({ user, workspace, fetchMe }: { user: UserType | n
     if (!workspace || !user) return;
     const newPrefs = { ...prefs, [key]: !getChecked(key) };
     try {
-      await membersApi.update(workspace.id, user.id, { notification_prefs: newPrefs } as Partial<UserType>);
+      await membersApi.update(workspace.id, user.id, {
+        notification_prefs: newPrefs,
+      } as Partial<UserType>);
       await fetchMe();
       Toast.show('Preferences saved');
     } catch {
@@ -670,20 +972,29 @@ function NotificationPrefsTab({ user, workspace, fetchMe }: { user: UserType | n
 
   return (
     <div className="space-y-5">
-      <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>Notification Preferences</h3>
+      <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>
+        Notification Preferences
+      </h3>
       <div className="space-y-3">
         {NOTIFICATION_OPTIONS.map(({ key, label, desc }) => (
-          <label key={key} className="flex items-start gap-3 cursor-pointer p-3 rounded-lg hover:bg-[var(--color-grey-1)] transition-colors">
+          <label
+            key={key}
+            className="flex items-start gap-3 cursor-pointer p-3 rounded-lg hover:bg-subtle transition-colors"
+          >
             <input
               type="checkbox"
               checked={getChecked(key)}
               onChange={() => handleToggle(key)}
-              className="w-4 h-4 rounded border-gray-300 mt-0.5"
+              className="w-4 h-4 rounded border-outline mt-0.5"
               style={{ accentColor: 'var(--color-primary)' }}
             />
             <div>
-              <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>{label}</span>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-secondary)' }}>{desc}</p>
+              <span className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+                {label}
+              </span>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--color-text-secondary)' }}>
+                {desc}
+              </p>
             </div>
           </label>
         ))}
@@ -738,10 +1049,17 @@ function WorkspaceTab({ user, workspace, logout }: WorkspaceTabProps) {
 
   return (
     <div className="space-y-5">
-      <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>Workspace Settings</h3>
+      <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>
+        Workspace Settings
+      </h3>
 
       <div>
-        <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Workspace Name</label>
+        <label
+          className="block text-sm font-medium mb-1"
+          style={{ color: 'var(--color-text-secondary)' }}
+        >
+          Workspace Name
+        </label>
         <div className="flex gap-2">
           <input
             value={wsName}
@@ -749,12 +1067,14 @@ function WorkspaceTab({ user, workspace, logout }: WorkspaceTabProps) {
             onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
             disabled={!isOwner}
             className="flex-1 px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 disabled:opacity-60"
-            style={{
-              borderColor: 'var(--color-border)',
-              backgroundColor: isOwner ? 'var(--color-surface)' : 'var(--color-grey-1)',
-              color: 'var(--color-text)',
-              '--tw-ring-color': 'var(--color-primary)',
-            } as React.CSSProperties}
+            style={
+              {
+                borderColor: 'var(--color-border)',
+                backgroundColor: isOwner ? 'var(--color-surface)' : 'var(--color-grey-1)',
+                color: 'var(--color-text)',
+                '--tw-ring-color': 'var(--color-primary)',
+              } as React.CSSProperties
+            }
           />
           {isOwner && wsName !== workspace?.name && wsName.trim() && (
             <button
@@ -775,28 +1095,39 @@ function WorkspaceTab({ user, workspace, logout }: WorkspaceTabProps) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Workspace ID</label>
-        <code className="text-xs font-mono" style={{ color: 'var(--color-text-secondary)' }}>{workspace?.id}</code>
+        <label
+          className="block text-sm font-medium mb-1"
+          style={{ color: 'var(--color-text-secondary)' }}
+        >
+          Workspace ID
+        </label>
+        <code className="text-xs font-mono" style={{ color: 'var(--color-text-secondary)' }}>
+          {workspace?.id}
+        </code>
       </div>
 
       {isOwner && (
         <div className="pt-4 border-t" style={{ borderColor: 'var(--color-border)' }}>
           <div className="flex items-center gap-2 mb-2">
-            <AlertTriangle size={16} className="text-red-500" />
-            <h4 className="text-sm font-medium text-red-600">Danger Zone</h4>
+            <AlertTriangle size={16} className="text-destructive" />
+            <h4 className="text-sm font-medium text-destructive">Danger Zone</h4>
           </div>
           {!confirmDelete ? (
             <button
               onClick={() => setConfirmDelete(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-red-600 border border-red-300 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-destructive border border-destructive rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30"
             >
               <Trash2 size={14} />
               Delete workspace
             </button>
           ) : (
-            <div className="p-4 border border-red-300 rounded-lg space-y-3" style={{ backgroundColor: 'rgba(239, 68, 68, 0.05)' }}>
-              <p className="text-sm text-red-600">
-                This will permanently delete the workspace, all projects, teams, tasks, and members. This cannot be undone.
+            <div
+              className="p-4 border border-destructive rounded-lg space-y-3"
+              style={{ backgroundColor: 'rgba(239, 68, 68, 0.05)' }}
+            >
+              <p className="text-sm text-destructive">
+                This will permanently delete the workspace, all projects, teams, tasks, and members.
+                This cannot be undone.
               </p>
               <p className="text-sm" style={{ color: 'var(--color-text)' }}>
                 Type <strong>{workspace?.name}</strong> to confirm:
@@ -806,7 +1137,11 @@ function WorkspaceTab({ user, workspace, logout }: WorkspaceTabProps) {
                 onChange={(e) => setDeleteInput(e.target.value)}
                 placeholder={workspace?.name}
                 className="w-full px-3 py-2 border rounded-lg text-sm outline-none"
-                style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+                style={{
+                  borderColor: 'var(--color-border)',
+                  backgroundColor: 'var(--color-surface)',
+                  color: 'var(--color-text)',
+                }}
               />
               <div className="flex gap-2">
                 <button
@@ -817,7 +1152,10 @@ function WorkspaceTab({ user, workspace, logout }: WorkspaceTabProps) {
                   Delete permanently
                 </button>
                 <button
-                  onClick={() => { setConfirmDelete(false); setDeleteInput(''); }}
+                  onClick={() => {
+                    setConfirmDelete(false);
+                    setDeleteInput('');
+                  }}
                   className="px-3 py-1.5 text-sm rounded-lg"
                   style={{ color: 'var(--color-text-secondary)' }}
                 >
@@ -861,7 +1199,7 @@ function DataTab({ workspaceId }: { workspaceId?: string }) {
     try {
       const { data } = await importsApi.importTasks(workspaceId, file);
       setImportResult(data.message);
-    } catch (err) {
+    } catch {
       setImportResult('Import failed. Check file format.');
     }
     setImporting(false);
@@ -870,11 +1208,15 @@ function DataTab({ workspaceId }: { workspaceId?: string }) {
 
   return (
     <div className="space-y-5">
-      <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>Import / Export</h3>
+      <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>
+        Import / Export
+      </h3>
 
       {/* Export */}
       <div>
-        <h4 className="text-sm font-medium mb-2" style={{ color: 'var(--color-text)' }}>Export Tasks</h4>
+        <h4 className="text-sm font-medium mb-2" style={{ color: 'var(--color-text)' }}>
+          Export Tasks
+        </h4>
         <p className="text-xs mb-3" style={{ color: 'var(--color-text-secondary)' }}>
           Download all tasks in your preferred format.
         </p>
@@ -883,7 +1225,7 @@ function DataTab({ workspaceId }: { workspaceId?: string }) {
             <button
               key={fmt}
               onClick={() => handleExport(fmt)}
-              className="px-3 py-1.5 text-sm border rounded-lg flex items-center gap-1.5 hover:bg-[var(--color-grey-1)] transition-colors"
+              className="px-3 py-1.5 text-sm border rounded-lg flex items-center gap-1.5 hover:bg-subtle transition-colors"
               style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
             >
               <Download size={14} />
@@ -897,7 +1239,9 @@ function DataTab({ workspaceId }: { workspaceId?: string }) {
 
       {/* Import */}
       <div>
-        <h4 className="text-sm font-medium mb-2" style={{ color: 'var(--color-text)' }}>Import Tasks</h4>
+        <h4 className="text-sm font-medium mb-2" style={{ color: 'var(--color-text)' }}>
+          Import Tasks
+        </h4>
         <p className="text-xs mb-3" style={{ color: 'var(--color-text-secondary)' }}>
           Upload a CSV or JSON file. Supports Planview, Trello JSON exports, and Asana CSV exports.
         </p>
@@ -911,14 +1255,21 @@ function DataTab({ workspaceId }: { workspaceId?: string }) {
         <button
           onClick={() => fileRef.current?.click()}
           disabled={importing}
-          className="px-3 py-1.5 text-sm border rounded-lg flex items-center gap-1.5 hover:bg-[var(--color-grey-1)] transition-colors disabled:opacity-50"
+          className="px-3 py-1.5 text-sm border rounded-lg flex items-center gap-1.5 hover:bg-subtle transition-colors disabled:opacity-50"
           style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
         >
           <Upload size={14} />
           {importing ? 'Importing...' : 'Choose File'}
         </button>
         {importResult && (
-          <p className="text-sm mt-2" style={{ color: importResult.includes('failed') ? 'var(--color-danger)' : 'var(--color-success)' }}>
+          <p
+            className="text-sm mt-2"
+            style={{
+              color: importResult.includes('failed')
+                ? 'var(--color-danger)'
+                : 'var(--color-success)',
+            }}
+          >
             {importResult}
           </p>
         )}
@@ -936,9 +1287,11 @@ function TwoFactorTab() {
 
   const user = useAuthStore((s) => s.user);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- derives the 2FA toggle from the loaded user */
   useEffect(() => {
     setEnabled(!!(user as unknown as Record<string, unknown>)?.totp_enabled);
   }, [user]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleSetup = async () => {
     setLoading(true);
@@ -985,13 +1338,17 @@ function TwoFactorTab() {
 
   return (
     <div className="space-y-5">
-      <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>Two-Factor Authentication</h3>
+      <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>
+        Two-Factor Authentication
+      </h3>
 
       {enabled && !setupData && (
         <div>
           <div className="flex items-center gap-2 mb-4">
             <div className="w-2 h-2 rounded-full bg-green-500" />
-            <span className="text-sm font-medium" style={{ color: 'var(--color-success)' }}>2FA is enabled</span>
+            <span className="text-sm font-medium" style={{ color: 'var(--color-success)' }}>
+              2FA is enabled
+            </span>
           </div>
           <p className="text-xs mb-3" style={{ color: 'var(--color-text-secondary)' }}>
             Enter your current 2FA code to disable it:
@@ -1003,12 +1360,16 @@ function TwoFactorTab() {
               placeholder="000000"
               maxLength={6}
               className="w-32 px-3 py-2 text-center font-mono border rounded-lg text-sm outline-none"
-              style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+              style={{
+                borderColor: 'var(--color-border)',
+                backgroundColor: 'var(--color-surface)',
+                color: 'var(--color-text)',
+              }}
             />
             <button
               onClick={handleDisable}
               disabled={loading || code.length !== 6}
-              className="px-4 py-2 text-sm text-red-600 border border-red-300 rounded-lg disabled:opacity-50"
+              className="px-4 py-2 text-sm text-destructive border border-destructive rounded-lg disabled:opacity-50"
             >
               Disable 2FA
             </button>
@@ -1019,7 +1380,8 @@ function TwoFactorTab() {
       {!enabled && !setupData && (
         <div>
           <p className="text-sm mb-3" style={{ color: 'var(--color-text-secondary)' }}>
-            Add an extra layer of security to your account with time-based one-time passwords (TOTP).
+            Add an extra layer of security to your account with time-based one-time passwords
+            (TOTP).
           </p>
           <button
             onClick={handleSetup}
@@ -1043,13 +1405,20 @@ function TwoFactorTab() {
             dangerouslySetInnerHTML={{ __html: setupData.qr_svg }}
           />
           <div>
-            <p className="text-xs mb-1" style={{ color: 'var(--color-text-secondary)' }}>Or enter this code manually:</p>
-            <code className="text-sm font-mono px-2 py-1 rounded" style={{ backgroundColor: 'var(--color-grey-1)', color: 'var(--color-text)' }}>
+            <p className="text-xs mb-1" style={{ color: 'var(--color-text-secondary)' }}>
+              Or enter this code manually:
+            </p>
+            <code
+              className="text-sm font-mono px-2 py-1 rounded"
+              style={{ backgroundColor: 'var(--color-grey-1)', color: 'var(--color-text)' }}
+            >
               {setupData.secret}
             </code>
           </div>
           <div>
-            <p className="text-sm mb-2" style={{ color: 'var(--color-text)' }}>Enter the code from your app to verify:</p>
+            <p className="text-sm mb-2" style={{ color: 'var(--color-text)' }}>
+              Enter the code from your app to verify:
+            </p>
             <div className="flex items-center gap-2">
               <input
                 value={code}
@@ -1057,7 +1426,11 @@ function TwoFactorTab() {
                 placeholder="000000"
                 maxLength={6}
                 className="w-32 px-3 py-2 text-center font-mono border rounded-lg text-sm outline-none"
-                style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+                style={{
+                  borderColor: 'var(--color-border)',
+                  backgroundColor: 'var(--color-surface)',
+                  color: 'var(--color-text)',
+                }}
               />
               <button
                 onClick={handleVerify}
@@ -1072,29 +1445,31 @@ function TwoFactorTab() {
         </div>
       )}
 
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );
 }
 
 function WebhooksTab({ workspaceId }: { workspaceId?: string }) {
-  const [webhooks, setWebhooks] = useState<WebhookType[]>([]);
+  const webhooksQuery = useWebhooks(workspaceId);
+  const webhooks = webhooksQuery.data ?? [];
+  const createWebhook = useCreateWebhook(workspaceId);
+  const updateWebhook = useUpdateWebhook(workspaceId);
+  const deleteWebhook = useDeleteWebhook(workspaceId);
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
   const [events, setEvents] = useState('');
 
-  useEffect(() => {
-    if (!workspaceId) return;
-    webhooksApi.list(workspaceId).then((res) => setWebhooks(res.data));
-  }, [workspaceId]);
-
   const handleCreate = async () => {
     if (!workspaceId || !name.trim() || !url.trim()) return;
     try {
       const eventList = events.trim() ? events.split(',').map((e) => e.trim()) : undefined;
-      const { data } = await webhooksApi.create(workspaceId, { name: name.trim(), url: url.trim(), events: eventList });
-      setWebhooks((prev) => [data, ...prev]);
+      await createWebhook.mutateAsync({
+        name: name.trim(),
+        url: url.trim(),
+        events: eventList,
+      });
       setAdding(false);
       setName('');
       setUrl('');
@@ -1107,26 +1482,30 @@ function WebhooksTab({ workspaceId }: { workspaceId?: string }) {
 
   const handleDelete = async (id: string) => {
     if (!workspaceId) return;
-    await webhooksApi.delete(workspaceId, id);
-    setWebhooks((prev) => prev.filter((w) => w.id !== id));
+    await deleteWebhook.mutateAsync(id);
     Toast.show('Webhook deleted');
   };
 
   const handleToggle = async (wh: WebhookType) => {
     if (!workspaceId) return;
-    const { data } = await webhooksApi.update(workspaceId, wh.id, { is_active: !wh.is_active });
-    setWebhooks((prev) => prev.map((w) => (w.id === data.id ? data : w)));
+    await updateWebhook.mutateAsync({ webhookId: wh.id, data: { is_active: !wh.is_active } });
   };
 
   const AVAILABLE_EVENTS = [
-    'task.created', 'task.updated', 'task.deleted',
-    'comment.created', 'project.created', 'project.updated',
+    'task.created',
+    'task.updated',
+    'task.deleted',
+    'comment.created',
+    'project.created',
+    'project.updated',
   ];
 
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>Webhooks</h3>
+        <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>
+          Webhooks
+        </h3>
         <button
           onClick={() => setAdding(true)}
           className="flex items-center gap-1.5 px-3 py-1.5 text-white rounded-lg text-sm font-medium"
@@ -1142,21 +1521,32 @@ function WebhooksTab({ workspaceId }: { workspaceId?: string }) {
       </p>
 
       {adding && (
-        <div className="p-4 rounded-lg border space-y-3" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-grey-1)' }}>
+        <div
+          className="p-4 rounded-lg border space-y-3"
+          style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-grey-1)' }}
+        >
           <input
             autoFocus
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Webhook name"
             className="w-full px-3 py-2 text-sm border rounded-lg outline-none"
-            style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+            style={{
+              borderColor: 'var(--color-border)',
+              backgroundColor: 'var(--color-surface)',
+              color: 'var(--color-text)',
+            }}
           />
           <input
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder="https://example.com/webhook"
             className="w-full px-3 py-2 text-sm border rounded-lg outline-none"
-            style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+            style={{
+              borderColor: 'var(--color-border)',
+              backgroundColor: 'var(--color-surface)',
+              color: 'var(--color-text)',
+            }}
           />
           <div>
             <label className="text-xs mb-1 block" style={{ color: 'var(--color-text-secondary)' }}>
@@ -1167,7 +1557,11 @@ function WebhooksTab({ workspaceId }: { workspaceId?: string }) {
               onChange={(e) => setEvents(e.target.value)}
               placeholder={AVAILABLE_EVENTS.join(', ')}
               className="w-full px-3 py-2 text-sm border rounded-lg outline-none"
-              style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+              style={{
+                borderColor: 'var(--color-border)',
+                backgroundColor: 'var(--color-surface)',
+                color: 'var(--color-text)',
+              }}
             />
           </div>
           <div className="flex gap-2">
@@ -1190,65 +1584,80 @@ function WebhooksTab({ workspaceId }: { workspaceId?: string }) {
         </div>
       )}
 
-      {webhooks.length === 0 && !adding && (
-        <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>No webhooks configured.</p>
-      )}
-
-      <div className="space-y-2">
-        {webhooks.map((wh) => (
-          <div
-            key={wh.id}
-            className="flex items-center gap-3 p-3 rounded-lg border"
-            style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)' }}
-          >
+      {webhooksQuery.isPending ? (
+        <SectionLoading label="Loading webhooks..." />
+      ) : webhooksQuery.isError ? (
+        <SectionError onRetry={() => webhooksQuery.refetch()} />
+      ) : webhooks.length === 0 && !adding ? (
+        <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+          No webhooks configured.
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {webhooks.map((wh) => (
             <div
-              className={`w-2 h-2 rounded-full ${wh.is_active ? 'bg-green-500' : 'bg-gray-400'}`}
-            />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate" style={{ color: 'var(--color-text)' }}>{wh.name}</p>
-              <p className="text-xs truncate" style={{ color: 'var(--color-text-secondary)' }}>{wh.url}</p>
+              key={wh.id}
+              className="flex items-center gap-3 p-3 rounded-lg border"
+              style={{
+                borderColor: 'var(--color-border)',
+                backgroundColor: 'var(--color-surface)',
+              }}
+            >
+              <div
+                className={`w-2 h-2 rounded-full ${wh.is_active ? 'bg-green-500' : 'bg-gray-400'}`}
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate" style={{ color: 'var(--color-text)' }}>
+                  {wh.name}
+                </p>
+                <p className="text-xs truncate" style={{ color: 'var(--color-text-secondary)' }}>
+                  {wh.url}
+                </p>
+              </div>
+              <button
+                onClick={() => handleToggle(wh)}
+                className="text-xs px-2 py-1 rounded border"
+                style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}
+              >
+                {wh.is_active ? 'Disable' : 'Enable'}
+              </button>
+              <button
+                onClick={() => handleDelete(wh.id)}
+                className="p-1.5 rounded hover:bg-muted"
+                style={{ color: 'var(--color-danger, #ef4444)' }}
+              >
+                <Trash2 size={14} />
+              </button>
             </div>
-            <button
-              onClick={() => handleToggle(wh)}
-              className="text-xs px-2 py-1 rounded border"
-              style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}
-            >
-              {wh.is_active ? 'Disable' : 'Enable'}
-            </button>
-            <button
-              onClick={() => handleDelete(wh.id)}
-              className="p-1.5 rounded hover:bg-[var(--color-grey-2)]"
-              style={{ color: 'var(--color-danger, #ef4444)' }}
-            >
-              <Trash2 size={14} />
-            </button>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
 function CustomFieldsTab({ workspaceId }: { workspaceId?: string }) {
-  const [fields, setFields] = useState<CustomField[]>([]);
+  const fieldsQuery = useCustomFields(workspaceId);
+  const fields = fieldsQuery.data ?? [];
+  const createField = useCreateCustomField(workspaceId);
+  const deleteField = useDeleteCustomField(workspaceId);
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState('');
   const [fieldType, setFieldType] = useState('text');
   const [options, setOptions] = useState('');
 
-  useEffect(() => {
-    if (!workspaceId) return;
-    customFieldsApi.list(workspaceId).then((res) => setFields(res.data));
-  }, [workspaceId]);
-
   const handleCreate = async () => {
     if (!workspaceId || !name.trim()) return;
     try {
-      const optionsJson = fieldType === 'select' && options.trim()
-        ? JSON.stringify(options.split(',').map((o) => o.trim()))
-        : undefined;
-      const { data } = await customFieldsApi.create(workspaceId, { name: name.trim(), field_type: fieldType, options: optionsJson });
-      setFields((prev) => [...prev, data]);
+      const optionsJson =
+        fieldType === 'select' && options.trim()
+          ? JSON.stringify(options.split(',').map((o) => o.trim()))
+          : undefined;
+      await createField.mutateAsync({
+        name: name.trim(),
+        field_type: fieldType,
+        options: optionsJson,
+      });
       setAdding(false);
       setName('');
       setFieldType('text');
@@ -1261,8 +1670,7 @@ function CustomFieldsTab({ workspaceId }: { workspaceId?: string }) {
 
   const handleDelete = async (id: string) => {
     if (!workspaceId) return;
-    await customFieldsApi.delete(workspaceId, id);
-    setFields((prev) => prev.filter((f) => f.id !== id));
+    await deleteField.mutateAsync(id);
     Toast.show('Custom field deleted');
   };
 
@@ -1277,7 +1685,9 @@ function CustomFieldsTab({ workspaceId }: { workspaceId?: string }) {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>Custom Fields</h3>
+        <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>
+          Custom Fields
+        </h3>
         <button
           onClick={() => setAdding(true)}
           className="flex items-center gap-1.5 px-3 py-1.5 text-white rounded-lg text-sm font-medium"
@@ -1289,27 +1699,41 @@ function CustomFieldsTab({ workspaceId }: { workspaceId?: string }) {
       </div>
 
       <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
-        Custom fields appear on all tasks in this workspace. Values are set per-task in the task detail panel.
+        Custom fields appear on all tasks in this workspace. Values are set per-task in the task
+        detail panel.
       </p>
 
       {adding && (
-        <div className="p-4 rounded-lg border space-y-3" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-grey-1)' }}>
+        <div
+          className="p-4 rounded-lg border space-y-3"
+          style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-grey-1)' }}
+        >
           <input
             autoFocus
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Field name"
             className="w-full px-3 py-2 text-sm border rounded-lg outline-none"
-            style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+            style={{
+              borderColor: 'var(--color-border)',
+              backgroundColor: 'var(--color-surface)',
+              color: 'var(--color-text)',
+            }}
           />
           <select
             value={fieldType}
             onChange={(e) => setFieldType(e.target.value)}
             className="w-full px-3 py-2 text-sm border rounded-lg outline-none"
-            style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+            style={{
+              borderColor: 'var(--color-border)',
+              backgroundColor: 'var(--color-surface)',
+              color: 'var(--color-text)',
+            }}
           >
             {FIELD_TYPES.map((t) => (
-              <option key={t.value} value={t.value}>{t.label}</option>
+              <option key={t.value} value={t.value}>
+                {t.label}
+              </option>
             ))}
           </select>
           {fieldType === 'select' && (
@@ -1318,7 +1742,11 @@ function CustomFieldsTab({ workspaceId }: { workspaceId?: string }) {
               onChange={(e) => setOptions(e.target.value)}
               placeholder="Option 1, Option 2, Option 3"
               className="w-full px-3 py-2 text-sm border rounded-lg outline-none"
-              style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+              style={{
+                borderColor: 'var(--color-border)',
+                backgroundColor: 'var(--color-surface)',
+                color: 'var(--color-text)',
+              }}
             />
           )}
           <div className="flex gap-2">
@@ -1341,61 +1769,69 @@ function CustomFieldsTab({ workspaceId }: { workspaceId?: string }) {
         </div>
       )}
 
-      {fields.length === 0 && !adding && (
-        <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>No custom fields defined.</p>
-      )}
-
-      <div className="space-y-2">
-        {fields.map((f) => (
-          <div
-            key={f.id}
-            className="flex items-center gap-3 p-3 rounded-lg border"
-            style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)' }}
-          >
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>{f.name}</p>
-              <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
-                {FIELD_TYPES.find((t) => t.value === f.field_type)?.label || f.field_type}
-                {f.options && ` — ${JSON.parse(f.options).join(', ')}`}
-              </p>
-            </div>
-            <button
-              onClick={() => handleDelete(f.id)}
-              className="p-1.5 rounded hover:bg-[var(--color-grey-2)]"
-              style={{ color: 'var(--color-danger, #ef4444)' }}
+      {fieldsQuery.isPending ? (
+        <SectionLoading label="Loading custom fields..." />
+      ) : fieldsQuery.isError ? (
+        <SectionError onRetry={() => fieldsQuery.refetch()} />
+      ) : fields.length === 0 && !adding ? (
+        <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+          No custom fields defined.
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {fields.map((f) => (
+            <div
+              key={f.id}
+              className="flex items-center gap-3 p-3 rounded-lg border"
+              style={{
+                borderColor: 'var(--color-border)',
+                backgroundColor: 'var(--color-surface)',
+              }}
             >
-              <Trash2 size={14} />
-            </button>
-          </div>
-        ))}
-      </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+                  {f.name}
+                </p>
+                <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                  {FIELD_TYPES.find((t) => t.value === f.field_type)?.label || f.field_type}
+                  {f.options && `, ${JSON.parse(f.options).join(', ')}`}
+                </p>
+              </div>
+              <button
+                onClick={() => handleDelete(f.id)}
+                className="p-1.5 rounded hover:bg-muted"
+                style={{ color: 'var(--color-danger, #ef4444)' }}
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
 function TemplatesTab({ workspaceId }: { workspaceId?: string }) {
-  const [templates, setTemplates] = useState<TaskTemplate[]>([]);
+  const templatesQuery = useTaskTemplates(workspaceId);
+  const templates = templatesQuery.data ?? [];
+  const createTemplate = useCreateTemplate(workspaceId);
+  const deleteTemplate = useDeleteTemplate(workspaceId);
   const [adding, setAdding] = useState(false);
   const [tplName, setTplName] = useState('');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState('todo');
   const [estimate, setEstimate] = useState('');
 
-  useEffect(() => {
-    if (!workspaceId) return;
-    templatesApi.list(workspaceId).then((res) => setTemplates(res.data));
-  }, [workspaceId]);
-
   const handleCreate = async () => {
     if (!workspaceId || !tplName.trim()) return;
     try {
-      const { data } = await templatesApi.create(workspaceId, {
+      await createTemplate.mutateAsync({
         name: tplName.trim(),
         description: description.trim() || null,
         status,
         time_estimate_minutes: estimate ? parseInt(estimate) : null,
       });
-      setTemplates((prev) => [...prev, data]);
       setAdding(false);
       setTplName('');
       setDescription('');
@@ -1409,15 +1845,16 @@ function TemplatesTab({ workspaceId }: { workspaceId?: string }) {
 
   const handleDelete = async (id: string) => {
     if (!workspaceId) return;
-    await templatesApi.delete(workspaceId, id);
-    setTemplates((prev) => prev.filter((t) => t.id !== id));
+    await deleteTemplate.mutateAsync(id);
     Toast.show('Template deleted');
   };
 
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>Task Templates</h3>
+        <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>
+          Task Templates
+        </h3>
         <button
           onClick={() => setAdding(true)}
           className="flex items-center gap-1.5 px-3 py-1.5 text-white rounded-lg text-sm font-medium"
@@ -1431,83 +1868,227 @@ function TemplatesTab({ workspaceId }: { workspaceId?: string }) {
         Templates let you quickly create tasks with pre-filled fields. Available in the Taskbox.
       </p>
       {adding && (
-        <div className="p-4 rounded-lg border space-y-3" style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-grey-1)' }}>
-          <input autoFocus value={tplName} onChange={(e) => setTplName(e.target.value)} placeholder="Template name"
+        <div
+          className="p-4 rounded-lg border space-y-3"
+          style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-grey-1)' }}
+        >
+          <input
+            autoFocus
+            value={tplName}
+            onChange={(e) => setTplName(e.target.value)}
+            placeholder="Template name"
             className="w-full px-3 py-2 text-sm border rounded-lg outline-none"
-            style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }} />
-          <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Description (optional)" rows={2}
+            style={{
+              borderColor: 'var(--color-border)',
+              backgroundColor: 'var(--color-surface)',
+              color: 'var(--color-text)',
+            }}
+          />
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Description (optional)"
+            rows={2}
             className="w-full px-3 py-2 text-sm border rounded-lg outline-none resize-none"
-            style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }} />
+            style={{
+              borderColor: 'var(--color-border)',
+              backgroundColor: 'var(--color-surface)',
+              color: 'var(--color-text)',
+            }}
+          />
           <div className="grid grid-cols-2 gap-3">
-            <select value={status} onChange={(e) => setStatus(e.target.value)}
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
               className="px-3 py-2 text-sm border rounded-lg outline-none"
-              style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}>
+              style={{
+                borderColor: 'var(--color-border)',
+                backgroundColor: 'var(--color-surface)',
+                color: 'var(--color-text)',
+              }}
+            >
               <option value="todo">To Do</option>
               <option value="in_progress">In Progress</option>
               <option value="blocked">Blocked</option>
             </select>
-            <input type="number" value={estimate} onChange={(e) => setEstimate(e.target.value)} placeholder="Estimate (mins)"
+            <input
+              type="number"
+              value={estimate}
+              onChange={(e) => setEstimate(e.target.value)}
+              placeholder="Estimate (mins)"
               className="px-3 py-2 text-sm border rounded-lg outline-none"
-              style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }} />
+              style={{
+                borderColor: 'var(--color-border)',
+                backgroundColor: 'var(--color-surface)',
+                color: 'var(--color-text)',
+              }}
+            />
           </div>
           <div className="flex gap-2">
-            <button onClick={handleCreate} disabled={!tplName.trim()}
+            <button
+              onClick={handleCreate}
+              disabled={!tplName.trim()}
               className="px-4 py-2 text-white rounded-lg text-sm font-medium disabled:opacity-50"
-              style={{ backgroundColor: 'var(--color-primary)' }}>Create</button>
-            <button onClick={() => setAdding(false)} className="px-3 py-2 text-sm rounded-lg"
-              style={{ color: 'var(--color-text-secondary)' }}>Cancel</button>
+              style={{ backgroundColor: 'var(--color-primary)' }}
+            >
+              Create
+            </button>
+            <button
+              onClick={() => setAdding(false)}
+              className="px-3 py-2 text-sm rounded-lg"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
+              Cancel
+            </button>
           </div>
         </div>
       )}
-      {templates.length === 0 && !adding && (
-        <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>No templates created yet.</p>
-      )}
-      <div className="space-y-2">
-        {templates.map((tpl) => (
-          <div key={tpl.id} className="flex items-center gap-3 p-3 rounded-lg border"
-            style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)' }}>
-            {tpl.colour && <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: tpl.colour }} />}
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>{tpl.name}</p>
-              <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
-                {tpl.status}{tpl.time_estimate_minutes && ` · ${tpl.time_estimate_minutes}m`}
-              </p>
+      {templatesQuery.isPending ? (
+        <SectionLoading label="Loading templates..." />
+      ) : templatesQuery.isError ? (
+        <SectionError onRetry={() => templatesQuery.refetch()} />
+      ) : templates.length === 0 && !adding ? (
+        <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+          No templates created yet.
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {templates.map((tpl) => (
+            <div
+              key={tpl.id}
+              className="flex items-center gap-3 p-3 rounded-lg border"
+              style={{
+                borderColor: 'var(--color-border)',
+                backgroundColor: 'var(--color-surface)',
+              }}
+            >
+              {tpl.colour && (
+                <div
+                  className="w-3 h-3 rounded-full shrink-0"
+                  style={{ backgroundColor: tpl.colour }}
+                />
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+                  {tpl.name}
+                </p>
+                <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                  {tpl.status}
+                  {tpl.time_estimate_minutes && ` · ${tpl.time_estimate_minutes}m`}
+                </p>
+              </div>
+              <button
+                onClick={() => handleDelete(tpl.id)}
+                className="p-1.5 rounded hover:bg-muted"
+                style={{ color: 'var(--color-danger, #ef4444)' }}
+              >
+                <Trash2 size={14} />
+              </button>
             </div>
-            <button onClick={() => handleDelete(tpl.id)} className="p-1.5 rounded hover:bg-[var(--color-grey-2)]"
-              style={{ color: 'var(--color-danger, #ef4444)' }}>
-              <Trash2 size={14} />
-            </button>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
-const DEFAULT_MODULES: Record<string, { label: string; description: string; defaultOn: boolean }> = {
-  people: { label: 'People Profiles', description: 'Team directory, org chart, and personal profiles', defaultOn: true },
-  one_to_ones: { label: '1:1 Meetings', description: 'Track regular check-ins and action items', defaultOn: true },
-  objectives: { label: 'Objectives & KRs', description: 'Set and track goals with key results', defaultOn: true },
-  compliance: { label: 'Compliance Tracking', description: 'Monitor certificates, visas, and expiry dates', defaultOn: true },
-  competencies: { label: 'Competencies', description: 'Skills matrix and competency assessments', defaultOn: true },
-  leave: { label: 'Leave Management', description: 'Leave allowances, requests, and approvals', defaultOn: true },
-  recruitment: { label: 'Recruitment', description: 'Candidate pipeline and hiring tracker', defaultOn: false },
-  development: { label: 'Development Plans', description: 'Career development goals and learning plans', defaultOn: true },
-  reviews: { label: 'Performance Reviews', description: 'Structured review cycles and assessments', defaultOn: false },
-  wellbeing: { label: 'Team Wellbeing', description: 'Pulse surveys and kudos wall', defaultOn: false },
-  onboarding: { label: 'Onboarding', description: 'Onboarding and offboarding checklists', defaultOn: false },
-  early_talent: { label: 'Early Talent', description: 'Graduate and apprentice programme management', defaultOn: false },
-  ai_assistant: { label: 'AI Assistant', description: 'AI-powered chat and quick reports', defaultOn: true },
-  reporting: { label: 'People Reports', description: 'Aggregated people management dashboard', defaultOn: true },
-  guide: { label: 'Guide', description: 'In-app help and feature documentation', defaultOn: true },
-  burndown: { label: 'Burndown Charts', description: 'Sprint burndown and progress charts', defaultOn: true },
-  rotas: { label: 'Rotas', description: 'Team rota and shift scheduling', defaultOn: true },
-};
+const DEFAULT_MODULES: Record<string, { label: string; description: string; defaultOn: boolean }> =
+  {
+    people: {
+      label: 'People Profiles',
+      description: 'Team directory, org chart, and personal profiles',
+      defaultOn: true,
+    },
+    one_to_ones: {
+      label: '1:1 Meetings',
+      description: 'Track regular check-ins and action items',
+      defaultOn: true,
+    },
+    objectives: {
+      label: 'Objectives & KRs',
+      description: 'Set and track goals with key results',
+      defaultOn: true,
+    },
+    compliance: {
+      label: 'Compliance Tracking',
+      description: 'Monitor certificates, visas, and expiry dates',
+      defaultOn: true,
+    },
+    competencies: {
+      label: 'Competencies',
+      description: 'Skills matrix and competency assessments',
+      defaultOn: true,
+    },
+    leave: {
+      label: 'Leave Management',
+      description: 'Leave allowances, requests, and approvals',
+      defaultOn: true,
+    },
+    recruitment: {
+      label: 'Recruitment',
+      description: 'Candidate pipeline and hiring tracker',
+      defaultOn: false,
+    },
+    development: {
+      label: 'Development Plans',
+      description: 'Career development goals and learning plans',
+      defaultOn: true,
+    },
+    reviews: {
+      label: 'Performance Reviews',
+      description: 'Structured review cycles and assessments',
+      defaultOn: false,
+    },
+    wellbeing: {
+      label: 'Team Wellbeing',
+      description: 'Pulse surveys and kudos wall',
+      defaultOn: false,
+    },
+    onboarding: {
+      label: 'Onboarding',
+      description: 'Onboarding and offboarding checklists',
+      defaultOn: false,
+    },
+    early_talent: {
+      label: 'Early Talent',
+      description: 'Graduate and apprentice programme management',
+      defaultOn: false,
+    },
+    ai_assistant: {
+      label: 'AI Assistant',
+      description: 'AI-powered chat and quick reports',
+      defaultOn: true,
+    },
+    reporting: {
+      label: 'People Reports',
+      description: 'Aggregated people management dashboard',
+      defaultOn: true,
+    },
+    guide: {
+      label: 'Guide',
+      description: 'In-app help and feature documentation',
+      defaultOn: true,
+    },
+    burndown: {
+      label: 'Burndown Charts',
+      description: 'Sprint burndown and progress charts',
+      defaultOn: true,
+    },
+    rotas: { label: 'Rotas', description: 'Team rota and shift scheduling', defaultOn: true },
+  };
 
-function ModulesTab({ workspaceId, enabledModules }: { workspaceId?: string; enabledModules: Record<string, boolean> | null }) {
+function ModulesTab({
+  workspaceId,
+  enabledModules,
+}: {
+  workspaceId?: string;
+  enabledModules: Record<string, boolean> | null;
+}) {
   const [modules, setModules] = useState<Record<string, boolean>>(() => {
     const defaults: Record<string, boolean> = {};
-    Object.entries(DEFAULT_MODULES).forEach(([key, v]) => { defaults[key] = v.defaultOn; });
+    Object.entries(DEFAULT_MODULES).forEach(([key, v]) => {
+      defaults[key] = v.defaultOn;
+    });
     return { ...defaults, ...(enabledModules || {}) };
   });
   const [saving, setSaving] = useState(false);
@@ -1530,7 +2111,9 @@ function ModulesTab({ workspaceId, enabledModules }: { workspaceId?: string; ena
   };
 
   useEffect(() => {
-    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, []);
 
   const handleToggle = (key: string) => {
@@ -1545,26 +2128,33 @@ function ModulesTab({ workspaceId, enabledModules }: { workspaceId?: string; ena
   return (
     <div className="space-y-5">
       <div>
-        <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>Modules</h3>
+        <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>
+          Modules
+        </h3>
         <p className="text-sm mt-1" style={{ color: 'var(--color-text-secondary)' }}>
-          Enable or disable modules to customise the sidebar for your workspace. Disabled modules are hidden but data is preserved.
+          Enable or disable modules to customise the sidebar for your workspace. Disabled modules
+          are hidden but data is preserved.
         </p>
       </div>
       <div className="space-y-1">
         {Object.entries(DEFAULT_MODULES).map(([key, meta]) => (
           <div
             key={key}
-            className="flex items-center justify-between p-3 rounded-lg hover:bg-[var(--color-grey-2)] transition-colors"
+            className="flex items-center justify-between p-3 rounded-lg hover:bg-muted transition-colors"
           >
             <div className="flex-1 mr-4">
-              <div className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>{meta.label}</div>
-              <div className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>{meta.description}</div>
+              <div className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+                {meta.label}
+              </div>
+              <div className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                {meta.description}
+              </div>
             </div>
             <button
               onClick={() => handleToggle(key)}
               disabled={saving}
               className={`relative w-11 h-6 rounded-full transition-colors ${
-                modules[key] ? 'bg-[var(--color-primary)]' : 'bg-gray-300 dark:bg-gray-600'
+                modules[key] ? 'bg-accent' : 'bg-gray-300 dark:bg-gray-600'
               }`}
             >
               <span
@@ -1594,25 +2184,13 @@ const LOOKUP_CATEGORIES: { key: string; label: string }[] = [
 ];
 
 function ReferenceDataTab({ workspaceId }: { workspaceId?: string }) {
-  const [data, setData] = useState<Record<string, LookupValue[]>>({});
+  const referenceQuery = useReferenceData(workspaceId);
+  const data = referenceQuery.data ?? {};
+  const createLookup = useCreateLookup(workspaceId);
+  const updateLookup = useUpdateLookup(workspaceId);
+  const deleteLookup = useDeleteLookup(workspaceId);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const [loading, setLoading] = useState(true);
   const invalidateLookups = useLookupStore((s) => s.invalidate);
-
-  const fetchAll = async () => {
-    if (!workspaceId) return;
-    try {
-      const res = await lookupsApi.listAll(workspaceId);
-      setData(res.data);
-    } catch {
-      Toast.show('Failed to load reference data');
-    }
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    fetchAll();
-  }, [workspaceId]);
 
   const toggleSection = (key: string) => {
     setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -1624,8 +2202,7 @@ function ReferenceDataTab({ workspaceId }: { workspaceId?: string }) {
       const payload: { value: string; label?: string; colour?: string } = { value: value.trim() };
       if (label.trim()) payload.label = label.trim();
       if (colour.trim()) payload.colour = colour.trim();
-      const { data: created } = await lookupsApi.create(workspaceId, category, payload);
-      setData((prev) => ({ ...prev, [category]: [...(prev[category] || []), created] }));
+      await createLookup.mutateAsync({ category, data: payload });
       invalidateLookups(category);
     } catch {
       Toast.show('Failed to add value');
@@ -1635,11 +2212,11 @@ function ReferenceDataTab({ workspaceId }: { workspaceId?: string }) {
   const handleToggleActive = async (category: string, item: LookupValue) => {
     if (!workspaceId) return;
     try {
-      const { data: updated } = await lookupsApi.update(workspaceId, category, item.id, { is_active: !item.is_active });
-      setData((prev) => ({
-        ...prev,
-        [category]: (prev[category] || []).map((v) => (v.id === updated.id ? updated : v)),
-      }));
+      await updateLookup.mutateAsync({
+        category,
+        id: item.id,
+        data: { is_active: !item.is_active },
+      });
       invalidateLookups(category);
     } catch {
       Toast.show('Failed to update value');
@@ -1649,11 +2226,7 @@ function ReferenceDataTab({ workspaceId }: { workspaceId?: string }) {
   const handleDelete = async (category: string, id: string) => {
     if (!workspaceId) return;
     try {
-      await lookupsApi.delete(workspaceId, category, id);
-      setData((prev) => ({
-        ...prev,
-        [category]: (prev[category] || []).filter((v) => v.id !== id),
-      }));
+      await deleteLookup.mutateAsync({ category, id });
       invalidateLookups(category);
       Toast.show('Value deleted');
     } catch {
@@ -1661,11 +2234,24 @@ function ReferenceDataTab({ workspaceId }: { workspaceId?: string }) {
     }
   };
 
-  if (loading) {
+  if (referenceQuery.isPending) {
     return (
       <div className="space-y-5">
-        <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>Reference Data</h3>
-        <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Loading...</p>
+        <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>
+          Reference Data
+        </h3>
+        <SectionLoading />
+      </div>
+    );
+  }
+
+  if (referenceQuery.isError) {
+    return (
+      <div className="space-y-5">
+        <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>
+          Reference Data
+        </h3>
+        <SectionError onRetry={() => referenceQuery.refetch()} />
       </div>
     );
   }
@@ -1673,9 +2259,12 @@ function ReferenceDataTab({ workspaceId }: { workspaceId?: string }) {
   return (
     <div className="space-y-5">
       <div>
-        <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>Reference Data</h3>
+        <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>
+          Reference Data
+        </h3>
         <p className="text-sm mt-1" style={{ color: 'var(--color-text-secondary)' }}>
-          Manage lookup values used across people management modules. These populate dropdowns and filters throughout the app.
+          Manage lookup values used across people management modules. These populate dropdowns and
+          filters throughout the app.
         </p>
       </div>
 
@@ -1687,11 +2276,14 @@ function ReferenceDataTab({ workspaceId }: { workspaceId?: string }) {
             <div
               key={key}
               className="border rounded-lg overflow-hidden"
-              style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)' }}
+              style={{
+                borderColor: 'var(--color-border)',
+                backgroundColor: 'var(--color-surface)',
+              }}
             >
               <button
                 onClick={() => toggleSection(key)}
-                className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-[var(--color-grey-1)] transition-colors"
+                className="w-full flex items-center gap-2 px-4 py-3 text-left hover:bg-subtle transition-colors"
               >
                 {isOpen ? (
                   <ChevronDown size={16} style={{ color: 'var(--color-text-secondary)' }} />
@@ -1701,7 +2293,13 @@ function ReferenceDataTab({ workspaceId }: { workspaceId?: string }) {
                 <span className="text-sm font-medium flex-1" style={{ color: 'var(--color-text)' }}>
                   {label}
                 </span>
-                <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: 'var(--color-grey-2)', color: 'var(--color-text-secondary)' }}>
+                <span
+                  className="text-xs px-2 py-0.5 rounded-full"
+                  style={{
+                    backgroundColor: 'var(--color-grey-2)',
+                    color: 'var(--color-text-secondary)',
+                  }}
+                >
                   {items.length}
                 </span>
               </button>
@@ -1709,20 +2307,26 @@ function ReferenceDataTab({ workspaceId }: { workspaceId?: string }) {
               {isOpen && (
                 <div className="border-t" style={{ borderColor: 'var(--color-border)' }}>
                   {items.length === 0 && (
-                    <p className="px-4 py-3 text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                    <p
+                      className="px-4 py-3 text-xs"
+                      style={{ color: 'var(--color-text-secondary)' }}
+                    >
                       No values yet. Add one below.
                     </p>
                   )}
                   {items.map((item) => (
                     <div
                       key={item.id}
-                      className="flex items-center gap-3 px-4 py-2 border-b last:border-b-0 hover:bg-[var(--color-grey-1)] transition-colors group"
+                      className="flex items-center gap-3 px-4 py-2 border-b last:border-b-0 hover:bg-subtle transition-colors group"
                       style={{ borderColor: 'var(--color-border)' }}
                     >
                       {item.colour && (
                         <div
                           className="w-4 h-4 rounded-full shrink-0 border"
-                          style={{ backgroundColor: item.colour, borderColor: 'var(--color-border)' }}
+                          style={{
+                            backgroundColor: item.colour,
+                            borderColor: 'var(--color-border)',
+                          }}
                         />
                       )}
                       <div className="flex-1 min-w-0">
@@ -1730,12 +2334,18 @@ function ReferenceDataTab({ workspaceId }: { workspaceId?: string }) {
                           {item.label || item.value}
                         </span>
                         {item.label && (
-                          <span className="text-xs ml-2" style={{ color: 'var(--color-text-secondary)' }}>
+                          <span
+                            className="text-xs ml-2"
+                            style={{ color: 'var(--color-text-secondary)' }}
+                          >
                             {item.value}
                           </span>
                         )}
                       </div>
-                      <label className="flex items-center gap-1 cursor-pointer shrink-0" title={item.is_active ? 'Active' : 'Inactive'}>
+                      <label
+                        className="flex items-center gap-1 cursor-pointer shrink-0"
+                        title={item.is_active ? 'Active' : 'Inactive'}
+                      >
                         <input
                           type="checkbox"
                           checked={item.is_active}
@@ -1749,7 +2359,7 @@ function ReferenceDataTab({ workspaceId }: { workspaceId?: string }) {
                       </label>
                       <button
                         onClick={() => handleDelete(key, item.id)}
-                        className="p-1 rounded hover:bg-[var(--color-grey-2)] opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+                        className="p-1 rounded hover:bg-muted opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
                         style={{ color: 'var(--color-danger, #ef4444)' }}
                         title="Delete"
                         aria-label="Delete value"
@@ -1769,7 +2379,13 @@ function ReferenceDataTab({ workspaceId }: { workspaceId?: string }) {
   );
 }
 
-function AddLookupRow({ category, onAdd }: { category: string; onAdd: (category: string, value: string, label: string, colour: string) => Promise<void> }) {
+function AddLookupRow({
+  category,
+  onAdd,
+}: {
+  category: string;
+  onAdd: (category: string, value: string, label: string, colour: string) => Promise<void>;
+}) {
   const [value, setValue] = useState('');
   const [label, setLabel] = useState('');
   const [colour, setColour] = useState('');
@@ -1795,12 +2411,14 @@ function AddLookupRow({ category, onAdd }: { category: string; onAdd: (category:
         onChange={(e) => setValue(e.target.value)}
         placeholder="Value"
         className="flex-1 px-2 py-1.5 text-xs border rounded outline-none focus:ring-1"
-        style={{
-          borderColor: 'var(--color-border)',
-          backgroundColor: 'var(--color-surface)',
-          color: 'var(--color-text)',
-          '--tw-ring-color': 'var(--color-primary)',
-        } as React.CSSProperties}
+        style={
+          {
+            borderColor: 'var(--color-border)',
+            backgroundColor: 'var(--color-surface)',
+            color: 'var(--color-text)',
+            '--tw-ring-color': 'var(--color-primary)',
+          } as React.CSSProperties
+        }
         onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
       />
       <input
@@ -1808,12 +2426,14 @@ function AddLookupRow({ category, onAdd }: { category: string; onAdd: (category:
         onChange={(e) => setLabel(e.target.value)}
         placeholder="Label (optional)"
         className="flex-1 px-2 py-1.5 text-xs border rounded outline-none focus:ring-1"
-        style={{
-          borderColor: 'var(--color-border)',
-          backgroundColor: 'var(--color-surface)',
-          color: 'var(--color-text)',
-          '--tw-ring-color': 'var(--color-primary)',
-        } as React.CSSProperties}
+        style={
+          {
+            borderColor: 'var(--color-border)',
+            backgroundColor: 'var(--color-surface)',
+            color: 'var(--color-text)',
+            '--tw-ring-color': 'var(--color-primary)',
+          } as React.CSSProperties
+        }
         onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
       />
       <input
@@ -1821,12 +2441,14 @@ function AddLookupRow({ category, onAdd }: { category: string; onAdd: (category:
         onChange={(e) => setColour(e.target.value)}
         placeholder="#hex"
         className="w-16 px-2 py-1.5 text-xs border rounded outline-none focus:ring-1"
-        style={{
-          borderColor: 'var(--color-border)',
-          backgroundColor: 'var(--color-surface)',
-          color: 'var(--color-text)',
-          '--tw-ring-color': 'var(--color-primary)',
-        } as React.CSSProperties}
+        style={
+          {
+            borderColor: 'var(--color-border)',
+            backgroundColor: 'var(--color-surface)',
+            color: 'var(--color-text)',
+            '--tw-ring-color': 'var(--color-primary)',
+          } as React.CSSProperties
+        }
         onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
       />
       {colour && (
@@ -1857,18 +2479,9 @@ const STATUS_STYLES: Record<string, { bg: string; text: string; label: string }>
 };
 
 function FeedbackTab({ workspaceId }: { workspaceId?: string }) {
-  const [items, setItems] = useState<FeedbackItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const feedbackQuery = useFeedback(workspaceId);
+  const items = feedbackQuery.data ?? [];
   const [filter, setFilter] = useState<'all' | 'bug' | 'feature'>('all');
-
-  useEffect(() => {
-    if (!workspaceId) return;
-    setLoading(true);
-    feedbackApi.list(workspaceId).then((res) => {
-      setItems(res.data);
-      setLoading(false);
-    }).catch(() => setLoading(false));
-  }, [workspaceId]);
 
   const filtered = filter === 'all' ? items : items.filter((i) => i.type === filter);
 
@@ -1880,20 +2493,26 @@ function FeedbackTab({ workspaceId }: { workspaceId?: string }) {
 
   return (
     <div className="space-y-5">
-      <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>Feedback History</h3>
+      <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>
+        Feedback History
+      </h3>
       <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
         Bug reports and feature requests submitted via the toolbar buttons.
       </p>
 
       <div className="flex gap-2">
-        {([['all', 'All'], ['bug', 'Bugs'], ['feature', 'Features']] as const).map(([key, label]) => (
+        {(
+          [
+            ['all', 'All'],
+            ['bug', 'Bugs'],
+            ['feature', 'Features'],
+          ] as const
+        ).map(([key, label]) => (
           <button
             key={key}
             onClick={() => setFilter(key)}
             className={`px-3 py-1.5 text-xs font-medium rounded-lg flex items-center gap-1.5 transition-colors ${
-              filter === key
-                ? 'text-white'
-                : 'hover:bg-[var(--color-grey-2)]'
+              filter === key ? 'text-white' : 'hover:bg-muted'
             }`}
             style={
               filter === key
@@ -1908,11 +2527,18 @@ function FeedbackTab({ workspaceId }: { workspaceId?: string }) {
         ))}
       </div>
 
-      {loading ? (
-        <div className="py-8 text-center text-sm" style={{ color: 'var(--color-text-secondary)' }}>Loading...</div>
+      {feedbackQuery.isPending ? (
+        <div className="py-8 text-center text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+          Loading...
+        </div>
+      ) : feedbackQuery.isError ? (
+        <div className="py-8 flex justify-center">
+          <SectionError onRetry={() => feedbackQuery.refetch()} />
+        </div>
       ) : filtered.length === 0 ? (
         <div className="py-8 text-center text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-          No {filter === 'all' ? 'feedback' : filter === 'bug' ? 'bug reports' : 'feature requests'} yet.
+          No {filter === 'all' ? 'feedback' : filter === 'bug' ? 'bug reports' : 'feature requests'}{' '}
+          yet.
         </div>
       ) : (
         <div className="space-y-2">
@@ -1922,16 +2548,22 @@ function FeedbackTab({ workspaceId }: { workspaceId?: string }) {
               <div
                 key={item.id}
                 className="p-3 rounded-lg border"
-                style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-grey-1)' }}
+                style={{
+                  borderColor: 'var(--color-border)',
+                  backgroundColor: 'var(--color-grey-1)',
+                }}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-2 min-w-0">
                     {item.type === 'bug' ? (
-                      <Bug size={14} className="text-red-500 shrink-0" />
+                      <Bug size={14} className="text-destructive shrink-0" />
                     ) : (
-                      <Lightbulb size={14} className="text-amber-500 shrink-0" />
+                      <Lightbulb size={14} className="text-caution shrink-0" />
                     )}
-                    <span className="text-sm font-medium truncate" style={{ color: 'var(--color-text)' }}>
+                    <span
+                      className="text-sm font-medium truncate"
+                      style={{ color: 'var(--color-text)' }}
+                    >
                       {item.title}
                     </span>
                   </div>
@@ -1942,10 +2574,16 @@ function FeedbackTab({ workspaceId }: { workspaceId?: string }) {
                     {status.label}
                   </span>
                 </div>
-                <p className="text-xs mt-1.5 line-clamp-2" style={{ color: 'var(--color-text-secondary)' }}>
+                <p
+                  className="text-xs mt-1.5 line-clamp-2"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
                   {item.description}
                 </p>
-                <div className="flex items-center gap-3 mt-2 text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                <div
+                  className="flex items-center gap-3 mt-2 text-xs"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
                   <span>{item.user_name}</span>
                   <span>{new Date(item.created_at).toLocaleDateString()}</span>
                 </div>

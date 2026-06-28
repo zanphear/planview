@@ -34,15 +34,15 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   markRead: async (workspaceId, ids) => {
     await notificationsApi.markRead(workspaceId, ids);
     set((s) => ({
-      notifications: s.notifications.map((n) =>
-        ids.includes(n.id) ? { ...n, is_read: true } : n
-      ),
+      notifications: s.notifications.map((n) => (ids.includes(n.id) ? { ...n, is_read: true } : n)),
       unreadCount: Math.max(0, s.unreadCount - ids.length),
     }));
   },
 
   markAllRead: async (workspaceId) => {
-    const unreadIds = get().notifications.filter((n) => !n.is_read).map((n) => n.id);
+    const unreadIds = get()
+      .notifications.filter((n) => !n.is_read)
+      .map((n) => n.id);
     if (unreadIds.length > 0) {
       await notificationsApi.markRead(workspaceId, unreadIds);
     }

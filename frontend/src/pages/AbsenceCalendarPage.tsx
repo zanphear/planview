@@ -1,40 +1,43 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import {
-  startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval,
-  format, isSameMonth, isToday, addMonths, subMonths, parseISO,
+  startOfMonth,
+  endOfMonth,
+  startOfWeek,
+  endOfWeek,
+  eachDayOfInterval,
+  format,
+  isSameMonth,
+  isToday,
+  addMonths,
+  subMonths,
+  parseISO,
 } from 'date-fns';
 import { useWorkspaceStore } from '../stores/workspaceStore';
-import { timeEntriesApi, type Absence } from '../api/timeEntries';
+import { type Absence } from '../api/timeEntries';
+import { useAbsences } from '../api/queries/timeEntries';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 
 export function AbsenceCalendarPage() {
   const workspace = useWorkspaceStore((s) => s.currentWorkspace);
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [absences, setAbsences] = useState<Absence[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!workspace) return;
-    const monthStart = startOfMonth(currentMonth);
-    const monthEnd = endOfMonth(currentMonth);
-    const calStart = startOfWeek(monthStart, { weekStartsOn: 1 });
-    const calEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
-
-    setLoading(true);
-    timeEntriesApi.absences(workspace.id, {
-      since: format(calStart, 'yyyy-MM-dd'),
-      until: format(calEnd, 'yyyy-MM-dd'),
-    }).then(({ data }) => setAbsences(data))
-      .catch(() => setAbsences([]))
-      .finally(() => setLoading(false));
-  }, [workspace, currentMonth]);
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
   const calStart = startOfWeek(monthStart, { weekStartsOn: 1 });
   const calEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
   const days = eachDayOfInterval({ start: calStart, end: calEnd });
+
+  const range = useMemo(
+    () => ({
+      since: format(calStart, 'yyyy-MM-dd'),
+      until: format(calEnd, 'yyyy-MM-dd'),
+    }),
+    [calStart, calEnd],
+  );
+
+  const { data, isPending, isError, refetch } = useAbsences(workspace?.id, range);
+  const absences = useMemo<Absence[]>(() => data ?? [], [data]);
 
   const absencesByDate = useMemo(() => {
     const map = new Map<string, Absence[]>();
@@ -45,7 +48,7 @@ export function AbsenceCalendarPage() {
       for (const d of rangeDays) {
         const key = format(d, 'yyyy-MM-dd');
         const existing = map.get(key) || [];
-        if (!existing.find(a => a.id === absence.id)) {
+        if (!existing.find((a) => a.id === absence.id)) {
           existing.push(absence);
         }
         map.set(key, existing);
@@ -72,13 +75,32 @@ export function AbsenceCalendarPage() {
     }));
   }, [absences]);
 
-  if (loading) return <LoadingSpinner />;
+  if (isPending) return <LoadingSpinner />;
+
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+        <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+          Couldn&apos;t load the absence calendar.
+        </p>
+        <button
+          onClick={() => refetch()}
+          className="px-4 py-2 text-sm font-medium rounded-lg text-white"
+          style={{ backgroundColor: 'var(--color-primary)' }}
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-6 h-full flex flex-col">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-bold" style={{ color: 'var(--color-text)' }}>Absence Calendar</h1>
+        <h1 className="text-xl font-bold" style={{ color: 'var(--color-text)' }}>
+          Absence Calendar
+        </h1>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
@@ -88,7 +110,10 @@ export function AbsenceCalendarPage() {
           >
             <ChevronLeft size={18} />
           </button>
-          <span className="text-sm font-medium min-w-[140px] text-center" style={{ color: 'var(--color-text)' }}>
+          <span
+            className="text-sm font-medium min-w-[140px] text-center"
+            style={{ color: 'var(--color-text)' }}
+          >
             {format(currentMonth, 'MMMM yyyy')}
           </span>
           <button
@@ -110,14 +135,21 @@ export function AbsenceCalendarPage() {
       </div>
 
       {/* Calendar grid */}
-      <div className="flex-1 border rounded-lg overflow-hidden" style={{ borderColor: 'var(--color-border)' }}>
+      <div
+        className="flex-1 border rounded-lg overflow-hidden"
+        style={{ borderColor: 'var(--color-border)' }}
+      >
         {/* Day headers */}
         <div className="grid grid-cols-7">
           {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d) => (
             <div
               key={d}
               className="px-2 py-2 text-xs font-medium text-center border-b"
-              style={{ color: 'var(--color-text-secondary)', borderColor: 'var(--color-border)', backgroundColor: 'var(--color-grey-1)' }}
+              style={{
+                color: 'var(--color-text-secondary)',
+                borderColor: 'var(--color-border)',
+                backgroundColor: 'var(--color-grey-1)',
+              }}
             >
               {d}
             </div>
@@ -135,11 +167,16 @@ export function AbsenceCalendarPage() {
                 className="min-h-[80px] border-b border-r p-1.5"
                 style={{
                   borderColor: 'var(--color-border)',
-                  backgroundColor: isToday(day) ? 'var(--color-primary-light, rgba(65,134,224,0.08))' : 'transparent',
+                  backgroundColor: isToday(day)
+                    ? 'var(--color-primary-light, rgba(65,134,224,0.08))'
+                    : 'transparent',
                   opacity: inMonth ? 1 : 0.4,
                 }}
               >
-                <div className={`text-xs font-medium mb-1 ${isToday(day) ? 'text-[var(--color-primary)] font-bold' : ''}`} style={{ color: isToday(day) ? undefined : 'var(--color-text-secondary)' }}>
+                <div
+                  className={`text-xs font-medium mb-1 ${isToday(day) ? 'text-accent font-bold' : ''}`}
+                  style={{ color: isToday(day) ? undefined : 'var(--color-text-secondary)' }}
+                >
                   {format(day, 'd')}
                 </div>
                 <div className="space-y-0.5">
@@ -148,13 +185,16 @@ export function AbsenceCalendarPage() {
                       key={absence.id}
                       className="px-1.5 py-0.5 rounded text-[10px] truncate"
                       style={{ backgroundColor: absence.colour + '20', color: absence.colour }}
-                      title={`${absence.user_name} — ${absence.label}`}
+                      title={`${absence.user_name}, ${absence.label}`}
                     >
                       {absence.user_name?.split(' ')[0]}
                     </div>
                   ))}
                   {dayAbsences.length > 3 && (
-                    <div className="text-[10px] px-1" style={{ color: 'var(--color-text-secondary)' }}>
+                    <div
+                      className="text-[10px] px-1"
+                      style={{ color: 'var(--color-text-secondary)' }}
+                    >
                       +{dayAbsences.length - 3} more
                     </div>
                   )}
@@ -176,7 +216,10 @@ export function AbsenceCalendarPage() {
               <div
                 key={person.userId}
                 className="flex items-center gap-3 p-3 rounded-lg border"
-                style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)' }}
+                style={{
+                  borderColor: 'var(--color-border)',
+                  backgroundColor: 'var(--color-surface)',
+                }}
               >
                 <div
                   className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium text-white shrink-0"
@@ -185,10 +228,16 @@ export function AbsenceCalendarPage() {
                   {person.userInitials || person.userName?.charAt(0)}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium truncate" style={{ color: 'var(--color-text)' }}>
+                  <div
+                    className="text-sm font-medium truncate"
+                    style={{ color: 'var(--color-text)' }}
+                  >
                     {person.userName}
                   </div>
-                  <div className="text-xs truncate" style={{ color: 'var(--color-text-secondary)' }}>
+                  <div
+                    className="text-xs truncate"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                  >
                     {person.absences.map((a) => a.label).join(', ')}
                   </div>
                 </div>
@@ -198,10 +247,10 @@ export function AbsenceCalendarPage() {
         </div>
       )}
 
-      {absences.length === 0 && !loading && (
+      {absences.length === 0 && (
         <div className="flex-1 flex items-center justify-center">
           <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-            No absences recorded for this period.
+            No absences recorded for this period. Book leave or log time off to see it here.
           </p>
         </div>
       )}

@@ -39,3 +39,9 @@ Thumbs.db
 
 # Build prompt (not needed in repo)
 planview-build-prompt.md
+
+# Production secrets (never commit; use deploy/.env.production.example as the template)
+deploy/.env.production
+.env.production
+*.env.production
+backend/openapi.json

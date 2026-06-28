@@ -26,7 +26,7 @@ async def stream_chat(messages: list[dict], workspace_name: str):
     async with httpx.AsyncClient(timeout=120.0) as client:
         async with client.stream(
             "POST",
-            f"{settings.ai_model_url}/v1/chat/completions",
+            settings.ai_chat_url,
             json={
                 "model": settings.ai_model_name,
                 "messages": full_messages,
@@ -82,7 +82,7 @@ async def _stream_llm(messages: list[dict]):
     async with httpx.AsyncClient(timeout=120.0) as client:
         async with client.stream(
             "POST",
-            f"{settings.ai_model_url}/v1/chat/completions",
+            settings.ai_chat_url,
             json={
                 "model": settings.ai_model_name,
                 "messages": messages,

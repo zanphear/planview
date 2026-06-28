@@ -27,8 +27,7 @@ export function CustomFieldsEditor({ taskId }: CustomFieldsEditorProps) {
 
   if (!loaded || fields.length === 0) return null;
 
-  const getValue = (fieldId: string) =>
-    values.find((v) => v.field_id === fieldId)?.value || '';
+  const getValue = (fieldId: string) => values.find((v) => v.field_id === fieldId)?.value || '';
 
   const saveValue = async (fieldId: string, value: string) => {
     if (!workspace) return;
@@ -40,14 +39,20 @@ export function CustomFieldsEditor({ taskId }: CustomFieldsEditorProps) {
 
   return (
     <div>
-      <label className="block text-xs font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
+      <label
+        className="block text-xs font-medium mb-2"
+        style={{ color: 'var(--color-text-secondary)' }}
+      >
         <Sliders size={12} className="inline mr-1" />
         Custom Fields
       </label>
       <div className="space-y-2">
         {fields.map((field) => (
           <div key={field.id}>
-            <label className="block text-[11px] mb-0.5" style={{ color: 'var(--color-text-secondary)' }}>
+            <label
+              className="block text-[11px] mb-0.5"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
               {field.name}
             </label>
             {field.field_type === 'checkbox' ? (
@@ -62,11 +67,17 @@ export function CustomFieldsEditor({ taskId }: CustomFieldsEditorProps) {
                 value={getValue(field.id)}
                 onChange={(e) => saveValue(field.id, e.target.value)}
                 className="w-full px-2 py-1 text-sm border rounded-lg"
-                style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+                style={{
+                  borderColor: 'var(--color-border)',
+                  backgroundColor: 'var(--color-surface)',
+                  color: 'var(--color-text)',
+                }}
               >
-                <option value="">—</option>
+                <option value="">, </option>
                 {JSON.parse(field.options).map((opt: string) => (
-                  <option key={opt} value={opt}>{opt}</option>
+                  <option key={opt} value={opt}>
+                    {opt}
+                  </option>
                 ))}
               </select>
             ) : field.field_type === 'number' ? (
@@ -75,7 +86,11 @@ export function CustomFieldsEditor({ taskId }: CustomFieldsEditorProps) {
                 value={getValue(field.id)}
                 onChange={(e) => saveValue(field.id, e.target.value)}
                 className="w-full px-2 py-1 text-sm border rounded-lg"
-                style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+                style={{
+                  borderColor: 'var(--color-border)',
+                  backgroundColor: 'var(--color-surface)',
+                  color: 'var(--color-text)',
+                }}
               />
             ) : field.field_type === 'date' ? (
               <input
@@ -83,7 +98,11 @@ export function CustomFieldsEditor({ taskId }: CustomFieldsEditorProps) {
                 value={getValue(field.id)}
                 onChange={(e) => saveValue(field.id, e.target.value)}
                 className="w-full px-2 py-1 text-sm border rounded-lg"
-                style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+                style={{
+                  borderColor: 'var(--color-border)',
+                  backgroundColor: 'var(--color-surface)',
+                  color: 'var(--color-text)',
+                }}
               />
             ) : (
               <input
@@ -95,13 +114,20 @@ export function CustomFieldsEditor({ taskId }: CustomFieldsEditorProps) {
                   setValues((prev) => {
                     const existing = prev.find((v) => v.field_id === field.id);
                     if (existing) {
-                      return prev.map((v) => v.field_id === field.id ? { ...v, value: val } : v);
+                      return prev.map((v) => (v.field_id === field.id ? { ...v, value: val } : v));
                     }
-                    return [...prev, { id: '', field_id: field.id, task_id: taskId, value: val, created_at: '' }];
+                    return [
+                      ...prev,
+                      { id: '', field_id: field.id, task_id: taskId, value: val, created_at: '' },
+                    ];
                   });
                 }}
                 className="w-full px-2 py-1 text-sm border rounded-lg"
-                style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+                style={{
+                  borderColor: 'var(--color-border)',
+                  backgroundColor: 'var(--color-surface)',
+                  color: 'var(--color-text)',
+                }}
               />
             )}
           </div>

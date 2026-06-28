@@ -1,4 +1,4 @@
-"""Email notification service — sends task-related emails via SMTP.
+"""Email notification service, sends task-related emails via SMTP.
 
 Requires SMTP env vars to be configured:
   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, SMTP_FROM
@@ -25,7 +25,7 @@ def _smtp_configured() -> bool:
 
 def send_email(to: str, subject: str, html_body: str) -> bool:
     if not _smtp_configured():
-        logger.info("SMTP not configured — would send to=%s subject=%s", to, subject)
+        logger.info("SMTP not configured, would send to=%s subject=%s", to, subject)
         return False
 
     try:

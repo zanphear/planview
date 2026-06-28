@@ -10,7 +10,7 @@ from app.websocket.events import emit_event
 
 logger = logging.getLogger(__name__)
 
-# Serialize LLM calls — one at a time to avoid overloading the model server
+# Serialize LLM calls, one at a time to avoid overloading the model server
 _semaphore = asyncio.Semaphore(1)
 
 

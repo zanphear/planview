@@ -15,8 +15,10 @@ export const workspacesApi = {
 
   create: (data: { name: string }) => api.post<Workspace>('/workspaces', data),
 
-  update: (workspaceId: string, data: { name?: string; enabled_modules?: Record<string, boolean> }) =>
-    api.put<Workspace>(`/workspaces/${workspaceId}`, data),
+  update: (
+    workspaceId: string,
+    data: { name?: string; enabled_modules?: Record<string, boolean> },
+  ) => api.put<Workspace>(`/workspaces/${workspaceId}`, data),
 
   delete: (workspaceId: string) => api.delete(`/workspaces/${workspaceId}`),
 };

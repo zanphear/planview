@@ -13,14 +13,20 @@ interface TeamManageModalProps {
   onTeamUpdated: (team: Team) => void;
 }
 
-export function TeamManageModal({ team, onSave, onDelete, onClose, onTeamUpdated }: TeamManageModalProps) {
+export function TeamManageModal({
+  team,
+  onSave,
+  onDelete,
+  onClose,
+  onTeamUpdated,
+}: TeamManageModalProps) {
   const workspace = useWorkspaceStore((s) => s.currentWorkspace);
   const [name, setName] = useState(team.name);
   const [isFavourite, setIsFavourite] = useState(team.is_favourite);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [allMembers, setAllMembers] = useState<User[]>([]);
   const [teamMemberIds, setTeamMemberIds] = useState<Set<string>>(
-    new Set(team.members.map((m) => m.id))
+    new Set(team.members.map((m) => m.id)),
   );
 
   useEffect(() => {
@@ -75,9 +81,19 @@ export function TeamManageModal({ team, onSave, onDelete, onClose, onTeamUpdated
         className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[480px] max-h-[80vh] rounded-xl shadow-2xl z-50 border flex flex-col"
         style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b shrink-0" style={{ borderColor: 'var(--color-border)' }}>
-          <h3 className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>Manage Team</h3>
-          <button onClick={onClose} className="p-1 rounded hover:opacity-70" style={{ color: 'var(--color-text-secondary)' }} aria-label="Close">
+        <div
+          className="flex items-center justify-between px-5 py-4 border-b shrink-0"
+          style={{ borderColor: 'var(--color-border)' }}
+        >
+          <h3 className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>
+            Manage Team
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-1 rounded hover:opacity-70"
+            style={{ color: 'var(--color-text-secondary)' }}
+            aria-label="Close"
+          >
             <X size={18} />
           </button>
         </div>
@@ -85,14 +101,26 @@ export function TeamManageModal({ team, onSave, onDelete, onClose, onTeamUpdated
         <div className="p-5 space-y-4 overflow-y-auto flex-1">
           {/* Name */}
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Team Name</label>
+            <label
+              className="block text-sm font-medium mb-1"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
+              Team Name
+            </label>
             <input
               autoFocus
               value={name}
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleSave()}
               className="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2"
-              style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
+              style={
+                {
+                  borderColor: 'var(--color-border)',
+                  backgroundColor: 'var(--color-surface)',
+                  color: 'var(--color-text)',
+                  '--tw-ring-color': 'var(--color-primary)',
+                } as React.CSSProperties
+              }
             />
           </div>
 
@@ -105,28 +133,42 @@ export function TeamManageModal({ team, onSave, onDelete, onClose, onTeamUpdated
             >
               <Star size={18} fill={isFavourite ? 'currentColor' : 'none'} />
             </button>
-            <span className="text-sm" style={{ color: 'var(--color-text)' }}>Favourite</span>
+            <span className="text-sm" style={{ color: 'var(--color-text)' }}>
+              Favourite
+            </span>
           </label>
 
           {/* Current members */}
           <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
+            <label
+              className="block text-sm font-medium mb-2"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
               Members ({currentMembers.length})
             </label>
             <div className="space-y-1">
               {currentMembers.length === 0 && (
-                <p className="text-xs py-2" style={{ color: 'var(--color-text-secondary)' }}>No members yet. Add members below.</p>
+                <p className="text-xs py-2" style={{ color: 'var(--color-text-secondary)' }}>
+                  No members yet. Add members below.
+                </p>
               )}
               {currentMembers.map((m) => (
                 <div
                   key={m.id}
-                  className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-[var(--color-grey-1)] group"
+                  className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-subtle group"
                 >
-                  <Avatar name={m.name} initials={m.initials || undefined} colour={m.colour} size={28} />
-                  <span className="text-sm flex-1 truncate" style={{ color: 'var(--color-text)' }}>{m.name}</span>
+                  <Avatar
+                    name={m.name}
+                    initials={m.initials || undefined}
+                    colour={m.colour}
+                    size={28}
+                  />
+                  <span className="text-sm flex-1 truncate" style={{ color: 'var(--color-text)' }}>
+                    {m.name}
+                  </span>
                   <button
                     onClick={() => handleRemoveMember(m.id)}
-                    className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-[var(--color-grey-2)] transition-opacity"
+                    className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-muted transition-opacity"
                     style={{ color: 'var(--color-danger, #ef4444)' }}
                     title="Remove from team"
                   >
@@ -140,20 +182,33 @@ export function TeamManageModal({ team, onSave, onDelete, onClose, onTeamUpdated
           {/* Available members to add */}
           {availableMembers.length > 0 && (
             <div>
-              <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-text-secondary)' }}>
+              <label
+                className="block text-sm font-medium mb-2"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
                 Add Members
               </label>
               <div className="space-y-1">
                 {availableMembers.map((m) => (
                   <div
                     key={m.id}
-                    className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-[var(--color-grey-1)] group"
+                    className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-subtle group"
                   >
-                    <Avatar name={m.name} initials={m.initials || undefined} colour={m.colour} size={28} />
-                    <span className="text-sm flex-1 truncate" style={{ color: 'var(--color-text-secondary)' }}>{m.name}</span>
+                    <Avatar
+                      name={m.name}
+                      initials={m.initials || undefined}
+                      colour={m.colour}
+                      size={28}
+                    />
+                    <span
+                      className="text-sm flex-1 truncate"
+                      style={{ color: 'var(--color-text-secondary)' }}
+                    >
+                      {m.name}
+                    </span>
                     <button
                       onClick={() => handleAddMember(m.id)}
-                      className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-[var(--color-grey-2)] transition-opacity"
+                      className="p-1 rounded opacity-0 group-hover:opacity-100 hover:bg-muted transition-opacity"
                       style={{ color: 'var(--color-primary)' }}
                       title="Add to team"
                     >
@@ -166,18 +221,21 @@ export function TeamManageModal({ team, onSave, onDelete, onClose, onTeamUpdated
           )}
 
           {/* Delete + Save */}
-          <div className="flex items-center justify-between pt-3 border-t" style={{ borderColor: 'var(--color-border)' }}>
+          <div
+            className="flex items-center justify-between pt-3 border-t"
+            style={{ borderColor: 'var(--color-border)' }}
+          >
             {!confirmDelete ? (
               <button
                 onClick={() => setConfirmDelete(true)}
-                className="flex items-center gap-1.5 text-sm text-red-600 hover:text-red-700"
+                className="flex items-center gap-1.5 text-sm text-destructive hover:text-destructive"
               >
                 <Trash2 size={14} />
                 Delete team
               </button>
             ) : (
               <div className="flex items-center gap-2">
-                <span className="text-sm text-red-600">Delete this team?</span>
+                <span className="text-sm text-destructive">Delete this team?</span>
                 <button
                   onClick={onDelete}
                   className="px-2.5 py-1 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700"

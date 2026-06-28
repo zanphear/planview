@@ -37,7 +37,10 @@ export function RecurrencePicker({ isRecurring, rule, onChange }: RecurrencePick
 
   return (
     <div>
-      <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>
+      <label
+        className="block text-xs font-medium mb-1"
+        style={{ color: 'var(--color-text-secondary)' }}
+      >
         <Repeat size={12} className="inline mr-1" />
         Repeat
       </label>
@@ -61,18 +64,28 @@ export function RecurrencePicker({ isRecurring, rule, onChange }: RecurrencePick
             style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
           >
             <button
-              onClick={() => { onChange(false, null); setOpen(false); }}
-              className="w-full text-left px-3 py-1.5 text-sm hover:bg-[var(--color-grey-1)]"
-              style={{ color: isRecurring ? 'var(--color-text-secondary)' : 'var(--color-primary)' }}
+              onClick={() => {
+                onChange(false, null);
+                setOpen(false);
+              }}
+              className="w-full text-left px-3 py-1.5 text-sm hover:bg-subtle"
+              style={{
+                color: isRecurring ? 'var(--color-text-secondary)' : 'var(--color-primary)',
+              }}
             >
               No repeat
             </button>
             {PRESETS.map((preset) => (
               <button
                 key={preset.rule}
-                onClick={() => { onChange(true, preset.rule); setOpen(false); }}
-                className="w-full text-left px-3 py-1.5 text-sm hover:bg-[var(--color-grey-1)]"
-                style={{ color: rule === preset.rule ? 'var(--color-primary)' : 'var(--color-text)' }}
+                onClick={() => {
+                  onChange(true, preset.rule);
+                  setOpen(false);
+                }}
+                className="w-full text-left px-3 py-1.5 text-sm hover:bg-subtle"
+                style={{
+                  color: rule === preset.rule ? 'var(--color-primary)' : 'var(--color-text)',
+                }}
               >
                 {preset.label}
               </button>

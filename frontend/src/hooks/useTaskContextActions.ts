@@ -11,25 +11,28 @@ export function useTaskContextActions(
 ) {
   const workspace = useWorkspaceStore((s) => s.currentWorkspace);
 
-  return useCallback(async (action: string, task: Task) => {
-    if (!workspace) return;
-    try {
-      if (action.startsWith('status:')) {
-        const status = action.split(':')[1];
-        const { data } = await tasksApi.update(workspace.id, task.id, { status });
-        setTasks((prev) => prev.map((t) => (t.id === task.id ? data : t)));
-      } else if (action === 'duplicate') {
-        const { data } = await tasksApi.duplicate(workspace.id, task.id);
-        setTasks((prev) => [...prev, data]);
-      } else if (action === 'delete') {
-        await tasksApi.delete(workspace.id, task.id);
-        setTasks((prev) => prev.filter((t) => t.id !== task.id));
-      } else if (action === 'colour') {
-        // Open task detail panel so they can pick a colour
-        setSelectedTask?.(task);
+  return useCallback(
+    async (action: string, task: Task) => {
+      if (!workspace) return;
+      try {
+        if (action.startsWith('status:')) {
+          const status = action.split(':')[1];
+          const { data } = await tasksApi.update(workspace.id, task.id, { status });
+          setTasks((prev) => prev.map((t) => (t.id === task.id ? data : t)));
+        } else if (action === 'duplicate') {
+          const { data } = await tasksApi.duplicate(workspace.id, task.id);
+          setTasks((prev) => [...prev, data]);
+        } else if (action === 'delete') {
+          await tasksApi.delete(workspace.id, task.id);
+          setTasks((prev) => prev.filter((t) => t.id !== task.id));
+        } else if (action === 'colour') {
+          // Open task detail panel so they can pick a colour
+          setSelectedTask?.(task);
+        }
+      } catch (err) {
+        console.error('Context action failed:', err);
       }
-    } catch (err) {
-      console.error('Context action failed:', err);
-    }
-  }, [workspace, setTasks, setSelectedTask]);
+    },
+    [workspace, setTasks, setSelectedTask],
+  );
 }

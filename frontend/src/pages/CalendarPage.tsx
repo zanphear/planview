@@ -1,8 +1,16 @@
 import { useEffect, useState, useMemo } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import {
-  startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval,
-  format, isSameMonth, isToday, addMonths, subMonths,
+  startOfMonth,
+  endOfMonth,
+  startOfWeek,
+  endOfWeek,
+  eachDayOfInterval,
+  format,
+  isSameMonth,
+  isToday,
+  addMonths,
+  subMonths,
 } from 'date-fns';
 import { useWorkspaceStore } from '../stores/workspaceStore';
 import { useTaskStore } from '../stores/taskStore';
@@ -56,7 +64,7 @@ export function CalendarPage() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-            className="p-2 rounded-lg hover:bg-[var(--color-grey-1)] transition-colors"
+            className="p-2 rounded-lg hover:bg-subtle transition-colors"
             style={{ color: 'var(--color-text-secondary)' }}
             aria-label="Previous month"
           >
@@ -64,14 +72,14 @@ export function CalendarPage() {
           </button>
           <button
             onClick={() => setCurrentMonth(new Date())}
-            className="px-3 py-1.5 text-sm font-medium rounded-lg hover:bg-[var(--color-grey-1)] transition-colors"
+            className="px-3 py-1.5 text-sm font-medium rounded-lg hover:bg-subtle transition-colors"
             style={{ color: 'var(--color-text)' }}
           >
             Today
           </button>
           <button
             onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-            className="p-2 rounded-lg hover:bg-[var(--color-grey-1)] transition-colors"
+            className="p-2 rounded-lg hover:bg-subtle transition-colors"
             style={{ color: 'var(--color-text-secondary)' }}
             aria-label="Next month"
           >
@@ -94,7 +102,10 @@ export function CalendarPage() {
       </div>
 
       {/* Calendar grid */}
-      <div className="grid grid-cols-7 flex-1 border-t border-l" style={{ borderColor: 'var(--color-border)' }}>
+      <div
+        className="grid grid-cols-7 flex-1 border-t border-l"
+        style={{ borderColor: 'var(--color-border)' }}
+      >
         {days.map((day) => {
           const key = format(day, 'yyyy-MM-dd');
           const dayTasks = tasksByDate.get(key) || [];
@@ -107,15 +118,23 @@ export function CalendarPage() {
               className="border-r border-b min-h-[100px] p-1"
               style={{
                 borderColor: 'var(--color-border)',
-                backgroundColor: today ? 'var(--color-primary-light, rgba(65,134,224,0.05))' : undefined,
+                backgroundColor: today
+                  ? 'var(--color-primary-light, rgba(65,134,224,0.05))'
+                  : undefined,
               }}
             >
               <div className="flex justify-end">
                 <span
                   className={`text-xs w-6 h-6 flex items-center justify-center rounded-full ${
-                    today ? 'bg-[var(--color-primary)] text-white font-bold' : ''
+                    today ? 'bg-accent text-white font-bold' : ''
                   }`}
-                  style={{ color: today ? undefined : inMonth ? 'var(--color-text)' : 'var(--color-text-secondary)' }}
+                  style={{
+                    color: today
+                      ? undefined
+                      : inMonth
+                        ? 'var(--color-text)'
+                        : 'var(--color-text-secondary)',
+                  }}
                 >
                   {format(day, 'd')}
                 </span>
@@ -135,7 +154,10 @@ export function CalendarPage() {
                   </div>
                 ))}
                 {dayTasks.length > 3 && (
-                  <div className="text-[10px] px-1" style={{ color: 'var(--color-text-secondary)' }}>
+                  <div
+                    className="text-[10px] px-1"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                  >
                     +{dayTasks.length - 3} more
                   </div>
                 )}

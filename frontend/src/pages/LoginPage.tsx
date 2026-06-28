@@ -43,7 +43,8 @@ export function LoginPage() {
       }
       navigate('/');
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { detail?: string }; status?: number } })?.response?.data?.detail;
+      const msg = (err as { response?: { data?: { detail?: string }; status?: number } })?.response
+        ?.data?.detail;
       if (msg === '2FA code required') {
         setNeeds2fa(true);
         setError('');
@@ -86,9 +87,15 @@ export function LoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <img src="/logo-color.png" alt="Siemens Energy" className="h-10 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold" style={{ color: 'var(--color-text)' }}>Planview</h1>
+          <h1 className="text-2xl font-bold" style={{ color: 'var(--color-text)' }}>
+            Planview
+          </h1>
           <p className="mt-1 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-            {isOidcOnly ? 'Sign in with your identity provider' : isRegister ? 'Create your account' : 'Sign in to your account'}
+            {isOidcOnly
+              ? 'Sign in with your identity provider'
+              : isRegister
+                ? 'Create your account'
+                : 'Sign in to your account'}
           </p>
         </div>
 
@@ -96,15 +103,29 @@ export function LoginPage() {
         {isOidcOnly && showOidcButton && (
           <div className="space-y-4">
             {error && (
-              <div className="text-sm px-3 py-2 rounded-lg" style={{ backgroundColor: 'rgba(228, 67, 50, 0.1)', color: 'var(--color-danger)' }}>{error}</div>
+              <div
+                className="text-sm px-3 py-2 rounded-lg"
+                style={{ backgroundColor: 'rgba(228, 67, 50, 0.1)', color: 'var(--color-danger)' }}
+              >
+                {error}
+              </div>
             )}
             <button
               onClick={handleOIDCLogin}
               disabled={oidcLoading}
-              className="w-full py-2.5 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-lg flex items-center justify-center gap-2"
+              className="w-full py-2.5 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:shadow-lg flex items-center justify-center gap-2"
               style={{ background: 'linear-gradient(135deg, #8A00E5, #4D217A)' }}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
                 <polyline points="10 17 15 12 10 7" />
                 <line x1="15" y1="12" x2="3" y2="12" />
@@ -120,46 +141,87 @@ export function LoginPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               {isRegister && (
                 <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Name</label>
+                  <label
+                    className="block text-sm font-medium mb-1"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                  >
+                    Name
+                  </label>
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
                     className="w-full px-3 py-2.5 border rounded-lg focus:ring-2 outline-none transition-shadow"
-                    style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
+                    style={
+                      {
+                        borderColor: 'var(--color-border)',
+                        backgroundColor: 'var(--color-surface)',
+                        color: 'var(--color-text)',
+                        '--tw-ring-color': 'var(--color-primary)',
+                      } as React.CSSProperties
+                    }
                     placeholder="Your name"
                   />
                 </div>
               )}
               <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Email</label>
+                <label
+                  className="block text-sm font-medium mb-1"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
+                  Email
+                </label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   className="w-full px-3 py-2.5 border rounded-lg focus:ring-2 outline-none transition-shadow"
-                  style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
+                  style={
+                    {
+                      borderColor: 'var(--color-border)',
+                      backgroundColor: 'var(--color-surface)',
+                      color: 'var(--color-text)',
+                      '--tw-ring-color': 'var(--color-primary)',
+                    } as React.CSSProperties
+                  }
                   placeholder="you@example.com"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Password</label>
+                <label
+                  className="block text-sm font-medium mb-1"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
+                  Password
+                </label>
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   className="w-full px-3 py-2.5 border rounded-lg focus:ring-2 outline-none transition-shadow"
-                  style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
+                  style={
+                    {
+                      borderColor: 'var(--color-border)',
+                      backgroundColor: 'var(--color-surface)',
+                      color: 'var(--color-text)',
+                      '--tw-ring-color': 'var(--color-primary)',
+                    } as React.CSSProperties
+                  }
                   placeholder="••••••••"
                 />
               </div>
 
               {needs2fa && !isRegister && (
                 <div>
-                  <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>2FA Code</label>
+                  <label
+                    className="block text-sm font-medium mb-1"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                  >
+                    2FA Code
+                  </label>
                   <input
                     type="text"
                     value={totpCode}
@@ -167,20 +229,35 @@ export function LoginPage() {
                     maxLength={6}
                     autoFocus
                     className="w-full px-3 py-2.5 border rounded-lg focus:ring-2 outline-none transition-shadow text-center font-mono tracking-widest"
-                    style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
+                    style={
+                      {
+                        borderColor: 'var(--color-border)',
+                        backgroundColor: 'var(--color-surface)',
+                        color: 'var(--color-text)',
+                        '--tw-ring-color': 'var(--color-primary)',
+                      } as React.CSSProperties
+                    }
                     placeholder="000000"
                   />
                 </div>
               )}
 
               {error && (
-                <div className="text-sm px-3 py-2 rounded-lg" style={{ backgroundColor: 'rgba(228, 67, 50, 0.1)', color: 'var(--color-danger)' }}>{error}</div>
+                <div
+                  className="text-sm px-3 py-2 rounded-lg"
+                  style={{
+                    backgroundColor: 'rgba(228, 67, 50, 0.1)',
+                    color: 'var(--color-danger)',
+                  }}
+                >
+                  {error}
+                </div>
               )}
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-2.5 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-lg"
+                className="w-full py-2.5 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:shadow-lg"
                 style={{ background: 'linear-gradient(135deg, #8A00E5, #4D217A)' }}
               >
                 {loading ? 'Loading...' : isRegister ? 'Create Account' : 'Sign In'}
@@ -192,16 +269,31 @@ export function LoginPage() {
               <>
                 <div className="flex items-center gap-3 my-5">
                   <div className="flex-1 h-px" style={{ backgroundColor: 'var(--color-border)' }} />
-                  <span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>or</span>
+                  <span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                    or
+                  </span>
                   <div className="flex-1 h-px" style={{ backgroundColor: 'var(--color-border)' }} />
                 </div>
                 <button
                   onClick={handleOIDCLogin}
                   disabled={oidcLoading}
-                  className="w-full py-2.5 rounded-lg font-medium border disabled:opacity-50 disabled:cursor-not-allowed transition-all hover:shadow-md flex items-center justify-center gap-2"
-                  style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)', backgroundColor: 'var(--color-surface)' }}
+                  className="w-full py-2.5 rounded-lg font-medium border disabled:opacity-50 disabled:cursor-not-allowed transition-colors hover:shadow-md flex items-center justify-center gap-2"
+                  style={{
+                    borderColor: 'var(--color-border)',
+                    color: 'var(--color-text)',
+                    backgroundColor: 'var(--color-surface)',
+                  }}
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
                     <polyline points="10 17 15 12 10 7" />
                     <line x1="15" y1="12" x2="3" y2="12" />
@@ -220,14 +312,21 @@ export function LoginPage() {
                 className="text-sm hover:underline"
                 style={{ color: 'var(--color-primary)' }}
               >
-                {isRegister ? 'Already have an account? Sign in' : "Don't have an account? Register"}
+                {isRegister
+                  ? 'Already have an account? Sign in'
+                  : "Don't have an account? Register"}
               </button>
             </div>
           </>
         )}
 
-        <div className="mt-8 pt-4 border-t text-center" style={{ borderColor: 'var(--color-border)' }}>
-          <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>Visual Planning & Scheduling</p>
+        <div
+          className="mt-8 pt-4 border-t text-center"
+          style={{ borderColor: 'var(--color-border)' }}
+        >
+          <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+            Visual Planning & Scheduling
+          </p>
         </div>
       </div>
     </div>

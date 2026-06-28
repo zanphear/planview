@@ -147,16 +147,16 @@ async def development_timeline(
             "user_id": str(plan.user_id),
             "user_name": plan.user.name if plan.user else None,
             "status": plan.status,
-            "start_date": plan.start_date.isoformat() if plan.start_date else None,
-            "end_date": plan.end_date.isoformat() if plan.end_date else None,
+            "start_date": plan.start_date,
+            "end_date": plan.end_date,
             "horizon_years": plan.horizon_years,
             "overall_progress": plan.overall_progress,
             "milestones": [
                 {
                     "id": str(m.id),
                     "title": m.title,
-                    "target_date": m.target_date.isoformat() if m.target_date else None,
-                    "completed_date": m.completed_date.isoformat() if m.completed_date else None,
+                    "target_date": m.target_date,
+                    "completed_date": m.completed_date,
                     "status": m.status,
                     "year": m.year,
                 }
@@ -168,7 +168,7 @@ async def development_timeline(
                     "title": g.title,
                     "status": g.status,
                     "progress": g.progress,
-                    "target_date": g.target_date.isoformat() if g.target_date else None,
+                    "target_date": g.target_date,
                     "year": g.year,
                 }
                 for g in plan.goals
@@ -447,19 +447,19 @@ async def skills_gap_analysis(
         raise HTTPException(status_code=404, detail="Development plan not found")
 
     # Get user's current competencies
-    result = await db.execute(
+    comp_result = await db.execute(
         select(UserCompetency)
         .where(UserCompetency.user_id == plan.user_id, UserCompetency.workspace_id == workspace_id)
     )
-    user_competencies = {str(uc.competency_id): uc for uc in result.scalars().all()}
+    user_competencies = {str(uc.competency_id): uc for uc in comp_result.scalars().all()}
 
     # If plan has a career pathway, get its required levels
     pathway_levels = []
     if plan.career_pathway_id:
-        result = await db.execute(
+        pathway_result = await db.execute(
             select(CareerPathway).where(CareerPathway.id == plan.career_pathway_id)
         )
-        pathway = result.scalar_one_or_none()
+        pathway = pathway_result.scalar_one_or_none()
         if pathway and pathway.levels:
             pathway_levels = pathway.levels
 

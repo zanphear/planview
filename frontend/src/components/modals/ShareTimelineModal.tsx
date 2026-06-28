@@ -22,7 +22,12 @@ interface ShareTimelineModalProps {
   onClose: () => void;
 }
 
-export function ShareTimelineModal({ teamId, projectId, entityName, onClose }: ShareTimelineModalProps) {
+export function ShareTimelineModal({
+  teamId,
+  projectId,
+  entityName,
+  onClose,
+}: ShareTimelineModalProps) {
   const workspace = useWorkspaceStore((s) => s.currentWorkspace);
   const [links, setLinks] = useState<SharedTimeline[]>([]);
   const [creating, setCreating] = useState(false);
@@ -44,11 +49,14 @@ export function ShareTimelineModal({ teamId, projectId, entityName, onClose }: S
     if (!workspace) return;
     setCreating(true);
     try {
-      const { data } = await api.post<SharedTimeline>(`/workspaces/${workspace.id}/shared-timelines`, {
-        name: `${entityName} - Shared`,
-        team_id: teamId || null,
-        project_id: projectId || null,
-      });
+      const { data } = await api.post<SharedTimeline>(
+        `/workspaces/${workspace.id}/shared-timelines`,
+        {
+          name: `${entityName} - Shared`,
+          team_id: teamId || null,
+          project_id: projectId || null,
+        },
+      );
       setLinks((prev) => [data, ...prev]);
       Toast.show('Share link created');
     } catch {
@@ -83,19 +91,31 @@ export function ShareTimelineModal({ teamId, projectId, entityName, onClose }: S
         className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[440px] rounded-xl shadow-2xl z-50 border"
         style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: 'var(--color-border)' }}>
-          <h3 className="text-base font-semibold flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
+        <div
+          className="flex items-center justify-between px-5 py-4 border-b"
+          style={{ borderColor: 'var(--color-border)' }}
+        >
+          <h3
+            className="text-base font-semibold flex items-center gap-2"
+            style={{ color: 'var(--color-text)' }}
+          >
             <Globe size={18} />
             Share Timeline
           </h3>
-          <button onClick={onClose} className="p-1 rounded hover:opacity-70" style={{ color: 'var(--color-text-secondary)' }} aria-label="Close">
+          <button
+            onClick={onClose}
+            className="p-1 rounded hover:opacity-70"
+            style={{ color: 'var(--color-text-secondary)' }}
+            aria-label="Close"
+          >
             <X size={18} />
           </button>
         </div>
 
         <div className="p-5 space-y-4">
           <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-            Create a public link to share <strong>{entityName}</strong> with anyone — no login required.
+            Create a public link to share <strong>{entityName}</strong> with anyone, no login
+            required.
           </p>
 
           <button
@@ -110,22 +130,31 @@ export function ShareTimelineModal({ teamId, projectId, entityName, onClose }: S
 
           {links.length > 0 && (
             <div className="space-y-2">
-              <label className="block text-xs font-medium" style={{ color: 'var(--color-text-secondary)' }}>
+              <label
+                className="block text-xs font-medium"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
                 Active Links
               </label>
               {links.map((link) => (
                 <div
                   key={link.id}
                   className="flex items-center gap-2 p-2.5 rounded-lg border"
-                  style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-grey-1)' }}
+                  style={{
+                    borderColor: 'var(--color-border)',
+                    backgroundColor: 'var(--color-grey-1)',
+                  }}
                 >
                   <Globe size={14} style={{ color: 'var(--color-text-secondary)' }} />
-                  <span className="text-sm flex-1 truncate font-mono" style={{ color: 'var(--color-text)' }}>
+                  <span
+                    className="text-sm flex-1 truncate font-mono"
+                    style={{ color: 'var(--color-text)' }}
+                  >
                     /shared/{link.token.slice(0, 12)}...
                   </span>
                   <button
                     onClick={() => copyLink(link.token, link.id)}
-                    className="p-1.5 rounded hover:bg-[var(--color-grey-2)]"
+                    className="p-1.5 rounded hover:bg-muted"
                     style={{ color: 'var(--color-primary)' }}
                     title="Copy link"
                   >
@@ -133,7 +162,7 @@ export function ShareTimelineModal({ teamId, projectId, entityName, onClose }: S
                   </button>
                   <button
                     onClick={() => handleDelete(link.id)}
-                    className="p-1.5 rounded hover:bg-[var(--color-grey-2)]"
+                    className="p-1.5 rounded hover:bg-muted"
                     style={{ color: 'var(--color-danger, #ef4444)' }}
                     title="Delete link"
                   >

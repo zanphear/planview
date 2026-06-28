@@ -1,17 +1,49 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
-  Users, Search, Building2, MapPin, Phone, Mail, Calendar, FileText,
-  Upload, Download, Trash2, ChevronRight, ChevronDown, Plus, X, EyeOff,
-  Briefcase, Shield, UserCheck, Network, Grid3X3, User as UserIcon,
-  Heart, Baby, UtensilsCrossed, AlertTriangle, Edit3, Save, Camera,
+  Users,
+  Search,
+  Building2,
+  MapPin,
+  Phone,
+  Mail,
+  Calendar,
+  FileText,
+  Upload,
+  Download,
+  Trash2,
+  ChevronRight,
+  ChevronDown,
+  Plus,
+  X,
+  EyeOff,
+  Briefcase,
+  Shield,
+  UserCheck,
+  Network,
+  Grid3X3,
+  User as UserIcon,
+  Heart,
+  Baby,
+  UtensilsCrossed,
+  AlertTriangle,
+  Edit3,
+  Save,
+  Camera,
 } from 'lucide-react';
 import { useWorkspaceStore } from '../stores/workspaceStore';
-import { usePeopleStore } from '../stores/peopleStore';
 import { peopleApi } from '../api/people';
 import type { PersonProfile, PersonInsights, PersonDocument, OrgChartNode } from '../api/people';
-import { membersApi } from '../api/users';
 import type { User } from '../api/users';
+import {
+  useProfiles,
+  useOrgChart,
+  useWorkspaceMembers,
+  useCurrentUser,
+  useUpdateProfile,
+  useUploadProfileAvatar,
+  useCreateProfile,
+} from '../api/queries/people';
 import { Toast } from '../components/shared/Toast';
 import { LookupSelect } from '../components/shared/LookupSelect';
 import { StatCard } from '../components/shared/StatCard';
@@ -37,8 +69,18 @@ const DOC_TYPES: Record<string, { label: string; icon: string }> = {
   other: { label: 'Other', icon: '📎' },
 };
 
-function Avatar({ name, initials, colour, avatarUrl, size = 40 }: {
-  name: string; initials: string | null; colour: string | null; avatarUrl: string | null; size?: number;
+function Avatar({
+  name,
+  initials,
+  colour,
+  avatarUrl,
+  size = 40,
+}: {
+  name: string;
+  initials: string | null;
+  colour: string | null;
+  avatarUrl: string | null;
+  size?: number;
 }) {
   if (avatarUrl) {
     return (
@@ -53,7 +95,12 @@ function Avatar({ name, initials, colour, avatarUrl, size = 40 }: {
   return (
     <div
       className="rounded-full flex items-center justify-center text-white font-semibold"
-      style={{ width: size, height: size, backgroundColor: colour || '#4186E0', fontSize: size * 0.4 }}
+      style={{
+        width: size,
+        height: size,
+        backgroundColor: colour || '#4186E0',
+        fontSize: size * 0.4,
+      }}
     >
       {initials || name.charAt(0).toUpperCase()}
     </div>
@@ -62,7 +109,13 @@ function Avatar({ name, initials, colour, avatarUrl, size = 40 }: {
 
 // --- Org Chart ---
 
-function OrgChartNodeView({ node, onSelect }: { node: OrgChartNode; onSelect: (userId: string) => void }) {
+function OrgChartNodeView({
+  node,
+  onSelect,
+}: {
+  node: OrgChartNode;
+  onSelect: (userId: string) => void;
+}) {
   const [expanded, setExpanded] = useState(true);
   const hasChildren = node.children.length > 0;
 
@@ -70,7 +123,7 @@ function OrgChartNodeView({ node, onSelect }: { node: OrgChartNode; onSelect: (u
     <div className="ml-6">
       <div className="flex items-center gap-2 py-1.5">
         {hasChildren ? (
-          <button onClick={() => setExpanded(!expanded)} className="p-0.5 hover:bg-[var(--color-grey-1)] rounded">
+          <button onClick={() => setExpanded(!expanded)} className="p-0.5 hover:bg-subtle rounded">
             {expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           </button>
         ) : (
@@ -78,12 +131,24 @@ function OrgChartNodeView({ node, onSelect }: { node: OrgChartNode; onSelect: (u
         )}
         <button
           onClick={() => onSelect(node.user_id)}
-          className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-[var(--color-grey-2)] transition-colors"
+          className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-muted transition-colors"
         >
-          <Avatar name={node.name} initials={node.initials} colour={node.colour} avatarUrl={node.avatar_url} size={32} />
+          <Avatar
+            name={node.name}
+            initials={node.initials}
+            colour={node.colour}
+            avatarUrl={node.avatar_url}
+            size={32}
+          />
           <div className="text-left">
-            <div className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>{node.name}</div>
-            {node.job_title && <div className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>{node.job_title}</div>}
+            <div className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+              {node.name}
+            </div>
+            {node.job_title && (
+              <div className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                {node.job_title}
+              </div>
+            )}
           </div>
         </button>
       </div>
@@ -100,7 +165,14 @@ function OrgChartNodeView({ node, onSelect }: { node: OrgChartNode; onSelect: (u
 
 // --- Profile Detail ---
 
-function ProfileDetail({ profile: initialProfile, workspaceId, currentUserId, currentUserRole, onBack, allMembers }: {
+function ProfileDetail({
+  profile: initialProfile,
+  workspaceId,
+  currentUserId,
+  currentUserRole,
+  onBack,
+  allMembers,
+}: {
   profile: PersonProfile;
   workspaceId: string;
   currentUserId: string;
@@ -120,9 +192,13 @@ function ProfileDetail({ profile: initialProfile, workspaceId, currentUserId, cu
   const [uploadType, setUploadType] = useState('other');
   const [uploadExpiry, setUploadExpiry] = useState('');
   const [uploadNotes, setUploadNotes] = useState('');
-  const updateProfileStore = usePeopleStore((s) => s.updateProfile);
+  const updateProfile = useUpdateProfile(workspaceId);
+  const uploadAvatar = useUploadProfileAvatar(workspaceId);
 
-  const isManagerOrAdmin = currentUserRole === 'owner' || currentUserRole === 'admin' || profile.manager_id === currentUserId;
+  const isManagerOrAdmin =
+    currentUserRole === 'owner' ||
+    currentUserRole === 'admin' ||
+    profile.manager_id === currentUserId;
 
   const loadInsights = useCallback(async () => {
     if (!isManagerOrAdmin) return;
@@ -142,9 +218,8 @@ function ProfileDetail({ profile: initialProfile, workspaceId, currentUserId, cu
 
   const handleSaveProfile = async () => {
     try {
-      const { data } = await peopleApi.update(workspaceId, profile.user_id, editData);
+      const data = await updateProfile.mutateAsync({ userId: profile.user_id, data: editData });
       setProfile(data);
-      updateProfileStore(data);
       setEditing(false);
       setEditData({});
       Toast.show('Profile updated');
@@ -169,9 +244,8 @@ function ProfileDetail({ profile: initialProfile, workspaceId, currentUserId, cu
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      const { data } = await peopleApi.uploadAvatar(workspaceId, profile.user_id, file);
+      const data = await uploadAvatar.mutateAsync({ userId: profile.user_id, file });
       setProfile(data);
-      updateProfileStore(data);
       Toast.show('Avatar uploaded');
     } catch {
       Toast.show('Failed to upload avatar');
@@ -184,8 +258,12 @@ function ProfileDetail({ profile: initialProfile, workspaceId, currentUserId, cu
     setUploading(true);
     try {
       const { data } = await peopleApi.uploadDocument(
-        workspaceId, profile.user_id, file, uploadType,
-        uploadExpiry || undefined, uploadNotes || undefined
+        workspaceId,
+        profile.user_id,
+        file,
+        uploadType,
+        uploadExpiry || undefined,
+        uploadNotes || undefined,
       );
       setDocuments((prev) => [data, ...prev]);
       setUploadExpiry('');
@@ -234,12 +312,19 @@ function ProfileDetail({ profile: initialProfile, workspaceId, currentUserId, cu
     <div className="max-w-4xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
-        <button onClick={onBack} className="text-sm hover:opacity-80" style={{ color: 'var(--color-primary)' }}>
+        <button
+          onClick={onBack}
+          className="text-sm hover:opacity-80"
+          style={{ color: 'var(--color-primary)' }}
+        >
           &larr; Back to directory
         </button>
       </div>
 
-      <div className="rounded-xl shadow-sm border overflow-hidden" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
+      <div
+        className="rounded-xl shadow-sm border overflow-hidden"
+        style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+      >
         {/* Profile header */}
         <div className="bg-gradient-to-r from-blue-500 to-purple-600 px-8 py-6">
           <div className="flex items-center gap-5">
@@ -253,7 +338,12 @@ function ProfileDetail({ profile: initialProfile, workspaceId, currentUserId, cu
               />
               <label className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity">
                 <Camera size={20} className="text-white" />
-                <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  className="hidden"
+                />
               </label>
             </div>
             <div>
@@ -288,23 +378,24 @@ function ProfileDetail({ profile: initialProfile, workspaceId, currentUserId, cu
         {/* Tabs */}
         <div className="border-b px-8" style={{ borderColor: 'var(--color-border)' }}>
           <div className="flex gap-6">
-            {tabs.filter((t) => t.show).map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 py-3 px-1 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === tab.id
-                    ? 'border-blue-500'
-                    : 'border-transparent hover:opacity-80'
-                }`}
-                style={{
-                  color: activeTab === tab.id ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-                }}
-              >
-                <tab.icon size={16} />
-                {tab.label}
-              </button>
-            ))}
+            {tabs
+              .filter((t) => t.show)
+              .map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 py-3 px-1 text-sm font-medium border-b-2 transition-colors ${
+                    activeTab === tab.id ? 'border-blue-500' : 'border-transparent hover:opacity-80'
+                  }`}
+                  style={{
+                    color:
+                      activeTab === tab.id ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+                  }}
+                >
+                  <tab.icon size={16} />
+                  {tab.label}
+                </button>
+              ))}
           </div>
         </div>
 
@@ -313,18 +404,35 @@ function ProfileDetail({ profile: initialProfile, workspaceId, currentUserId, cu
           {activeTab === 'overview' && (
             <div>
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>Profile Details</h2>
+                <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>
+                  Profile Details
+                </h2>
                 {!editing ? (
                   <button
-                    onClick={() => { setEditing(true); setEditData({}); }}
+                    onClick={() => {
+                      setEditing(true);
+                      setEditData({});
+                    }}
                     className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100"
                   >
                     <Edit3 size={14} /> Edit
                   </button>
                 ) : (
                   <div className="flex gap-2">
-                    <button onClick={() => { setEditing(false); setEditData({}); }} className="px-3 py-1.5 text-sm rounded-lg hover:bg-[var(--color-grey-1)]" style={{ color: 'var(--color-text-secondary)' }}>Cancel</button>
-                    <button onClick={handleSaveProfile} className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    <button
+                      onClick={() => {
+                        setEditing(false);
+                        setEditData({});
+                      }}
+                      className="px-3 py-1.5 text-sm rounded-lg hover:bg-subtle"
+                      style={{ color: 'var(--color-text-secondary)' }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSaveProfile}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    >
                       <Save size={14} /> Save
                     </button>
                   </div>
@@ -333,7 +441,10 @@ function ProfileDetail({ profile: initialProfile, workspaceId, currentUserId, cu
 
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <label className="flex items-center gap-1.5 text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>
+                  <label
+                    className="flex items-center gap-1.5 text-sm font-medium mb-1"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                  >
                     <Briefcase size={16} /> Job Title
                   </label>
                   {editing ? (
@@ -343,14 +454,23 @@ function ProfileDetail({ profile: initialProfile, workspaceId, currentUserId, cu
                       onChange={(v) => setEditData({ ...editData, job_title: v })}
                       placeholder="Select job title..."
                       className="w-full px-3 py-2 border rounded-lg text-sm"
-                      style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
+                      style={{
+                        backgroundColor: 'var(--color-surface)',
+                        borderColor: 'var(--color-border)',
+                        color: 'var(--color-text)',
+                      }}
                     />
                   ) : (
-                    <p className="text-sm" style={{ color: 'var(--color-text)' }}>{profile.job_title || 'Not specified'}</p>
+                    <p className="text-sm" style={{ color: 'var(--color-text)' }}>
+                      {profile.job_title || 'Not specified'}
+                    </p>
                   )}
                 </div>
                 <div>
-                  <label className="flex items-center gap-1.5 text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>
+                  <label
+                    className="flex items-center gap-1.5 text-sm font-medium mb-1"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                  >
                     <Building2 size={16} /> Department
                   </label>
                   {editing ? (
@@ -360,14 +480,23 @@ function ProfileDetail({ profile: initialProfile, workspaceId, currentUserId, cu
                       onChange={(v) => setEditData({ ...editData, department: v })}
                       placeholder="Select department..."
                       className="w-full px-3 py-2 border rounded-lg text-sm"
-                      style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
+                      style={{
+                        backgroundColor: 'var(--color-surface)',
+                        borderColor: 'var(--color-border)',
+                        color: 'var(--color-text)',
+                      }}
                     />
                   ) : (
-                    <p className="text-sm" style={{ color: 'var(--color-text)' }}>{profile.department || 'Not specified'}</p>
+                    <p className="text-sm" style={{ color: 'var(--color-text)' }}>
+                      {profile.department || 'Not specified'}
+                    </p>
                   )}
                 </div>
                 <div>
-                  <label className="flex items-center gap-1.5 text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>
+                  <label
+                    className="flex items-center gap-1.5 text-sm font-medium mb-1"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                  >
                     <MapPin size={16} /> Location
                   </label>
                   {editing ? (
@@ -377,86 +506,142 @@ function ProfileDetail({ profile: initialProfile, workspaceId, currentUserId, cu
                       onChange={(v) => setEditData({ ...editData, location: v })}
                       placeholder="Select location..."
                       className="w-full px-3 py-2 border rounded-lg text-sm"
-                      style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
+                      style={{
+                        backgroundColor: 'var(--color-surface)',
+                        borderColor: 'var(--color-border)',
+                        color: 'var(--color-text)',
+                      }}
                     />
                   ) : (
-                    <p className="text-sm" style={{ color: 'var(--color-text)' }}>{profile.location || 'Not specified'}</p>
+                    <p className="text-sm" style={{ color: 'var(--color-text)' }}>
+                      {profile.location || 'Not specified'}
+                    </p>
                   )}
                 </div>
                 <Field
-                  label="Phone" icon={<Phone size={16} />}
+                  label="Phone"
+                  icon={<Phone size={16} />}
                   value={editing ? (editData.phone ?? profile.phone ?? '') : profile.phone}
                   editing={editing}
                   onChange={(v) => setEditData({ ...editData, phone: v })}
                 />
                 <Field
-                  label="Email" icon={<Mail size={16} />}
+                  label="Email"
+                  icon={<Mail size={16} />}
                   value={profile.user_email}
                   editing={false}
                 />
                 <Field
-                  label="Employee ID" icon={<Shield size={16} />}
-                  value={editing ? (editData.employee_id ?? profile.employee_id ?? '') : profile.employee_id}
+                  label="Employee ID"
+                  icon={<Shield size={16} />}
+                  value={
+                    editing
+                      ? (editData.employee_id ?? profile.employee_id ?? '')
+                      : profile.employee_id
+                  }
                   editing={editing}
                   onChange={(v) => setEditData({ ...editData, employee_id: v })}
                 />
                 <div>
-                  <label className="flex items-center gap-1.5 text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>
+                  <label
+                    className="flex items-center gap-1.5 text-sm font-medium mb-1"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                  >
                     <UserCheck size={16} /> Manager
                   </label>
                   {editing ? (
                     <select
                       value={editData.manager_id ?? profile.manager_id ?? ''}
-                      onChange={(e) => setEditData({ ...editData, manager_id: e.target.value || null })}
+                      onChange={(e) =>
+                        setEditData({ ...editData, manager_id: e.target.value || null })
+                      }
                       className="w-full px-3 py-2 border rounded-lg text-sm"
-                      style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
+                      style={{
+                        backgroundColor: 'var(--color-surface)',
+                        borderColor: 'var(--color-border)',
+                        color: 'var(--color-text)',
+                      }}
                     >
                       <option value="">No manager</option>
-                      {allMembers.filter((m) => m.id !== profile.user_id).map((m) => (
-                        <option key={m.id} value={m.id}>{m.name}</option>
-                      ))}
+                      {allMembers
+                        .filter((m) => m.id !== profile.user_id)
+                        .map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.name}
+                          </option>
+                        ))}
                     </select>
                   ) : (
-                    <p className="text-sm" style={{ color: 'var(--color-text)' }}>{profile.manager_name || 'Not assigned'}</p>
+                    <p className="text-sm" style={{ color: 'var(--color-text)' }}>
+                      {profile.manager_name || 'Not assigned'}
+                    </p>
                   )}
                 </div>
                 <div>
-                  <label className="flex items-center gap-1.5 text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>
+                  <label
+                    className="flex items-center gap-1.5 text-sm font-medium mb-1"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                  >
                     <Briefcase size={16} /> Contract Type
                   </label>
                   {editing ? (
                     <select
                       value={editData.contract_type ?? profile.contract_type ?? ''}
-                      onChange={(e) => setEditData({ ...editData, contract_type: e.target.value || null })}
+                      onChange={(e) =>
+                        setEditData({ ...editData, contract_type: e.target.value || null })
+                      }
                       className="w-full px-3 py-2 border rounded-lg text-sm"
-                      style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
+                      style={{
+                        backgroundColor: 'var(--color-surface)',
+                        borderColor: 'var(--color-border)',
+                        color: 'var(--color-text)',
+                      }}
                     >
                       <option value="">Not specified</option>
                       {Object.entries(CONTRACT_TYPES).map(([key, { label }]) => (
-                        <option key={key} value={key}>{label}</option>
+                        <option key={key} value={key}>
+                          {label}
+                        </option>
                       ))}
                     </select>
                   ) : (
-                    <p className="text-sm" style={{ color: 'var(--color-text)' }}>{contractInfo?.label || 'Not specified'}</p>
+                    <p className="text-sm" style={{ color: 'var(--color-text)' }}>
+                      {contractInfo?.label || 'Not specified'}
+                    </p>
                   )}
                 </div>
                 <Field
-                  label="Contract Start" icon={<Calendar size={16} />}
-                  value={editing ? (editData.contract_start ?? profile.contract_start ?? '') : profile.contract_start}
+                  label="Contract Start"
+                  icon={<Calendar size={16} />}
+                  value={
+                    editing
+                      ? (editData.contract_start ?? profile.contract_start ?? '')
+                      : profile.contract_start
+                  }
                   editing={editing}
                   type="date"
                   onChange={(v) => setEditData({ ...editData, contract_start: v || null })}
                 />
                 <Field
-                  label="Contract End" icon={<Calendar size={16} />}
-                  value={editing ? (editData.contract_end ?? profile.contract_end ?? '') : profile.contract_end}
+                  label="Contract End"
+                  icon={<Calendar size={16} />}
+                  value={
+                    editing
+                      ? (editData.contract_end ?? profile.contract_end ?? '')
+                      : profile.contract_end
+                  }
                   editing={editing}
                   type="date"
                   onChange={(v) => setEditData({ ...editData, contract_end: v || null })}
                 />
                 <Field
-                  label="Probation End" icon={<Calendar size={16} />}
-                  value={editing ? (editData.probation_end ?? profile.probation_end ?? '') : profile.probation_end}
+                  label="Probation End"
+                  icon={<Calendar size={16} />}
+                  value={
+                    editing
+                      ? (editData.probation_end ?? profile.probation_end ?? '')
+                      : profile.probation_end
+                  }
                   editing={editing}
                   type="date"
                   onChange={(v) => setEditData({ ...editData, probation_end: v || null })}
@@ -465,17 +650,28 @@ function ProfileDetail({ profile: initialProfile, workspaceId, currentUserId, cu
 
               {/* Notes */}
               <div className="mt-6">
-                <label className="text-sm font-medium mb-1 block" style={{ color: 'var(--color-text-secondary)' }}>Notes</label>
+                <label
+                  className="text-sm font-medium mb-1 block"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
+                  Notes
+                </label>
                 {editing ? (
                   <textarea
                     value={editData.notes ?? profile.notes ?? ''}
                     onChange={(e) => setEditData({ ...editData, notes: e.target.value })}
                     rows={4}
                     className="w-full px-3 py-2 border rounded-lg text-sm resize-none"
-                    style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
+                    style={{
+                      backgroundColor: 'var(--color-surface)',
+                      borderColor: 'var(--color-border)',
+                      color: 'var(--color-text)',
+                    }}
                   />
                 ) : (
-                  <p className="text-sm whitespace-pre-wrap" style={{ color: 'var(--color-text)' }}>{profile.notes || 'No notes'}</p>
+                  <p className="text-sm whitespace-pre-wrap" style={{ color: 'var(--color-text)' }}>
+                    {profile.notes || 'No notes'}
+                  </p>
                 )}
               </div>
             </div>
@@ -485,107 +681,189 @@ function ProfileDetail({ profile: initialProfile, workspaceId, currentUserId, cu
             <div>
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>Personal Insights</h2>
-                  <span className="flex items-center gap-1 px-2 py-0.5 text-xs bg-amber-50 text-amber-700 rounded-full border border-amber-200">
+                  <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>
+                    Personal Insights
+                  </h2>
+                  <span className="flex items-center gap-1 px-2 py-0.5 text-xs bg-amber-50 text-caution rounded-full border border-caution">
                     <EyeOff size={12} /> Manager only
                   </span>
                 </div>
                 {!insightsEditing ? (
                   <button
-                    onClick={() => { setInsightsEditing(true); setInsightsData(insights || {}); }}
+                    onClick={() => {
+                      setInsightsEditing(true);
+                      setInsightsData(insights || {});
+                    }}
                     className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100"
                   >
                     <Edit3 size={14} /> Edit
                   </button>
                 ) : (
                   <div className="flex gap-2">
-                    <button onClick={() => { setInsightsEditing(false); setInsightsData({}); }} className="px-3 py-1.5 text-sm rounded-lg hover:bg-[var(--color-grey-1)]" style={{ color: 'var(--color-text-secondary)' }}>Cancel</button>
-                    <button onClick={handleSaveInsights} className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    <button
+                      onClick={() => {
+                        setInsightsEditing(false);
+                        setInsightsData({});
+                      }}
+                      className="px-3 py-1.5 text-sm rounded-lg hover:bg-subtle"
+                      style={{ color: 'var(--color-text-secondary)' }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSaveInsights}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    >
                       <Save size={14} /> Save
                     </button>
                   </div>
                 )}
               </div>
 
-              <div className="bg-amber-50/50 border border-amber-200 rounded-lg p-4 mb-6">
-                <p className="text-sm text-amber-800 flex items-center gap-2">
+              <div className="bg-amber-50/50 border border-caution rounded-lg p-4 mb-6">
+                <p className="text-sm text-caution flex items-center gap-2">
                   <AlertTriangle size={16} />
-                  This information is confidential and only visible to the person's line manager and workspace admins.
+                  This information is confidential and only visible to the person's line manager and
+                  workspace admins.
                 </p>
               </div>
 
               {insights ? (
                 <div className="grid grid-cols-2 gap-6">
                   <Field
-                    label="Date of Birth" icon={<Calendar size={16} />}
-                    value={insightsEditing ? (insightsData.date_of_birth ?? insights.date_of_birth ?? '') : insights.date_of_birth}
-                    editing={insightsEditing} type="date"
+                    label="Date of Birth"
+                    icon={<Calendar size={16} />}
+                    value={
+                      insightsEditing
+                        ? (insightsData.date_of_birth ?? insights.date_of_birth ?? '')
+                        : insights.date_of_birth
+                    }
+                    editing={insightsEditing}
+                    type="date"
                     onChange={(v) => setInsightsData({ ...insightsData, date_of_birth: v || null })}
                   />
                   <Field
-                    label="Partner's Name" icon={<Heart size={16} />}
-                    value={insightsEditing ? (insightsData.partner_name ?? insights.partner_name ?? '') : insights.partner_name}
+                    label="Partner's Name"
+                    icon={<Heart size={16} />}
+                    value={
+                      insightsEditing
+                        ? (insightsData.partner_name ?? insights.partner_name ?? '')
+                        : insights.partner_name
+                    }
                     editing={insightsEditing}
                     onChange={(v) => setInsightsData({ ...insightsData, partner_name: v })}
                   />
                   <div>
-                    <label className="flex items-center gap-1.5 text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>
+                    <label
+                      className="flex items-center gap-1.5 text-sm font-medium mb-1"
+                      style={{ color: 'var(--color-text-secondary)' }}
+                    >
                       <Baby size={16} /> Number of Children
                     </label>
                     {insightsEditing ? (
                       <input
-                        type="number" min={0}
+                        type="number"
+                        min={0}
                         value={insightsData.number_of_kids ?? insights.number_of_kids ?? ''}
-                        onChange={(e) => setInsightsData({ ...insightsData, number_of_kids: e.target.value ? parseInt(e.target.value) : null })}
+                        onChange={(e) =>
+                          setInsightsData({
+                            ...insightsData,
+                            number_of_kids: e.target.value ? parseInt(e.target.value) : null,
+                          })
+                        }
                         className="w-full px-3 py-2 border rounded-lg text-sm"
-                        style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
+                        style={{
+                          backgroundColor: 'var(--color-surface)',
+                          borderColor: 'var(--color-border)',
+                          color: 'var(--color-text)',
+                        }}
                       />
                     ) : (
-                      <p className="text-sm" style={{ color: 'var(--color-text)' }}>{insights.number_of_kids ?? 'Not recorded'}</p>
+                      <p className="text-sm" style={{ color: 'var(--color-text)' }}>
+                        {insights.number_of_kids ?? 'Not recorded'}
+                      </p>
                     )}
                   </div>
                   <Field
-                    label="Children's Details" icon={<Baby size={16} />}
-                    value={insightsEditing ? (insightsData.kids_details ?? insights.kids_details ?? '') : insights.kids_details}
+                    label="Children's Details"
+                    icon={<Baby size={16} />}
+                    value={
+                      insightsEditing
+                        ? (insightsData.kids_details ?? insights.kids_details ?? '')
+                        : insights.kids_details
+                    }
                     editing={insightsEditing}
                     onChange={(v) => setInsightsData({ ...insightsData, kids_details: v })}
                   />
                   <Field
-                    label="Interests & Hobbies" icon={<Heart size={16} />}
-                    value={insightsEditing ? (insightsData.interests ?? insights.interests ?? '') : insights.interests}
+                    label="Interests & Hobbies"
+                    icon={<Heart size={16} />}
+                    value={
+                      insightsEditing
+                        ? (insightsData.interests ?? insights.interests ?? '')
+                        : insights.interests
+                    }
                     editing={insightsEditing}
                     onChange={(v) => setInsightsData({ ...insightsData, interests: v })}
                   />
                   <Field
-                    label="Dietary Requirements" icon={<UtensilsCrossed size={16} />}
-                    value={insightsEditing ? (insightsData.dietary_requirements ?? insights.dietary_requirements ?? '') : insights.dietary_requirements}
+                    label="Dietary Requirements"
+                    icon={<UtensilsCrossed size={16} />}
+                    value={
+                      insightsEditing
+                        ? (insightsData.dietary_requirements ?? insights.dietary_requirements ?? '')
+                        : insights.dietary_requirements
+                    }
                     editing={insightsEditing}
                     onChange={(v) => setInsightsData({ ...insightsData, dietary_requirements: v })}
                   />
                   <Field
-                    label="Emergency Contact" icon={<Phone size={16} />}
-                    value={insightsEditing ? (insightsData.emergency_contact ?? insights.emergency_contact ?? '') : insights.emergency_contact}
+                    label="Emergency Contact"
+                    icon={<Phone size={16} />}
+                    value={
+                      insightsEditing
+                        ? (insightsData.emergency_contact ?? insights.emergency_contact ?? '')
+                        : insights.emergency_contact
+                    }
                     editing={insightsEditing}
                     onChange={(v) => setInsightsData({ ...insightsData, emergency_contact: v })}
                   />
                   <div className="col-span-2">
-                    <label className="text-sm font-medium mb-1 block" style={{ color: 'var(--color-text-secondary)' }}>Personal Notes</label>
+                    <label
+                      className="text-sm font-medium mb-1 block"
+                      style={{ color: 'var(--color-text-secondary)' }}
+                    >
+                      Personal Notes
+                    </label>
                     {insightsEditing ? (
                       <textarea
                         value={insightsData.personal_notes ?? insights.personal_notes ?? ''}
-                        onChange={(e) => setInsightsData({ ...insightsData, personal_notes: e.target.value })}
+                        onChange={(e) =>
+                          setInsightsData({ ...insightsData, personal_notes: e.target.value })
+                        }
                         rows={4}
                         className="w-full px-3 py-2 border rounded-lg text-sm resize-none"
-                        style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
+                        style={{
+                          backgroundColor: 'var(--color-surface)',
+                          borderColor: 'var(--color-border)',
+                          color: 'var(--color-text)',
+                        }}
                         placeholder="Anything useful to remember about this person..."
                       />
                     ) : (
-                      <p className="text-sm whitespace-pre-wrap" style={{ color: 'var(--color-text)' }}>{insights.personal_notes || 'No notes'}</p>
+                      <p
+                        className="text-sm whitespace-pre-wrap"
+                        style={{ color: 'var(--color-text)' }}
+                      >
+                        {insights.personal_notes || 'No notes'}
+                      </p>
                     )}
                   </div>
                 </div>
               ) : (
-                <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Loading insights...</p>
+                <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+                  Loading insights...
+                </p>
               )}
             </div>
           )}
@@ -593,42 +871,78 @@ function ProfileDetail({ profile: initialProfile, workspaceId, currentUserId, cu
           {activeTab === 'documents' && (
             <div>
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>Documents</h2>
+                <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>
+                  Documents
+                </h2>
               </div>
 
               {/* Upload area */}
-              <div className="rounded-lg border-2 border-dashed p-6 mb-6" style={{ backgroundColor: 'var(--color-bg)', borderColor: 'var(--color-border)' }}>
+              <div
+                className="rounded-lg border-2 border-dashed p-6 mb-6"
+                style={{ backgroundColor: 'var(--color-bg)', borderColor: 'var(--color-border)' }}
+              >
                 <div className="flex items-center gap-4">
                   <div className="flex-1 grid grid-cols-3 gap-3">
                     <div>
-                      <label className="text-xs font-medium mb-1 block" style={{ color: 'var(--color-text-secondary)' }}>Document Type</label>
+                      <label
+                        className="text-xs font-medium mb-1 block"
+                        style={{ color: 'var(--color-text-secondary)' }}
+                      >
+                        Document Type
+                      </label>
                       <select
                         value={uploadType}
                         onChange={(e) => setUploadType(e.target.value)}
                         className="w-full px-2 py-1.5 border rounded text-sm"
-                        style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
+                        style={{
+                          backgroundColor: 'var(--color-surface)',
+                          borderColor: 'var(--color-border)',
+                          color: 'var(--color-text)',
+                        }}
                       >
                         {Object.entries(DOC_TYPES).map(([key, { label }]) => (
-                          <option key={key} value={key}>{label}</option>
+                          <option key={key} value={key}>
+                            {label}
+                          </option>
                         ))}
                       </select>
                     </div>
                     <div>
-                      <label className="text-xs font-medium mb-1 block" style={{ color: 'var(--color-text-secondary)' }}>Expiry Date (optional)</label>
+                      <label
+                        className="text-xs font-medium mb-1 block"
+                        style={{ color: 'var(--color-text-secondary)' }}
+                      >
+                        Expiry Date (optional)
+                      </label>
                       <input
-                        type="date" value={uploadExpiry}
+                        type="date"
+                        value={uploadExpiry}
                         onChange={(e) => setUploadExpiry(e.target.value)}
                         className="w-full px-2 py-1.5 border rounded text-sm"
-                        style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
+                        style={{
+                          backgroundColor: 'var(--color-surface)',
+                          borderColor: 'var(--color-border)',
+                          color: 'var(--color-text)',
+                        }}
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-medium mb-1 block" style={{ color: 'var(--color-text-secondary)' }}>Notes (optional)</label>
+                      <label
+                        className="text-xs font-medium mb-1 block"
+                        style={{ color: 'var(--color-text-secondary)' }}
+                      >
+                        Notes (optional)
+                      </label>
                       <input
-                        type="text" value={uploadNotes}
+                        type="text"
+                        value={uploadNotes}
                         onChange={(e) => setUploadNotes(e.target.value)}
                         className="w-full px-2 py-1.5 border rounded text-sm"
-                        style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
+                        style={{
+                          backgroundColor: 'var(--color-surface)',
+                          borderColor: 'var(--color-border)',
+                          color: 'var(--color-text)',
+                        }}
                         placeholder="Brief description..."
                       />
                     </div>
@@ -636,7 +950,12 @@ function ProfileDetail({ profile: initialProfile, workspaceId, currentUserId, cu
                   <label className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer text-sm font-medium shrink-0">
                     <Upload size={16} />
                     {uploading ? 'Uploading...' : 'Upload'}
-                    <input type="file" onChange={handleDocUpload} className="hidden" disabled={uploading} />
+                    <input
+                      type="file"
+                      onChange={handleDocUpload}
+                      className="hidden"
+                      disabled={uploading}
+                    />
                   </label>
                 </div>
               </div>
@@ -652,24 +971,53 @@ function ProfileDetail({ profile: initialProfile, workspaceId, currentUserId, cu
                   {documents.map((doc) => {
                     const docType = DOC_TYPES[doc.document_type] || DOC_TYPES.other;
                     const isExpired = doc.expiry_date && new Date(doc.expiry_date) < new Date();
-                    const isExpiringSoon = doc.expiry_date && !isExpired &&
+                    const isExpiringSoon =
+                      doc.expiry_date &&
+                      !isExpired &&
                       new Date(doc.expiry_date) < new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
 
                     return (
-                      <div key={doc.id} className="flex items-center gap-3 px-4 py-3 border rounded-lg transition-colors hover:border-[var(--color-primary)]" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
+                      <div
+                        key={doc.id}
+                        className="flex items-center gap-3 px-4 py-3 border rounded-lg transition-colors hover:border-accent"
+                        style={{
+                          backgroundColor: 'var(--color-surface)',
+                          borderColor: 'var(--color-border)',
+                        }}
+                      >
                         <span className="text-xl">{docType.icon}</span>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium truncate" style={{ color: 'var(--color-text)' }}>{doc.filename}</span>
-                            <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: 'var(--color-grey-1)', color: 'var(--color-text-secondary)' }}>{docType.label}</span>
+                            <span
+                              className="text-sm font-medium truncate"
+                              style={{ color: 'var(--color-text)' }}
+                            >
+                              {doc.filename}
+                            </span>
+                            <span
+                              className="text-xs px-2 py-0.5 rounded"
+                              style={{
+                                backgroundColor: 'var(--color-grey-1)',
+                                color: 'var(--color-text-secondary)',
+                              }}
+                            >
+                              {docType.label}
+                            </span>
                             {isExpired && (
-                              <span className="text-xs px-2 py-0.5 bg-red-100 text-red-700 rounded font-medium">Expired</span>
+                              <span className="text-xs px-2 py-0.5 bg-red-100 text-destructive rounded font-medium">
+                                Expired
+                              </span>
                             )}
                             {isExpiringSoon && (
-                              <span className="text-xs px-2 py-0.5 bg-amber-100 text-amber-700 rounded font-medium">Expiring soon</span>
+                              <span className="text-xs px-2 py-0.5 bg-amber-100 text-caution rounded font-medium">
+                                Expiring soon
+                              </span>
                             )}
                           </div>
-                          <div className="flex items-center gap-3 text-xs mt-0.5" style={{ color: 'var(--color-text-secondary)' }}>
+                          <div
+                            className="flex items-center gap-3 text-xs mt-0.5"
+                            style={{ color: 'var(--color-text-secondary)' }}
+                          >
                             <span>{(doc.file_size / 1024).toFixed(0)} KB</span>
                             {doc.expiry_date && <span>Expires: {doc.expiry_date}</span>}
                             {doc.notes && <span>{doc.notes}</span>}
@@ -687,7 +1035,7 @@ function ProfileDetail({ profile: initialProfile, workspaceId, currentUserId, cu
                           </button>
                           <button
                             onClick={() => handleDeleteDoc(doc.id)}
-                            className="p-2 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                            className="p-2 hover:text-destructive hover:bg-red-50 rounded-lg"
                             style={{ color: 'var(--color-text-secondary)' }}
                             title="Delete"
                           >
@@ -709,7 +1057,14 @@ function ProfileDetail({ profile: initialProfile, workspaceId, currentUserId, cu
 
 // --- Field Component ---
 
-function Field({ label, icon, value, editing, type = 'text', onChange }: {
+function Field({
+  label,
+  icon,
+  value,
+  editing,
+  type = 'text',
+  onChange,
+}: {
   label: string;
   icon?: React.ReactNode;
   value: string | null | undefined;
@@ -719,7 +1074,10 @@ function Field({ label, icon, value, editing, type = 'text', onChange }: {
 }) {
   return (
     <div>
-      <label className="flex items-center gap-1.5 text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>
+      <label
+        className="flex items-center gap-1.5 text-sm font-medium mb-1"
+        style={{ color: 'var(--color-text-secondary)' }}
+      >
         {icon} {label}
       </label>
       {editing && onChange ? (
@@ -728,10 +1086,16 @@ function Field({ label, icon, value, editing, type = 'text', onChange }: {
           value={value ?? ''}
           onChange={(e) => onChange(e.target.value)}
           className="w-full px-3 py-2 border rounded-lg text-sm"
-          style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
+          style={{
+            backgroundColor: 'var(--color-surface)',
+            borderColor: 'var(--color-border)',
+            color: 'var(--color-text)',
+          }}
         />
       ) : (
-        <p className="text-sm" style={{ color: 'var(--color-text)' }}>{value || 'Not specified'}</p>
+        <p className="text-sm" style={{ color: 'var(--color-text)' }}>
+          {value || 'Not specified'}
+        </p>
       )}
     </div>
   );
@@ -739,14 +1103,23 @@ function Field({ label, icon, value, editing, type = 'text', onChange }: {
 
 // --- Create Profile Modal ---
 
-function CreateProfileModal({ member, workspaceId, onCreated, onClose }: {
-  member: User; workspaceId: string; onCreated: (p: PersonProfile) => void; onClose: () => void;
+function CreateProfileModal({
+  member,
+  workspaceId,
+  onCreated,
+  onClose,
+}: {
+  member: User;
+  workspaceId: string;
+  onCreated: () => void;
+  onClose: () => void;
 }) {
   const [jobTitle, setJobTitle] = useState('');
   const [department, setDepartment] = useState('');
   const [contractType, setContractType] = useState('');
   const [location, setLocation] = useState('');
   const [saving, setSaving] = useState(false);
+  const createProfile = useCreateProfile(workspaceId);
 
   const handleSubmit = async () => {
     setSaving(true);
@@ -756,8 +1129,8 @@ function CreateProfileModal({ member, workspaceId, onCreated, onClose }: {
       if (department) data.department = department;
       if (contractType) data.contract_type = contractType;
       if (location) data.location = location;
-      const { data: profile } = await peopleApi.create(workspaceId, member.id, data);
-      onCreated(profile);
+      await createProfile.mutateAsync({ userId: member.id, data });
+      onCreated();
       Toast.show('Profile created');
     } catch {
       Toast.show('Failed to create profile');
@@ -767,42 +1140,118 @@ function CreateProfileModal({ member, workspaceId, onCreated, onClose }: {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="rounded-xl shadow-xl w-full max-w-md p-6" style={{ backgroundColor: 'var(--color-surface)' }}>
+      <div
+        className="rounded-xl shadow-xl w-full max-w-md p-6"
+        style={{ backgroundColor: 'var(--color-surface)' }}
+      >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>Create Profile for {member.name}</h2>
-          <button onClick={onClose} className="p-1 hover:bg-[var(--color-grey-1)] rounded"><X size={18} /></button>
+          <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>
+            Create Profile for {member.name}
+          </h2>
+          <button onClick={onClose} className="p-1 hover:bg-subtle rounded">
+            <X size={18} />
+          </button>
         </div>
         <div className="space-y-3">
           <div>
-            <label className="text-sm font-medium mb-1 block" style={{ color: 'var(--color-text)' }}>Job Title</label>
-            <LookupSelect category="job_title" value={jobTitle} onChange={setJobTitle}
-              className="w-full px-3 py-2 border rounded-lg text-sm" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text)' }} placeholder="Select job title..." />
+            <label
+              className="text-sm font-medium mb-1 block"
+              style={{ color: 'var(--color-text)' }}
+            >
+              Job Title
+            </label>
+            <LookupSelect
+              category="job_title"
+              value={jobTitle}
+              onChange={setJobTitle}
+              className="w-full px-3 py-2 border rounded-lg text-sm"
+              style={{
+                backgroundColor: 'var(--color-surface)',
+                borderColor: 'var(--color-border)',
+                color: 'var(--color-text)',
+              }}
+              placeholder="Select job title..."
+            />
           </div>
           <div>
-            <label className="text-sm font-medium mb-1 block" style={{ color: 'var(--color-text)' }}>Department</label>
-            <LookupSelect category="department" value={department} onChange={setDepartment}
-              className="w-full px-3 py-2 border rounded-lg text-sm" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text)' }} placeholder="Select department..." />
+            <label
+              className="text-sm font-medium mb-1 block"
+              style={{ color: 'var(--color-text)' }}
+            >
+              Department
+            </label>
+            <LookupSelect
+              category="department"
+              value={department}
+              onChange={setDepartment}
+              className="w-full px-3 py-2 border rounded-lg text-sm"
+              style={{
+                backgroundColor: 'var(--color-surface)',
+                borderColor: 'var(--color-border)',
+                color: 'var(--color-text)',
+              }}
+              placeholder="Select department..."
+            />
           </div>
           <div>
-            <label className="text-sm font-medium mb-1 block" style={{ color: 'var(--color-text)' }}>Contract Type</label>
-            <select value={contractType} onChange={(e) => setContractType(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg text-sm" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text)' }}>
+            <label
+              className="text-sm font-medium mb-1 block"
+              style={{ color: 'var(--color-text)' }}
+            >
+              Contract Type
+            </label>
+            <select
+              value={contractType}
+              onChange={(e) => setContractType(e.target.value)}
+              className="w-full px-3 py-2 border rounded-lg text-sm"
+              style={{
+                backgroundColor: 'var(--color-surface)',
+                borderColor: 'var(--color-border)',
+                color: 'var(--color-text)',
+              }}
+            >
               <option value="">Not specified</option>
               {Object.entries(CONTRACT_TYPES).map(([key, { label }]) => (
-                <option key={key} value={key}>{label}</option>
+                <option key={key} value={key}>
+                  {label}
+                </option>
               ))}
             </select>
           </div>
           <div>
-            <label className="text-sm font-medium mb-1 block" style={{ color: 'var(--color-text)' }}>Location</label>
-            <LookupSelect category="location" value={location} onChange={setLocation}
-              className="w-full px-3 py-2 border rounded-lg text-sm" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text)' }} placeholder="Select location..." />
+            <label
+              className="text-sm font-medium mb-1 block"
+              style={{ color: 'var(--color-text)' }}
+            >
+              Location
+            </label>
+            <LookupSelect
+              category="location"
+              value={location}
+              onChange={setLocation}
+              className="w-full px-3 py-2 border rounded-lg text-sm"
+              style={{
+                backgroundColor: 'var(--color-surface)',
+                borderColor: 'var(--color-border)',
+                color: 'var(--color-text)',
+              }}
+              placeholder="Select location..."
+            />
           </div>
         </div>
         <div className="flex justify-end gap-2 mt-6">
-          <button onClick={onClose} className="px-4 py-2 text-sm rounded-lg hover:bg-[var(--color-grey-1)]" style={{ color: 'var(--color-text-secondary)' }}>Cancel</button>
-          <button onClick={handleSubmit} disabled={saving}
-            className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm rounded-lg hover:bg-subtle"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={saving}
+            className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+          >
             {saving ? 'Creating...' : 'Create Profile'}
           </button>
         </div>
@@ -817,25 +1266,18 @@ export function PeoplePage() {
   const workspace = useWorkspaceStore((s) => s.currentWorkspace);
   const { userId } = useParams();
   const navigate = useNavigate();
-  const { profiles, orgChart, isLoading, fetchProfiles, fetchOrgChart, addProfile } = usePeopleStore();
+  const profilesQuery = useProfiles(workspace?.id);
+  const orgChartQuery = useOrgChart(workspace?.id);
+  const membersQuery = useWorkspaceMembers(workspace?.id);
+  const currentUserQuery = useCurrentUser();
+  const profiles = useMemo(() => profilesQuery.data ?? [], [profilesQuery.data]);
+  const orgChart = orgChartQuery.data ?? [];
+  const allMembers = useMemo(() => membersQuery.data ?? [], [membersQuery.data]);
+  const currentUser = currentUserQuery.data ?? null;
   const [viewMode, setViewMode] = useState<ViewMode>('directory');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterDept, setFilterDept] = useState('');
-  const [allMembers, setAllMembers] = useState<User[]>([]);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [creatingFor, setCreatingFor] = useState<User | null>(null);
-
-  useEffect(() => {
-    if (workspace) {
-      fetchProfiles(workspace.id);
-      fetchOrgChart(workspace.id);
-      membersApi.list(workspace.id).then(({ data }) => setAllMembers(data));
-      // Get current user from auth
-      import('../api/users').then(({ authApi }) => {
-        authApi.me().then(({ data }) => setCurrentUser(data));
-      });
-    }
-  }, [workspace, fetchProfiles, fetchOrgChart]);
 
   const departments = useMemo(() => {
     const depts = new Set(profiles.map((p) => p.department).filter(Boolean) as string[]);
@@ -846,11 +1288,12 @@ export function PeoplePage() {
     let result = profiles;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
-      result = result.filter((p) =>
-        (p.user_name || '').toLowerCase().includes(q) ||
-        (p.job_title || '').toLowerCase().includes(q) ||
-        (p.department || '').toLowerCase().includes(q) ||
-        (p.user_email || '').toLowerCase().includes(q)
+      result = result.filter(
+        (p) =>
+          (p.user_name || '').toLowerCase().includes(q) ||
+          (p.job_title || '').toLowerCase().includes(q) ||
+          (p.department || '').toLowerCase().includes(q) ||
+          (p.user_email || '').toLowerCase().includes(q),
       );
     }
     if (filterDept) {
@@ -868,7 +1311,10 @@ export function PeoplePage() {
   // Stats computed from profiles
   const totalPeople = profiles.length;
   const uniqueDepartments = departments.length;
-  const contractors = useMemo(() => profiles.filter((p) => p.contract_type === 'contractor').length, [profiles]);
+  const contractors = useMemo(
+    () => profiles.filter((p) => p.contract_type === 'contractor').length,
+    [profiles],
+  );
   const onProbation = useMemo(() => {
     const now = new Date();
     return profiles.filter((p) => p.probation_end && new Date(p.probation_end) > now).length;
@@ -901,7 +1347,18 @@ export function PeoplePage() {
       const dept = p.department || 'Unassigned';
       counts[dept] = (counts[dept] || 0) + 1;
     }
-    const colourList = [COLOURS.blue, COLOURS.purple, COLOURS.teal, COLOURS.amber, COLOURS.pink, COLOURS.indigo, COLOURS.cyan, COLOURS.green, COLOURS.red, COLOURS.slate];
+    const colourList = [
+      COLOURS.blue,
+      COLOURS.purple,
+      COLOURS.teal,
+      COLOURS.amber,
+      COLOURS.pink,
+      COLOURS.indigo,
+      COLOURS.cyan,
+      COLOURS.green,
+      COLOURS.red,
+      COLOURS.slate,
+    ];
     return Object.entries(counts)
       .sort((a, b) => b[1] - a[1])
       .map(([label, value], i) => ({
@@ -929,6 +1386,71 @@ export function PeoplePage() {
     );
   }
 
+  // ── Pending ──────────────────────────────────────────────────────────────
+  if (!workspace || profilesQuery.isPending) {
+    return (
+      <div className="p-6">
+        <div
+          className="max-w-6xl mx-auto text-center py-20 text-sm"
+          style={{ color: 'var(--color-text-secondary)' }}
+        >
+          Loading people...
+        </div>
+      </div>
+    );
+  }
+
+  // ── Error (with retry) ────────────────────────────────────────────────────
+  if (profilesQuery.isError) {
+    return (
+      <div className="p-6">
+        <div className="max-w-6xl mx-auto text-center py-20">
+          <AlertTriangle
+            size={40}
+            className="mx-auto mb-3"
+            style={{ color: 'var(--color-text-secondary)' }}
+          />
+          <p className="text-sm mb-4" style={{ color: 'var(--color-text-secondary)' }}>
+            Could not load people. Check your connection and try again.
+          </p>
+          <button
+            onClick={() => profilesQuery.refetch()}
+            className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Try again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Empty (with CTA) ──────────────────────────────────────────────────────
+  if (profiles.length === 0 && membersWithoutProfiles.length === 0) {
+    return (
+      <div className="p-6">
+        <div className="max-w-6xl mx-auto text-center py-20">
+          <Users
+            size={48}
+            className="mx-auto mb-4 opacity-40"
+            style={{ color: 'var(--color-text-secondary)' }}
+          />
+          <h2 className="text-lg font-semibold mb-1" style={{ color: 'var(--color-text)' }}>
+            No people yet
+          </h2>
+          <p className="text-sm mb-5" style={{ color: 'var(--color-text-secondary)' }}>
+            Add members to your workspace, then create profiles to build your directory.
+          </p>
+          <button
+            onClick={() => navigate('/settings')}
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            <Plus size={16} /> Manage members
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6">
       <div className="max-w-6xl mx-auto">
@@ -936,18 +1458,26 @@ export function PeoplePage() {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <Users size={24} style={{ color: 'var(--color-primary)' }} />
-            <h1 className="text-xl font-bold" style={{ color: 'var(--color-text)' }}>People</h1>
-            <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>{profiles.length} profiles</span>
+            <h1 className="text-xl font-bold" style={{ color: 'var(--color-text)' }}>
+              People
+            </h1>
+            <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+              {profiles.length} profiles
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setViewMode('directory')}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                viewMode === 'directory' ? '' : 'hover:bg-[var(--color-grey-1)]'
+                viewMode === 'directory' ? '' : 'hover:bg-subtle'
               }`}
-              style={viewMode === 'directory'
-                ? { backgroundColor: 'rgba(var(--color-primary-rgb, 65, 134, 224), 0.15)', color: 'var(--color-primary)' }
-                : { color: 'var(--color-text-secondary)' }
+              style={
+                viewMode === 'directory'
+                  ? {
+                      backgroundColor: 'rgba(var(--color-primary-rgb, 65, 134, 224), 0.15)',
+                      color: 'var(--color-primary)',
+                    }
+                  : { color: 'var(--color-text-secondary)' }
               }
             >
               <Grid3X3 size={16} /> Directory
@@ -955,11 +1485,15 @@ export function PeoplePage() {
             <button
               onClick={() => setViewMode('orgchart')}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg transition-colors ${
-                viewMode === 'orgchart' ? '' : 'hover:bg-[var(--color-grey-1)]'
+                viewMode === 'orgchart' ? '' : 'hover:bg-subtle'
               }`}
-              style={viewMode === 'orgchart'
-                ? { backgroundColor: 'rgba(var(--color-primary-rgb, 65, 134, 224), 0.15)', color: 'var(--color-primary)' }
-                : { color: 'var(--color-text-secondary)' }
+              style={
+                viewMode === 'orgchart'
+                  ? {
+                      backgroundColor: 'rgba(var(--color-primary-rgb, 65, 134, 224), 0.15)',
+                      color: 'var(--color-primary)',
+                    }
+                  : { color: 'var(--color-text-secondary)' }
               }
             >
               <Network size={16} /> Org Chart
@@ -969,21 +1503,62 @@ export function PeoplePage() {
 
         {/* Stat cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <StatCard label="Total People" value={totalPeople} icon={<Users size={20} />} colour={COLOURS.blue} />
-          <StatCard label="Departments" value={uniqueDepartments} icon={<Building2 size={20} />} colour={COLOURS.purple} />
-          <StatCard label="Contractors" value={contractors} icon={<Briefcase size={20} />} colour={COLOURS.amber} />
-          <StatCard label="On Probation" value={onProbation} icon={<MapPin size={20} />} colour={COLOURS.teal} />
+          <StatCard
+            label="Total People"
+            value={totalPeople}
+            icon={<Users size={20} />}
+            colour={COLOURS.blue}
+          />
+          <StatCard
+            label="Departments"
+            value={uniqueDepartments}
+            icon={<Building2 size={20} />}
+            colour={COLOURS.purple}
+          />
+          <StatCard
+            label="Contractors"
+            value={contractors}
+            icon={<Briefcase size={20} />}
+            colour={COLOURS.amber}
+          />
+          <StatCard
+            label="On Probation"
+            value={onProbation}
+            icon={<MapPin size={20} />}
+            colour={COLOURS.teal}
+          />
         </div>
 
         {/* Charts */}
         {profiles.length > 0 && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-            <div className="rounded-xl border p-5" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
-              <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-text)' }}>Contract Types</h3>
-              <DonutChart segments={contractTypeSegments} size={120} centerValue={profiles.length} centerLabel="total" />
+            <div
+              className="rounded-xl border p-5"
+              style={{
+                backgroundColor: 'var(--color-surface)',
+                borderColor: 'var(--color-border)',
+              }}
+            >
+              <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-text)' }}>
+                Contract Types
+              </h3>
+              <DonutChart
+                segments={contractTypeSegments}
+                size={120}
+                centerValue={profiles.length}
+                centerLabel="total"
+              />
             </div>
-            <div className="rounded-xl border p-5" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
-              <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-text)' }}>By Department</h3>
+            <div
+              className="rounded-xl border p-5"
+              style={{
+                backgroundColor: 'var(--color-surface)',
+                borderColor: 'var(--color-border)',
+              }}
+            >
+              <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-text)' }}>
+                By Department
+              </h3>
               <BarChart bars={departmentBars} height={150} />
             </div>
           </div>
@@ -994,42 +1569,64 @@ export function PeoplePage() {
             {/* Search and filters */}
             <div className="flex items-center gap-3 mb-6">
               <div className="relative flex-1 max-w-md">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--color-text-secondary)' }} />
+                <Search
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search people..."
                   className="w-full pl-9 pr-3 py-2 border rounded-lg text-sm"
-                  style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
+                  style={{
+                    backgroundColor: 'var(--color-surface)',
+                    borderColor: 'var(--color-border)',
+                    color: 'var(--color-text)',
+                  }}
                 />
               </div>
               <select
                 value={filterDept}
                 onChange={(e) => setFilterDept(e.target.value)}
                 className="px-3 py-2 border rounded-lg text-sm"
-                style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
+                style={{
+                  backgroundColor: 'var(--color-surface)',
+                  borderColor: 'var(--color-border)',
+                  color: 'var(--color-text)',
+                }}
               >
                 <option value="">All departments</option>
                 {departments.map((d) => (
-                  <option key={d} value={d}>{d}</option>
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
                 ))}
               </select>
             </div>
 
             {/* Directory grid */}
-            {isLoading ? (
-              <div className="text-center py-12" style={{ color: 'var(--color-text-secondary)' }}>Loading...</div>
+            {filteredProfiles.length === 0 && membersWithoutProfiles.length === 0 ? (
+              <div className="text-center py-12" style={{ color: 'var(--color-text-secondary)' }}>
+                <Search size={32} className="mx-auto mb-3 opacity-40" />
+                <p className="text-sm">No people match your search.</p>
+              </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {filteredProfiles.map((profile) => {
-                  const contractInfo = profile.contract_type ? CONTRACT_TYPES[profile.contract_type] : null;
+                  const contractInfo = profile.contract_type
+                    ? CONTRACT_TYPES[profile.contract_type]
+                    : null;
                   return (
                     <button
                       key={profile.id}
                       onClick={() => navigate(`/people/${profile.user_id}`)}
-                      className="rounded-xl border p-5 text-left hover:shadow-md hover:border-blue-200 transition-all group"
-                      style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+                      className="rounded-xl border p-5 text-left hover:shadow-md hover:border-blue-200 transition-colors group"
+                      style={{
+                        backgroundColor: 'var(--color-surface)',
+                        borderColor: 'var(--color-border)',
+                      }}
                     >
                       <div className="flex items-center gap-3 mb-3">
                         <Avatar
@@ -1040,23 +1637,44 @@ export function PeoplePage() {
                           size={48}
                         />
                         <div className="min-w-0">
-                          <h3 className="text-sm font-semibold truncate group-hover:text-blue-600" style={{ color: 'var(--color-text)' }}>{profile.user_name}</h3>
-                          {profile.job_title && <p className="text-xs truncate" style={{ color: 'var(--color-text-secondary)' }}>{profile.job_title}</p>}
+                          <h3
+                            className="text-sm font-semibold truncate group-hover:text-blue-600"
+                            style={{ color: 'var(--color-text)' }}
+                          >
+                            {profile.user_name}
+                          </h3>
+                          {profile.job_title && (
+                            <p
+                              className="text-xs truncate"
+                              style={{ color: 'var(--color-text-secondary)' }}
+                            >
+                              {profile.job_title}
+                            </p>
+                          )}
                         </div>
                       </div>
                       <div className="space-y-1">
                         {profile.department && (
-                          <div className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                          <div
+                            className="flex items-center gap-1.5 text-xs"
+                            style={{ color: 'var(--color-text-secondary)' }}
+                          >
                             <Building2 size={12} /> {profile.department}
                           </div>
                         )}
                         {profile.location && (
-                          <div className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                          <div
+                            className="flex items-center gap-1.5 text-xs"
+                            style={{ color: 'var(--color-text-secondary)' }}
+                          >
                             <MapPin size={12} /> {profile.location}
                           </div>
                         )}
                         {profile.manager_name && (
-                          <div className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                          <div
+                            className="flex items-center gap-1.5 text-xs"
+                            style={{ color: 'var(--color-text-secondary)' }}
+                          >
                             <UserCheck size={12} /> {profile.manager_name}
                           </div>
                         )}
@@ -1080,8 +1698,11 @@ export function PeoplePage() {
                   <button
                     key={member.id}
                     onClick={() => setCreatingFor(member)}
-                    className="rounded-xl border-2 border-dashed p-5 text-left hover:border-blue-300 transition-all group"
-                    style={{ backgroundColor: 'var(--color-bg)', borderColor: 'var(--color-border)' }}
+                    className="rounded-xl border-2 border-dashed p-5 text-left hover:border-blue-300 transition-colors group"
+                    style={{
+                      backgroundColor: 'var(--color-bg)',
+                      borderColor: 'var(--color-border)',
+                    }}
                   >
                     <div className="flex items-center gap-3 mb-3">
                       <Avatar
@@ -1092,8 +1713,15 @@ export function PeoplePage() {
                         size={48}
                       />
                       <div className="min-w-0">
-                        <h3 className="text-sm font-semibold truncate" style={{ color: 'var(--color-text-secondary)' }}>{member.name}</h3>
-                        <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>No profile yet</p>
+                        <h3
+                          className="text-sm font-semibold truncate"
+                          style={{ color: 'var(--color-text-secondary)' }}
+                        >
+                          {member.name}
+                        </h3>
+                        <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                          No profile yet
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5 text-xs text-blue-500 group-hover:text-blue-600">
@@ -1107,11 +1735,16 @@ export function PeoplePage() {
         )}
 
         {viewMode === 'orgchart' && (
-          <div className="rounded-xl border p-6" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
+          <div
+            className="rounded-xl border p-6"
+            style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+          >
             {orgChart.length === 0 ? (
               <div className="text-center py-12" style={{ color: 'var(--color-text-secondary)' }}>
                 <Network size={40} className="mx-auto mb-3 opacity-40" />
-                <p className="text-sm">No org chart data yet. Set managers on people profiles to build the hierarchy.</p>
+                <p className="text-sm">
+                  No org chart data yet. Set managers on people profiles to build the hierarchy.
+                </p>
               </div>
             ) : (
               <div>
@@ -1133,7 +1766,9 @@ export function PeoplePage() {
         <CreateProfileModal
           member={creatingFor}
           workspaceId={workspace.id}
-          onCreated={(p) => { addProfile(p); setCreatingFor(null); }}
+          onCreated={() => {
+            setCreatingFor(null);
+          }}
           onClose={() => setCreatingFor(null)}
         />
       )}

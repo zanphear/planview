@@ -44,11 +44,17 @@ export function FilterBar({ filters, onChange, members = [] }: FilterBarProps) {
         value={filters.status || ''}
         onChange={(e) => onChange({ ...filters, status: e.target.value || null })}
         className="text-xs px-2 py-1 rounded-lg border outline-none"
-        style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+        style={{
+          borderColor: 'var(--color-border)',
+          backgroundColor: 'var(--color-surface)',
+          color: 'var(--color-text)',
+        }}
       >
         <option value="">All statuses</option>
         {DEFAULT_STATUSES.map((s) => (
-          <option key={s.id} value={s.id}>{s.emoji} {s.label}</option>
+          <option key={s.id} value={s.id}>
+            {s.emoji} {s.label}
+          </option>
         ))}
       </select>
 
@@ -58,11 +64,17 @@ export function FilterBar({ filters, onChange, members = [] }: FilterBarProps) {
           value={filters.assignee || ''}
           onChange={(e) => onChange({ ...filters, assignee: e.target.value || null })}
           className="text-xs px-2 py-1 rounded-lg border outline-none"
-          style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+          style={{
+            borderColor: 'var(--color-border)',
+            backgroundColor: 'var(--color-surface)',
+            color: 'var(--color-text)',
+          }}
         >
           <option value="">All assignees</option>
           {members.map((m) => (
-            <option key={m.id} value={m.id}>{m.name}</option>
+            <option key={m.id} value={m.id}>
+              {m.name}
+            </option>
           ))}
         </select>
       )}

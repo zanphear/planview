@@ -42,8 +42,15 @@ export const onboardingApi = {
   listTemplates: (workspaceId: string) =>
     api.get<OnboardingTemplate[]>(`/workspaces/${workspaceId}/onboarding/templates`),
 
-  createTemplate: (workspaceId: string, data: { name: string; template_type: string; description?: string; items: Partial<OnboardingTemplateItem>[] }) =>
-    api.post<OnboardingTemplate>(`/workspaces/${workspaceId}/onboarding/templates`, data),
+  createTemplate: (
+    workspaceId: string,
+    data: {
+      name: string;
+      template_type: string;
+      description?: string;
+      items: Partial<OnboardingTemplateItem>[];
+    },
+  ) => api.post<OnboardingTemplate>(`/workspaces/${workspaceId}/onboarding/templates`, data),
 
   deleteTemplate: (workspaceId: string, templateId: string) =>
     api.delete(`/workspaces/${workspaceId}/onboarding/templates/${templateId}`),
@@ -52,9 +59,13 @@ export const onboardingApi = {
   listChecklists: (workspaceId: string) =>
     api.get<OnboardingChecklist[]>(`/workspaces/${workspaceId}/onboarding/checklists`),
 
-  createChecklist: (workspaceId: string, data: { user_id: string; template_id?: string; checklist_type?: string }) =>
-    api.post<OnboardingChecklist>(`/workspaces/${workspaceId}/onboarding/checklists`, data),
+  createChecklist: (
+    workspaceId: string,
+    data: { user_id: string; template_id?: string; checklist_type?: string },
+  ) => api.post<OnboardingChecklist>(`/workspaces/${workspaceId}/onboarding/checklists`, data),
 
   toggleItem: (workspaceId: string, checklistId: string, itemId: string) =>
-    api.put<OnboardingChecklist>(`/workspaces/${workspaceId}/onboarding/checklists/${checklistId}/items/${itemId}`),
+    api.put<OnboardingChecklist>(
+      `/workspaces/${workspaceId}/onboarding/checklists/${checklistId}/items/${itemId}`,
+    ),
 };

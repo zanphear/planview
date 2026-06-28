@@ -4,21 +4,21 @@ A self-hosted visual planning & scheduling tool modelled on Toggl Plan. Drag-and
 
 ## Features
 
-- **Timeline Views** — Horizontal Gantt-style timelines with week/month/quarter/year zoom
-- **Team Swimlanes** — See workload per person across all projects
-- **Project Swimlanes** — Segment-based rows within a project timeline
-- **Kanban Board** — Drag-and-drop task cards between status columns
-- **Task Detail Panel** — Slide-out panel with status, dates, assignees, colour, description, checklists, comments, attachments
-- **Real-time Updates** — WebSocket-powered live updates across users
-- **Notifications** — In-app notification bell with toast alerts
-- **Comments** — Threaded comments on tasks with edit/delete
-- **File Attachments** — Upload and download files on tasks
-- **Milestones** — Vertical deadline markers spanning timelines
-- **Quick Search** — Cmd+K global search across tasks, projects, teams
-- **Export** — CSV, JSON, and ICS (calendar) export
-- **Shared Timelines** — Public read-only timeline links
-- **Time Off** — Track time off per team member
-- **Settings** — Profile, workspace, notification preferences
+- **Timeline Views**, Horizontal Gantt-style timelines with week/month/quarter/year zoom
+- **Team Swimlanes**, See workload per person across all projects
+- **Project Swimlanes**, Segment-based rows within a project timeline
+- **Kanban Board**, Drag-and-drop task cards between status columns
+- **Task Detail Panel**, Slide-out panel with status, dates, assignees, colour, description, checklists, comments, attachments
+- **Real-time Updates**, WebSocket-powered live updates across users
+- **Notifications**, In-app notification bell with toast alerts
+- **Comments**, Threaded comments on tasks with edit/delete
+- **File Attachments**, Upload and download files on tasks
+- **Milestones**, Vertical deadline markers spanning timelines
+- **Quick Search**, Cmd+K global search across tasks, projects, teams
+- **Export**, CSV, JSON, and ICS (calendar) export
+- **Shared Timelines**, Public read-only timeline links
+- **Time Off**, Track time off per team member
+- **Settings**, Profile, workspace, notification preferences
 
 ## Quick Start
 
@@ -119,13 +119,13 @@ Update the image tags and environment variables as needed.
 
 The API is available at `/api/v1/` with the following resources:
 
-- `POST /api/v1/auth/register` — Register + create workspace
-- `POST /api/v1/auth/login` — Login
-- `GET /api/v1/workspaces` — List workspaces
-- `GET /api/v1/workspaces/:id/tasks` — List tasks (filterable)
-- `GET /api/v1/workspaces/:id/timeline` — Optimised timeline query
-- `GET /api/v1/workspaces/:id/export/tasks.csv` — Export tasks
-- `GET /api/v1/shared/:token/tasks` — Public shared timeline
+- `POST /api/v1/auth/register`, Register + create workspace
+- `POST /api/v1/auth/login`, Login
+- `GET /api/v1/workspaces`, List workspaces
+- `GET /api/v1/workspaces/:id/tasks`, List tasks (filterable)
+- `GET /api/v1/workspaces/:id/timeline`, Optimised timeline query
+- `GET /api/v1/workspaces/:id/export/tasks.csv`, Export tasks
+- `GET /api/v1/shared/:token/tasks`, Public shared timeline
 - Full OpenAPI docs at `/docs` when running
 
 ## Licence

@@ -12,7 +12,14 @@ interface BulkActionBarProps {
   onClear: () => void;
 }
 
-export function BulkActionBar({ count, members, onStatusChange, onAssign, onDelete, onClear }: BulkActionBarProps) {
+export function BulkActionBar({
+  count,
+  members,
+  onStatusChange,
+  onAssign,
+  onDelete,
+  onClear,
+}: BulkActionBarProps) {
   const [showStatus, setShowStatus] = useState(false);
   const [showAssign, setShowAssign] = useState(false);
 
@@ -30,8 +37,11 @@ export function BulkActionBar({ count, members, onStatusChange, onAssign, onDele
       {/* Move to status */}
       <div className="relative">
         <button
-          onClick={() => { setShowStatus(!showStatus); setShowAssign(false); }}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg hover:bg-[var(--color-grey-1)] transition-colors"
+          onClick={() => {
+            setShowStatus(!showStatus);
+            setShowAssign(false);
+          }}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg hover:bg-subtle transition-colors"
           style={{ color: 'var(--color-text)' }}
         >
           <ArrowRight size={14} />
@@ -45,8 +55,11 @@ export function BulkActionBar({ count, members, onStatusChange, onAssign, onDele
             {DEFAULT_STATUSES.map((s) => (
               <button
                 key={s.id}
-                onClick={() => { onStatusChange(s.id); setShowStatus(false); }}
-                className="w-full text-left px-3 py-1.5 text-sm hover:bg-[var(--color-grey-1)] flex items-center gap-2"
+                onClick={() => {
+                  onStatusChange(s.id);
+                  setShowStatus(false);
+                }}
+                className="w-full text-left px-3 py-1.5 text-sm hover:bg-subtle flex items-center gap-2"
                 style={{ color: 'var(--color-text)' }}
               >
                 <span>{s.emoji}</span>
@@ -60,8 +73,11 @@ export function BulkActionBar({ count, members, onStatusChange, onAssign, onDele
       {/* Assign */}
       <div className="relative">
         <button
-          onClick={() => { setShowAssign(!showAssign); setShowStatus(false); }}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg hover:bg-[var(--color-grey-1)] transition-colors"
+          onClick={() => {
+            setShowAssign(!showAssign);
+            setShowStatus(false);
+          }}
+          className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg hover:bg-subtle transition-colors"
           style={{ color: 'var(--color-text)' }}
         >
           <Users size={14} />
@@ -75,8 +91,11 @@ export function BulkActionBar({ count, members, onStatusChange, onAssign, onDele
             {members.map((m) => (
               <button
                 key={m.id}
-                onClick={() => { onAssign(m.id); setShowAssign(false); }}
-                className="w-full text-left px-3 py-1.5 text-sm hover:bg-[var(--color-grey-1)] flex items-center gap-2"
+                onClick={() => {
+                  onAssign(m.id);
+                  setShowAssign(false);
+                }}
+                className="w-full text-left px-3 py-1.5 text-sm hover:bg-subtle flex items-center gap-2"
                 style={{ color: 'var(--color-text)' }}
               >
                 <div
@@ -107,7 +126,7 @@ export function BulkActionBar({ count, members, onStatusChange, onAssign, onDele
       {/* Clear selection */}
       <button
         onClick={onClear}
-        className="p-1.5 rounded-lg hover:bg-[var(--color-grey-1)] transition-colors"
+        className="p-1.5 rounded-lg hover:bg-subtle transition-colors"
         style={{ color: 'var(--color-text-secondary)' }}
         aria-label="Clear selection"
       >

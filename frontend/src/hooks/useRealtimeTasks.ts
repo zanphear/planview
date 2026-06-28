@@ -15,39 +15,48 @@ export function useRealtimeTasks(
 ) {
   const userId = useAuthStore((s) => s.user?.id);
 
-  const handleCreated = useCallback((data: Record<string, unknown>) => {
-    // Don't duplicate tasks we created ourselves (already in local state)
-    if (data.actor_id === userId) return;
+  const handleCreated = useCallback(
+    (data: Record<string, unknown>) => {
+      // Don't duplicate tasks we created ourselves (already in local state)
+      if (data.actor_id === userId) return;
 
-    const task = data.task as Task;
-    if (filter && !filter(task)) return;
-    setTasks((prev) => {
-      // Avoid duplicates
-      if (prev.some((t) => t.id === task.id)) return prev;
-      return [...prev, task];
-    });
-  }, [setTasks, filter, userId]);
-
-  const handleUpdated = useCallback((data: Record<string, unknown>) => {
-    const task = data.task as Task;
-    setTasks((prev) => {
-      const exists = prev.some((t) => t.id === task.id);
-      if (exists) {
-        // Update in place
-        return prev.map((t) => (t.id === task.id ? task : t));
-      }
-      // Task may have been moved into this view (e.g. reassigned to this user)
-      if (filter && filter(task)) {
+      const task = data.task as Task;
+      if (filter && !filter(task)) return;
+      setTasks((prev) => {
+        // Avoid duplicates
+        if (prev.some((t) => t.id === task.id)) return prev;
         return [...prev, task];
-      }
-      return prev;
-    });
-  }, [setTasks, filter]);
+      });
+    },
+    [setTasks, filter, userId],
+  );
 
-  const handleDeleted = useCallback((data: Record<string, unknown>) => {
-    const taskId = data.task_id as string;
-    setTasks((prev) => prev.filter((t) => t.id !== taskId));
-  }, [setTasks]);
+  const handleUpdated = useCallback(
+    (data: Record<string, unknown>) => {
+      const task = data.task as Task;
+      setTasks((prev) => {
+        const exists = prev.some((t) => t.id === task.id);
+        if (exists) {
+          // Update in place
+          return prev.map((t) => (t.id === task.id ? task : t));
+        }
+        // Task may have been moved into this view (e.g. reassigned to this user)
+        if (filter && filter(task)) {
+          return [...prev, task];
+        }
+        return prev;
+      });
+    },
+    [setTasks, filter],
+  );
+
+  const handleDeleted = useCallback(
+    (data: Record<string, unknown>) => {
+      const taskId = data.task_id as string;
+      setTasks((prev) => prev.filter((t) => t.id !== taskId));
+    },
+    [setTasks],
+  );
 
   useWSEvent('task.created', handleCreated, [handleCreated]);
   useWSEvent('task.updated', handleUpdated, [handleUpdated]);

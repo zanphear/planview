@@ -62,7 +62,7 @@ async def generate_report(
         raise HTTPException(status_code=400, detail="AI is not configured. Set AI_MODEL_URL in your environment.")
 
     type_info = ANALYSIS_TYPES[data.report_type]
-    title = f"{type_info['label']} — {date.today().strftime('%d %b %Y')}"
+    title = f"{type_info['label']}, {date.today().strftime('%d %b %Y')}"
 
     report = AnalysisReport(
         workspace_id=workspace_id,

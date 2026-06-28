@@ -2,7 +2,17 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
-import { Bold, Italic, List, ListOrdered, Heading2, Code, Link as LinkIcon, Undo, Redo } from 'lucide-react';
+import {
+  Bold,
+  Italic,
+  List,
+  ListOrdered,
+  Heading2,
+  Code,
+  Link as LinkIcon,
+  Undo,
+  Redo,
+} from 'lucide-react';
 import { useCallback, useEffect } from 'react';
 
 interface RichTextEditorProps {
@@ -11,7 +21,11 @@ interface RichTextEditorProps {
   placeholder?: string;
 }
 
-export function RichTextEditor({ content, onChange, placeholder = 'Add a description...' }: RichTextEditorProps) {
+export function RichTextEditor({
+  content,
+  onChange,
+  placeholder = 'Add a description...',
+}: RichTextEditorProps) {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -19,7 +33,7 @@ export function RichTextEditor({ content, onChange, placeholder = 'Add a descrip
       }),
       Link.configure({
         openOnClick: false,
-        HTMLAttributes: { class: 'text-[var(--color-primary)] underline cursor-pointer' },
+        HTMLAttributes: { class: 'text-accent underline cursor-pointer' },
       }),
       Placeholder.configure({ placeholder }),
     ],
@@ -29,7 +43,8 @@ export function RichTextEditor({ content, onChange, placeholder = 'Add a descrip
     },
     editorProps: {
       attributes: {
-        class: 'prose prose-sm max-w-none focus:outline-none min-h-[80px] px-3 py-2 text-sm text-[var(--color-text)]',
+        class:
+          'prose prose-sm max-w-none focus:outline-none min-h-[80px] px-3 py-2 text-sm text-foreground',
       },
     },
   });
@@ -56,9 +71,9 @@ export function RichTextEditor({ content, onChange, placeholder = 'Add a descrip
   if (!editor) return null;
 
   return (
-    <div className="border border-[var(--color-border)] rounded-lg overflow-hidden bg-[var(--color-surface)]">
+    <div className="border border-outline rounded-lg overflow-hidden bg-card">
       {/* Toolbar */}
-      <div className="flex items-center gap-0.5 px-2 py-1 border-b border-[var(--color-border)] bg-[var(--color-grey-1)]">
+      <div className="flex items-center gap-0.5 px-2 py-1 border-b border-outline bg-subtle">
         <ToolButton
           active={editor.isActive('bold')}
           onClick={() => editor.chain().focus().toggleBold().run()}
@@ -73,7 +88,7 @@ export function RichTextEditor({ content, onChange, placeholder = 'Add a descrip
         >
           <Italic size={14} />
         </ToolButton>
-        <div className="w-px h-4 bg-[var(--color-border)] mx-0.5" />
+        <div className="w-px h-4 bg-outline mx-0.5" />
         <ToolButton
           active={editor.isActive('heading', { level: 2 })}
           onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
@@ -102,14 +117,10 @@ export function RichTextEditor({ content, onChange, placeholder = 'Add a descrip
         >
           <Code size={14} />
         </ToolButton>
-        <ToolButton
-          active={editor.isActive('link')}
-          onClick={setLink}
-          title="Link"
-        >
+        <ToolButton active={editor.isActive('link')} onClick={setLink} title="Link">
           <LinkIcon size={14} />
         </ToolButton>
-        <div className="w-px h-4 bg-[var(--color-border)] mx-0.5" />
+        <div className="w-px h-4 bg-outline mx-0.5" />
         <ToolButton
           onClick={() => editor.chain().focus().undo().run()}
           disabled={!editor.can().undo()}
@@ -152,10 +163,10 @@ function ToolButton({
       title={title}
       className={`p-1.5 rounded transition-colors ${
         active
-          ? 'bg-[var(--color-primary)] text-white'
+          ? 'bg-accent text-white'
           : disabled
-          ? 'text-[var(--color-text-secondary)] opacity-30'
-          : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-grey-2)]'
+            ? 'text-muted-foreground opacity-30'
+            : 'text-muted-foreground hover:bg-muted'
       }`}
     >
       {children}

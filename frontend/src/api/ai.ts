@@ -27,14 +27,15 @@ export interface AIStatus {
 }
 
 export const aiApi = {
-  status: (workspaceId: string) =>
-    api.get<AIStatus>(`/workspaces/${workspaceId}/ai/status`),
+  status: (workspaceId: string) => api.get<AIStatus>(`/workspaces/${workspaceId}/ai/status`),
 
   listSessions: (workspaceId: string) =>
     api.get<AIChatSession[]>(`/workspaces/${workspaceId}/ai/sessions`),
 
   createSession: (workspaceId: string, title?: string) =>
-    api.post<AIChatSessionDetail>(`/workspaces/${workspaceId}/ai/sessions`, { title: title || 'New Chat' }),
+    api.post<AIChatSessionDetail>(`/workspaces/${workspaceId}/ai/sessions`, {
+      title: title || 'New Chat',
+    }),
 
   getSession: (workspaceId: string, sessionId: string) =>
     api.get<AIChatSessionDetail>(`/workspaces/${workspaceId}/ai/sessions/${sessionId}`),
@@ -55,11 +56,14 @@ export async function* streamChat(
   sessionId: string,
   message: string,
 ): AsyncGenerator<string> {
-  const resp = await fetch(`${API_URL}/api/v1/workspaces/${workspaceId}/ai/sessions/${sessionId}/chat`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-    body: JSON.stringify({ message }),
-  });
+  const resp = await fetch(
+    `${API_URL}/api/v1/workspaces/${workspaceId}/ai/sessions/${sessionId}/chat`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      body: JSON.stringify({ message }),
+    },
+  );
 
   if (!resp.ok) throw new Error(`Chat failed: ${resp.status}`);
   if (!resp.body) return;
@@ -83,7 +87,9 @@ export async function* streamChat(
         try {
           const parsed = JSON.parse(data);
           if (parsed.content) yield parsed.content;
-        } catch { /* skip malformed */ }
+        } catch {
+          /* skip malformed */
+        }
       }
     }
   }
@@ -135,7 +141,9 @@ export async function runQuickReport(
           if (parsed.report_id) {
             reportId = parsed.report_id;
           }
-        } catch { /* skip malformed */ }
+        } catch {
+          /* skip malformed */
+        }
       }
     }
   }
