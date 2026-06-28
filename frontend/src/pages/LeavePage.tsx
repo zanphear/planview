@@ -72,7 +72,7 @@ export function LeavePage() {
 
   const updateRequest = useUpdateLeaveRequest(workspace?.id);
 
-  const isManager = user?.role === 'admin' || user?.role === 'manager';
+  const isManager = user?.role === 'owner' || user?.role === 'admin';
 
   const lookupValues = useLookupValues(workspace?.id, 'leave_type');
 
