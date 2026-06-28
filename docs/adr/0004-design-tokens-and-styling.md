@@ -21,3 +21,12 @@ Build the semantic token target first (done in this change, additive and non-bre
 3. Mechanical sweep of the ~270 bracket literals and 103 palette utilities onto the semantic utilities.
 4. Raise body copy to `text-sm`; eliminate `text-[8-11px]`.
 5. Add `aria-live` announcers, chart text alternatives, and a SkipLink.
+
+## Update 2026-06-28: safe palette subset swept
+The 53 unambiguous text-* and border-* raw palette utilities were mapped to
+semantic tokens (red -> destructive, green -> positive, amber/yellow -> caution,
+gray/slate -> muted-foreground/outline). The remaining ~92 are deliberately left
+for a visual-QA pass: bg-* tints (a light bg-red-100 must become a tinted
+destructive, not the saturated colour), blue-* (needs a new `info` token), and
+ring-*. The `text-xs` body-size floor and the shadcn primitive adoption likewise
+need a running app and eyes; they are not safe to sweep blind.

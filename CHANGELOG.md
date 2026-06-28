@@ -37,6 +37,10 @@ All notable changes to Planview. Format loosely follows Keep a Changelog; dates 
 - Migrated all ~25 fetch-into-useState surfaces to TanStack Query across three verified waves (people-management pages, dashboards, MyWork, SettingsPage, the task-detail component subtree, and the global widgets). Each renders the four async states; mutations invalidate query keys; optimistic add/delete with rollback where applicable.
 - `set-state-in-effect` is now a CI-blocking error (was 22 violations, now 0), so a new fetch-into-useState fails the build. The OpenAPI drift gate (0006) and the committed `schema.ts` also landed, and the whole frontend was verified locally green (build + lint + format) using the on-box node toolchain.
 
+### Round 4 (mypy gate, repository layer, store + palette)
+- mypy is clean (153 files) and a blocking CI gate; the first pass fixed 40 errors including a real burndown crash (stats.py used the tuple `.count` method) and a date `.replace` bug.
+- Second repository aggregate (projects) landed; PeoplePage migrated and peopleStore deleted; 53 safe text/border raw-palette utilities mapped to semantic tokens.
+
 ### Notes
 - Still deferred: deleting the now-legacy Zustand server-data stores once their last consumers move to hooks, the raw-palette and font-size cleanup plus shadcn primitives (0004), the rest of the repository-layer aggregates (0005), and the blocking mypy gate (0007).
 - None of the round-2 code was runtime-verified in the authoring environment (no node, partial backend venv). CI and review are the gate.

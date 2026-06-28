@@ -51,3 +51,11 @@ teamStore, peopleStore, lookupStore) still exist for backward compatibility and 
 Board.tsx one-way bridge; they can be deleted once their last consumers are moved
 to hooks. workspaceStore/authStore/uiStore stay (genuine client state). Verified
 locally: frontend build + lint (0 errors) + format all green.
+
+## Update 2026-06-28: first server store deleted
+PeoplePage is migrated and `peopleStore` is deleted (no other consumers). The
+remaining server-data stores (project/task/team/lookup/notification) are still
+read by the timeline, board and sidebar surfaces, several of which are coupled to
+the realtime `useRealtimeTasks` bridge (WebSocket task updates write to the store).
+Deleting those safely means rewiring the realtime bridge to the query cache, which
+needs a running app to verify, so they are the documented remainder.

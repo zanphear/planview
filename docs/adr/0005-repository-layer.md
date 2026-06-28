@@ -26,3 +26,11 @@ aggregate is migrated to thin router -> `TeamService` -> `TeamRepository` as the
 template, behaviour-preserving. The service raises local domain errors (no FastAPI
 imports) which the router maps to HTTP. Remaining aggregates (tasks, projects,
 people, the analysis_service split) follow the same pattern, one per PR.
+
+## Update 2026-06-28: projects aggregate migrated
+`projects.py` is now the second aggregate on the pattern (thin router ->
+ProjectService -> ProjectRepository, covering projects plus project-scoped segments
+and tags), verified by py_compile, mypy and app import. teams + projects establish
+the template; the remaining routers are mechanical follow-on, one aggregate per PR,
+and are intentionally not mass-refactored blind (no test execution available
+locally, so each should land with its characterization tests).

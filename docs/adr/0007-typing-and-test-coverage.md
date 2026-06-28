@@ -24,3 +24,13 @@ Roll both out incrementally rather than flipping a strict gate that is red on da
 
 ## Consequences
 - CI now runs the existing tests (real signal) instead of silently never running them. The deeper coverage and the blocking mypy gate are staged follow-ups.
+
+## Update 2026-06-28: mypy gate is live
+mypy is clean across all 153 source files and now runs as a blocking CI job
+(backend-lint installs the dev extras + libmagic and runs `mypy app/`). The first
+pass fixed 40 errors, several of them genuine runtime bugs the gate caught: the
+burndown series in `stats.py` was built from `r.count` (the tuple method, not the
+column) and would have crashed; `export_service` called string `.replace` on a
+date column; two routers reused a `result` variable across queries of different
+models. Broader integration test coverage and per-package strictness ratcheting
+remain the follow-on.
