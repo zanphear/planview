@@ -43,7 +43,7 @@ export function BugReportModal({ onClose }: BugReportModalProps) {
           style={{ borderColor: 'var(--color-border)' }}
         >
           <div className="flex items-center gap-2">
-            <Bug size={18} className="text-red-500" />
+            <Bug size={18} className="text-destructive" />
             <h3 className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>
               Report a Bug
             </h3>

@@ -950,7 +950,10 @@ export function GuidePage() {
 
       {/* Search */}
       <div className="relative mb-4">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        <Search
+          size={16}
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+        />
         <input
           type="text"
           value={searchTerm}

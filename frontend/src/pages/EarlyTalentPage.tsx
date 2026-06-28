@@ -319,7 +319,7 @@ export function EarlyTalentPage() {
             className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
               tab === t.key
                 ? 'border-accent text-accent'
-                : 'border-transparent hover:border-gray-300'
+                : 'border-transparent hover:border-outline'
             }`}
             style={tab !== t.key ? { color: 'var(--color-text-secondary)' } : undefined}
           >
@@ -402,7 +402,7 @@ export function EarlyTalentPage() {
                         className="p-1.5 rounded hover:bg-red-100 dark:hover:bg-red-900/30"
                         title="Delete programme"
                       >
-                        <Trash2 size={14} className="text-red-500" />
+                        <Trash2 size={14} className="text-destructive" />
                       </button>
                       {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                     </div>

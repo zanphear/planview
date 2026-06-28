@@ -284,7 +284,7 @@ export function AIAssistantPage() {
                 }}
                 className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-red-100 dark:hover:bg-red-900/30 transition-opacity"
               >
-                <Trash2 size={12} className="text-red-500" />
+                <Trash2 size={12} className="text-destructive" />
               </button>
             </div>
           ))}

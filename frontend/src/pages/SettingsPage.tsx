@@ -271,7 +271,7 @@ export function SettingsPage() {
             <hr className="my-3" style={{ borderColor: 'var(--color-border)' }} />
             <button
               onClick={logout}
-              className="w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+              className="w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2.5 text-destructive hover:bg-red-50 dark:hover:bg-red-950/30"
             >
               <LogOut size={16} />
               Sign out
@@ -319,7 +319,7 @@ export function SettingsPage() {
                   {user?.avatar_url && (
                     <button
                       onClick={handleAvatarDelete}
-                      className="text-xs mt-1 text-red-500 hover:text-red-600"
+                      className="text-xs mt-1 text-destructive hover:text-destructive"
                     >
                       Remove photo
                     </button>
@@ -908,7 +908,7 @@ function ChangePasswordForm() {
           }
         />
       </div>
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      {error && <p className="text-xs text-destructive">{error}</p>}
       <button
         onClick={handleSubmit}
         disabled={saving || !currentPw || !newPw || !confirmPw}
@@ -985,7 +985,7 @@ function NotificationPrefsTab({
               type="checkbox"
               checked={getChecked(key)}
               onChange={() => handleToggle(key)}
-              className="w-4 h-4 rounded border-gray-300 mt-0.5"
+              className="w-4 h-4 rounded border-outline mt-0.5"
               style={{ accentColor: 'var(--color-primary)' }}
             />
             <div>
@@ -1109,23 +1109,23 @@ function WorkspaceTab({ user, workspace, logout }: WorkspaceTabProps) {
       {isOwner && (
         <div className="pt-4 border-t" style={{ borderColor: 'var(--color-border)' }}>
           <div className="flex items-center gap-2 mb-2">
-            <AlertTriangle size={16} className="text-red-500" />
-            <h4 className="text-sm font-medium text-red-600">Danger Zone</h4>
+            <AlertTriangle size={16} className="text-destructive" />
+            <h4 className="text-sm font-medium text-destructive">Danger Zone</h4>
           </div>
           {!confirmDelete ? (
             <button
               onClick={() => setConfirmDelete(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-red-600 border border-red-300 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-destructive border border-destructive rounded-lg hover:bg-red-50 dark:hover:bg-red-950/30"
             >
               <Trash2 size={14} />
               Delete workspace
             </button>
           ) : (
             <div
-              className="p-4 border border-red-300 rounded-lg space-y-3"
+              className="p-4 border border-destructive rounded-lg space-y-3"
               style={{ backgroundColor: 'rgba(239, 68, 68, 0.05)' }}
             >
-              <p className="text-sm text-red-600">
+              <p className="text-sm text-destructive">
                 This will permanently delete the workspace, all projects, teams, tasks, and members.
                 This cannot be undone.
               </p>
@@ -1369,7 +1369,7 @@ function TwoFactorTab() {
             <button
               onClick={handleDisable}
               disabled={loading || code.length !== 6}
-              className="px-4 py-2 text-sm text-red-600 border border-red-300 rounded-lg disabled:opacity-50"
+              className="px-4 py-2 text-sm text-destructive border border-destructive rounded-lg disabled:opacity-50"
             >
               Disable 2FA
             </button>
@@ -1445,7 +1445,7 @@ function TwoFactorTab() {
         </div>
       )}
 
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );
 }
@@ -2556,9 +2556,9 @@ function FeedbackTab({ workspaceId }: { workspaceId?: string }) {
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-2 min-w-0">
                     {item.type === 'bug' ? (
-                      <Bug size={14} className="text-red-500 shrink-0" />
+                      <Bug size={14} className="text-destructive shrink-0" />
                     ) : (
-                      <Lightbulb size={14} className="text-amber-500 shrink-0" />
+                      <Lightbulb size={14} className="text-caution shrink-0" />
                     )}
                     <span
                       className="text-sm font-medium truncate"

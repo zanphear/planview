@@ -61,7 +61,7 @@ function ToastContainer() {
           )}
           <button
             onClick={() => remove(toast.id)}
-            className="text-gray-400 hover:text-white shrink-0"
+            className="text-muted-foreground hover:text-white shrink-0"
           >
             <X size={14} />
           </button>

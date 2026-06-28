@@ -104,14 +104,16 @@ export function ProjectEditModal({ project, onSave, onDelete, onClose }: Project
             {!confirmDelete ? (
               <button
                 onClick={() => setConfirmDelete(true)}
-                className="flex items-center gap-1.5 text-sm text-red-600 hover:text-red-700"
+                className="flex items-center gap-1.5 text-sm text-destructive hover:text-destructive"
               >
                 <Trash2 size={14} />
                 Delete project
               </button>
             ) : (
               <div className="flex items-center gap-2">
-                <span className="text-sm text-red-600">Delete this project and all its tasks?</span>
+                <span className="text-sm text-destructive">
+                  Delete this project and all its tasks?
+                </span>
                 <button
                   onClick={onDelete}
                   className="px-2.5 py-1 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700"

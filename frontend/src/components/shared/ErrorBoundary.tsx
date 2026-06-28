@@ -30,7 +30,7 @@ export class ErrorBoundary extends Component<Props, State> {
       if (this.props.fallback) return this.props.fallback;
       return (
         <div className="flex flex-col items-center justify-center p-12 text-center">
-          <AlertTriangle size={48} className="text-red-400 mb-4" />
+          <AlertTriangle size={48} className="text-destructive mb-4" />
           <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--color-text)' }}>
             Something went wrong
           </h3>

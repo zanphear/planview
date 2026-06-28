@@ -43,7 +43,7 @@ export function FeatureRequestModal({ onClose }: FeatureRequestModalProps) {
           style={{ borderColor: 'var(--color-border)' }}
         >
           <div className="flex items-center gap-2">
-            <Lightbulb size={18} className="text-amber-500" />
+            <Lightbulb size={18} className="text-caution" />
             <h3 className="text-base font-semibold" style={{ color: 'var(--color-text)' }}>
               Request a Feature
             </h3>

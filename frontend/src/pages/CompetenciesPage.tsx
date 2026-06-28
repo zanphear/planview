@@ -681,7 +681,7 @@ function CompetenciesTab({
                           </button>
                           <button
                             onClick={() => onDelete(comp.id)}
-                            className="p-1.5 rounded hover:bg-red-50 transition-colors text-red-500"
+                            className="p-1.5 rounded hover:bg-red-50 transition-colors text-destructive"
                             title="Delete"
                           >
                             <Trash2 size={14} />

@@ -298,7 +298,7 @@ export function AnalysisReportsPage() {
                         className="p-1.5 rounded hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
                         title="Delete report"
                       >
-                        <Trash2 size={14} className="text-red-500" />
+                        <Trash2 size={14} className="text-destructive" />
                       </button>
                     </div>
                   );
@@ -315,14 +315,14 @@ export function AnalysisReportsPage() {
 function StatusBadge({ status }: { status: string }) {
   const styles =
     status === 'completed'
-      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+      ? 'bg-green-100 text-positive dark:bg-green-900/30 dark:text-positive'
       : status === 'failed'
-        ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+        ? 'bg-red-100 text-destructive dark:bg-red-900/30 dark:text-destructive'
         : status === 'queued'
           ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
           : status === 'generating'
-            ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-            : 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400';
+            ? 'bg-yellow-100 text-caution dark:bg-yellow-900/30 dark:text-caution'
+            : 'bg-gray-100 text-muted-foreground dark:bg-gray-900/30 dark:text-muted-foreground';
 
   return (
     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${styles}`}>
@@ -393,18 +393,18 @@ function ReportDetailView({
           className="p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
           title="Delete report"
         >
-          <Trash2 size={16} className="text-red-500" />
+          <Trash2 size={16} className="text-destructive" />
         </button>
       </div>
 
       {report.status === 'failed' ? (
-        <div className="flex items-start gap-3 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-          <AlertCircle size={18} className="text-red-500 mt-0.5" />
+        <div className="flex items-start gap-3 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-destructive dark:border-destructive">
+          <AlertCircle size={18} className="text-destructive mt-0.5" />
           <div>
-            <p className="text-sm font-medium text-red-700 dark:text-red-400">
+            <p className="text-sm font-medium text-destructive dark:text-destructive">
               Report generation failed
             </p>
-            <p className="text-xs mt-1 text-red-600 dark:text-red-300">{report.content}</p>
+            <p className="text-xs mt-1 text-destructive dark:text-destructive">{report.content}</p>
           </div>
         </div>
       ) : report.status === 'queued' || report.status === 'generating' ? (
@@ -421,7 +421,7 @@ function ReportDetailView({
         <div ref={contentRef}>
           <div className="print-header hidden mb-6">
             <h1 className="text-2xl font-bold">{report.title}</h1>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               Generated{' '}
               {new Date(report.created_at).toLocaleDateString('en-GB', {
                 day: 'numeric',
