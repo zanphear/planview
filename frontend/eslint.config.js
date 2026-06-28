@@ -26,7 +26,10 @@ export default defineConfig([
       // promote back to error once the compiler is enabled. Genuine correctness
       // rules stay as errors: rules-of-hooks, set-state-in-render (infinite-loop
       // bug), error-boundaries, plus the TS rules. exhaustive-deps stays a warning.
-      'react-hooks/set-state-in-effect': 'warn',
+      //
+      // set-state-in-effect stays an ERROR: server data now lives in TanStack Query
+      // (ADR 0003), so a new fetch-into-useState should fail CI. The few legitimate
+      // UI-sync effects that remain carry a targeted eslint-disable with a reason.
       'react-hooks/immutability': 'warn',
       'react-hooks/purity': 'warn',
       'react-hooks/refs': 'warn',

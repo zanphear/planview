@@ -42,6 +42,7 @@ export function QuickSearch() {
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- resets input UI state on open, not server data */
   useEffect(() => {
     if (open) {
       inputRef.current?.focus();
@@ -49,6 +50,7 @@ export function QuickSearch() {
       setDebounced('');
     }
   }, [open]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Debounce the raw input into the search term that drives the query.
   useEffect(() => {
@@ -57,9 +59,11 @@ export function QuickSearch() {
   }, [query]);
 
   // Reset the keyboard selection whenever the search term changes.
+  /* eslint-disable react-hooks/set-state-in-effect -- resets keyboard selection UI state */
   useEffect(() => {
     setSelectedIdx(0);
   }, [debounced]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // Server state lives in the query cache, keyed on the debounced term (ADR 0003).
   const searchQuery = useQuery({

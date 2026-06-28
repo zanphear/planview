@@ -134,6 +134,7 @@ export function SettingsPage() {
   const [adding, setAdding] = useState(false);
   const [addName, setAddName] = useState('');
 
+  /* eslint-disable react-hooks/set-state-in-effect -- seeds the profile form from the loaded user, not server data */
   useEffect(() => {
     if (user) {
       setName(user.name);
@@ -141,6 +142,7 @@ export function SettingsPage() {
       setColour(user.colour);
     }
   }, [user]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleSaveProfile = async () => {
     if (!workspace || !user) return;
@@ -1285,9 +1287,11 @@ function TwoFactorTab() {
 
   const user = useAuthStore((s) => s.user);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- derives the 2FA toggle from the loaded user */
   useEffect(() => {
     setEnabled(!!(user as unknown as Record<string, unknown>)?.totp_enabled);
   }, [user]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleSetup = async () => {
     setLoading(true);
