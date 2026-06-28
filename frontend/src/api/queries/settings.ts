@@ -41,7 +41,7 @@ type UpdateFeedbackInput = Parameters<typeof feedbackApi.update>[2];
 
 // ── Queries ──────────────────────────────────────────────────────────────────
 // Each is the server data behind one Settings section. Plain reads; the mutations
-// below revalidate them. No optimistic UI — the page reloaded everything after a
+// below revalidate them. No optimistic UI, the page reloaded everything after a
 // write, so a straight invalidate is the faithful translation.
 
 /** Workspace members (Members tab). */

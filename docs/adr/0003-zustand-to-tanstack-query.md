@@ -32,3 +32,22 @@ move/reorder with onError rollback), and `ProjectBoardPage` renders all four
 states. The Zustand stores remain for other consumers; `Board.tsx` is bridged
 one-way from the Query cache until it is migrated. Steps 3 to 5 (remaining stores,
 the ~47 direct-fetch pages, the ESLint guard) are the remaining work.
+
+## Update 2026-06-28: migration substantially complete
+All ~25 fetch-into-useState surfaces are migrated to TanStack Query across three
+verified waves: the people-management pages (Leave, Compliance, Reviews,
+Recruitment, Development, Objectives, Competencies, Wellbeing, Onboarding, Rota,
+Resource, Absence, Activity), the dashboards (Dashboard, Reporting, Burndown),
+MyWork, SettingsPage (six data sections), the task-detail component subtree
+(comments, attachments, tags, dependencies, checklists, with optimistic add/delete
+and rollback), and the global Taskbox/QuickSearch/OIDC callback. Each page renders
+the four async states; mutations invalidate query keys. `set-state-in-effect`
+dropped from 22 to 0 violations and is now a CI-blocking error (the few remaining
+genuine UI-sync effects carry a reasoned eslint-disable), so the pattern cannot
+regress (step 5 of the plan).
+
+Remaining tidy-up: the Zustand server-data stores (projectStore, taskStore,
+teamStore, peopleStore, lookupStore) still exist for backward compatibility and the
+Board.tsx one-way bridge; they can be deleted once their last consumers are moved
+to hooks. workspaceStore/authStore/uiStore stay (genuine client state). Verified
+locally: frontend build + lint (0 errors) + format all green.

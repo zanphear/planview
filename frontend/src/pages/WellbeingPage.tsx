@@ -68,7 +68,7 @@ export function WellbeingPage() {
   const user = useAuthStore((s) => s.user);
   const workspaceId = workspace?.id;
 
-  // Client/UI state only — server data lives in TanStack Query (ADR 0003).
+  // Client/UI state only, server data lives in TanStack Query (ADR 0003).
   const [tab, setTab] = useState<Tab>('surveys');
   const [expandedSurvey, setExpandedSurvey] = useState<string | null>(null);
   const [showNewSurvey, setShowNewSurvey] = useState(false);
@@ -95,7 +95,7 @@ export function WellbeingPage() {
     return members.find((u) => u.id === userId);
   };
 
-  // Computed stats — derive purely from query data, no input mutation.
+  // Computed stats, derive purely from query data, no input mutation.
   const allResponses = useMemo(
     () => (surveysQuery.data ?? []).flatMap((s) => s.responses),
     [surveysQuery.data],

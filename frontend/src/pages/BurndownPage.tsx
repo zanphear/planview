@@ -8,7 +8,7 @@ import { LoadingSpinner } from '../components/shared/LoadingSpinner';
 export function BurndownPage() {
   const workspace = useWorkspaceStore((s) => s.currentWorkspace);
   const projects = useProjectStore((s) => s.projects);
-  // Client/UI state stays local — only the series itself is server state.
+  // Client/UI state stays local, only the series itself is server state.
   const [days, setDays] = useState(30);
   const [projectId, setProjectId] = useState<string>('');
 

@@ -56,7 +56,7 @@ export function TagPicker({ projectId, selectedIds, onChange }: TagPickerProps) 
             className="text-xs underline"
             style={{ color: 'var(--color-danger)' }}
           >
-            Failed to load tags — retry
+            Failed to load tags, retry
           </button>
         )}
         {tags.map((tag) => {

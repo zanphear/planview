@@ -22,7 +22,7 @@ export const statsKeys = {
 // Read-only dashboards. No mutations: these wrap the aggregate stats endpoints
 // and let TanStack Query own caching / refetch / retry.
 
-/** Task / workspace stats — the dashboard's primary task data. */
+/** Task / workspace stats, the dashboard's primary task data. */
 export function useWorkspaceStats(workspaceId: string | undefined) {
   return useQuery({
     queryKey: statsKeys.workspace(workspaceId ?? ''),
@@ -31,7 +31,7 @@ export function useWorkspaceStats(workspaceId: string | undefined) {
   });
 }
 
-/** People-management aggregate stats — drives the People Dashboard / reporting. */
+/** People-management aggregate stats, drives the People Dashboard / reporting. */
 export function usePeopleStats(workspaceId: string | undefined) {
   return useQuery({
     queryKey: statsKeys.people(workspaceId ?? ''),

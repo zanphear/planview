@@ -38,7 +38,7 @@ export function MyWorkPage() {
     };
   }, [startDate, zoom]);
 
-  // ── Server state (TanStack Query — ADR 0003) ────────────────────────────────
+  // ── Server state (TanStack Query, ADR 0003) ────────────────────────────────
   const tasksQuery = useMyTasks(workspace?.id, user?.id, window);
   const milestonesQuery = useMyWorkMilestones(workspace?.id);
   const membersQuery = useMyWorkMembers(workspace?.id);

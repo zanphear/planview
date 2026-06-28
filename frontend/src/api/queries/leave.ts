@@ -54,7 +54,7 @@ export function useLeaveAllowances(
   });
 }
 
-/** Workspace members — used to resolve names/avatars on requests & allowances. */
+/** Workspace members, used to resolve names/avatars on requests & allowances. */
 export function useLeaveMembers(workspaceId: string | undefined) {
   return useQuery({
     queryKey: leaveKeys.members(workspaceId ?? ''),

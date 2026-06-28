@@ -32,7 +32,7 @@ export function useCandidates(workspaceId: string | undefined) {
   });
 }
 
-/** Workspace members — secondary server data for the interviewer picker. */
+/** Workspace members, secondary server data for the interviewer picker. */
 export function useMembers(workspaceId: string | undefined) {
   return useQuery({
     queryKey: ['members', workspaceId ?? ''],

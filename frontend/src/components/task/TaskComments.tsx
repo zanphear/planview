@@ -36,7 +36,7 @@ export function TaskComments({ taskId }: TaskCommentsProps) {
 
   const cacheKey = commentKeys.byTask(workspace?.id ?? '', taskId);
 
-  // Real-time comment updates — patch the query cache so all readers stay in sync.
+  // Real-time comment updates, patch the query cache so all readers stay in sync.
   useWSEvent(
     'comment.created',
     (data) => {

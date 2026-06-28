@@ -114,7 +114,7 @@ export function DashboardPage() {
   const user = useAuthStore((s) => s.user);
 
   const statsQuery = useWorkspaceStats(workspace?.id);
-  // People stats are optional context — a failure here must not break the
+  // People stats are optional context, a failure here must not break the
   // task-focused dashboard, so we tolerate it rather than gate on it.
   const peopleStats = usePeopleStats(workspace?.id).data ?? null;
   const activityQuery = useActivityFeed(workspace?.id);

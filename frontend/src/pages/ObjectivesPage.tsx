@@ -417,7 +417,7 @@ export function ObjectivesPage() {
         </div>
       )}
 
-      {/* Objectives list — four states: pending / error / empty / success */}
+      {/* Objectives list, four states: pending / error / empty / success */}
       {objectivesQuery.isPending ? (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (

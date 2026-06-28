@@ -33,6 +33,10 @@ All notable changes to Planview. Format loosely follows Keep a Changelog; dates 
 - **0006:** added `backend/scripts/dump_openapi.py` and a CI `openapi-types` job that generates `schema.ts` from the schema. Fetcher migration to the generated types is the remaining tail.
 - **0007:** added `tests/test_idor.py` (cross-tenant regression tests for the early-talent and attachment fixes), `tests/test_projects.py`, `tests/test_tasks.py`. Backend tests now run in CI against an ephemeral Postgres.
 
+### TanStack Query migration complete (0003)
+- Migrated all ~25 fetch-into-useState surfaces to TanStack Query across three verified waves (people-management pages, dashboards, MyWork, SettingsPage, the task-detail component subtree, and the global widgets). Each renders the four async states; mutations invalidate query keys; optimistic add/delete with rollback where applicable.
+- `set-state-in-effect` is now a CI-blocking error (was 22 violations, now 0), so a new fetch-into-useState fails the build. The OpenAPI drift gate (0006) and the committed `schema.ts` also landed, and the whole frontend was verified locally green (build + lint + format) using the on-box node toolchain.
+
 ### Notes
-- Still deferred (need npm/visual QA or are genuinely multi-PR): full Zustand to TanStack migration of the remaining ~47 surfaces, the raw-palette and font-size cleanup plus shadcn primitives (0004), the rest of the repository-layer aggregates (0005), the OpenAPI fetcher migration and drift gate (0006), and the blocking mypy gate (0007).
+- Still deferred: deleting the now-legacy Zustand server-data stores once their last consumers move to hooks, the raw-palette and font-size cleanup plus shadcn primitives (0004), the rest of the repository-layer aggregates (0005), and the blocking mypy gate (0007).
 - None of the round-2 code was runtime-verified in the authoring environment (no node, partial backend venv). CI and review are the gate.

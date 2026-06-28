@@ -76,7 +76,7 @@ export function DependencyPicker({ taskId }: DependencyPickerProps) {
           className="text-xs underline mb-1 block"
           style={{ color: 'var(--color-danger)' }}
         >
-          Failed to load dependencies — retry
+          Failed to load dependencies, retry
         </button>
       )}
 

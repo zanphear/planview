@@ -58,7 +58,7 @@ export function useMyWorkMilestones(workspaceId: string | undefined) {
   });
 }
 
-/** Workspace members — used to resolve assignees in the task detail panel. */
+/** Workspace members, used to resolve assignees in the task detail panel. */
 export function useMyWorkMembers(workspaceId: string | undefined) {
   return useQuery({
     queryKey: myWorkKeys.members(workspaceId ?? ''),
