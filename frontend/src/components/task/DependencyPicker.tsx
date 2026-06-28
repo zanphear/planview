@@ -1,6 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link, X, Search } from 'lucide-react';
-import { dependenciesApi, type TaskDependency } from '../../api/dependencies';
+import {
+  useTaskDependencies,
+  useCreateDependency,
+  useDeleteDependency,
+} from '../../api/queries/dependencies';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
 import { useTaskStore } from '../../stores/taskStore';
 import { Toast } from '../shared/Toast';
@@ -12,23 +16,13 @@ interface DependencyPickerProps {
 export function DependencyPicker({ taskId }: DependencyPickerProps) {
   const workspace = useWorkspaceStore((s) => s.currentWorkspace);
   const allTasks = useTaskStore((s) => s.tasks);
-  const [deps, setDeps] = useState<TaskDependency[]>([]);
   const [adding, setAdding] = useState(false);
   const [search, setSearch] = useState('');
 
-  const loadDeps = async () => {
-    if (!workspace) return;
-    try {
-      const { data } = await dependenciesApi.list(workspace.id, taskId);
-      setDeps(data);
-    } catch {
-      /* ignore */
-    }
-  };
-
-  useEffect(() => {
-    loadDeps();
-  }, [workspace, taskId]);
+  const depsQuery = useTaskDependencies(workspace?.id, taskId);
+  const deps = depsQuery.data ?? [];
+  const createDependency = useCreateDependency(workspace?.id);
+  const deleteDependency = useDeleteDependency(workspace?.id, taskId);
 
   const blockers = deps.filter((d) => d.blocked_id === taskId);
   const blocking = deps.filter((d) => d.blocker_id === taskId);
@@ -36,11 +30,10 @@ export function DependencyPicker({ taskId }: DependencyPickerProps) {
   const handleAdd = async (otherTaskId: string, asBlocker: boolean) => {
     if (!workspace) return;
     try {
-      await dependenciesApi.create(workspace.id, {
+      await createDependency.mutateAsync({
         blocker_id: asBlocker ? otherTaskId : taskId,
         blocked_id: asBlocker ? taskId : otherTaskId,
       });
-      await loadDeps();
       setAdding(false);
       setSearch('');
     } catch {
@@ -48,10 +41,9 @@ export function DependencyPicker({ taskId }: DependencyPickerProps) {
     }
   };
 
-  const handleRemove = async (depId: string) => {
+  const handleRemove = (depId: string) => {
     if (!workspace) return;
-    await dependenciesApi.delete(workspace.id, depId);
-    setDeps((prev) => prev.filter((d) => d.id !== depId));
+    deleteDependency.mutate(depId);
   };
 
   const taskName = (id: string) => allTasks.find((t) => t.id === id)?.name || 'Unknown';
@@ -72,6 +64,21 @@ export function DependencyPicker({ taskId }: DependencyPickerProps) {
         <Link size={12} className="inline mr-1" />
         Dependencies
       </label>
+
+      {depsQuery.isPending && (
+        <p className="text-xs mb-1" style={{ color: 'var(--color-text-secondary)' }}>
+          Loading…
+        </p>
+      )}
+      {depsQuery.isError && (
+        <button
+          onClick={() => depsQuery.refetch()}
+          className="text-xs underline mb-1 block"
+          style={{ color: 'var(--color-danger)' }}
+        >
+          Failed to load dependencies — retry
+        </button>
+      )}
 
       {blockers.length > 0 && (
         <div className="mb-2">

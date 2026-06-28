@@ -34,16 +34,35 @@ import { useUIStore } from '../stores/uiStore';
 import { authApi, membersApi, type User as UserType } from '../api/users';
 import { workspacesApi } from '../api/workspaces';
 import { importsApi } from '../api/imports';
-import { webhooksApi, type Webhook as WebhookType } from '../api/webhooks';
-import { customFieldsApi, type CustomField } from '../api/customFields';
-import { templatesApi, type TaskTemplate } from '../api/templates';
+import { type Webhook as WebhookType } from '../api/webhooks';
 import { api } from '../api/client';
-import { lookupsApi, type LookupValue } from '../api/lookups';
+import { type LookupValue } from '../api/lookups';
 import { useLookupStore } from '../stores/lookupStore';
 import { ColourPicker } from '../components/task/ColourPicker';
 import { Avatar } from '../components/shared/Avatar';
 import { Toast } from '../components/shared/Toast';
-import { feedbackApi, type FeedbackItem } from '../api/feedback';
+import {
+  useWorkspaceMembers,
+  useInviteMember,
+  useAddMember,
+  useUpdateMember,
+  useRemoveMember,
+  useWebhooks,
+  useCreateWebhook,
+  useUpdateWebhook,
+  useDeleteWebhook,
+  useCustomFields,
+  useCreateCustomField,
+  useDeleteCustomField,
+  useTaskTemplates,
+  useCreateTemplate,
+  useDeleteTemplate,
+  useReferenceData,
+  useCreateLookup,
+  useUpdateLookup,
+  useDeleteLookup,
+  useFeedback,
+} from '../api/queries/settings';
 
 type Tab =
   | 'profile'
@@ -60,6 +79,33 @@ type Tab =
   | 'reference_data'
   | 'feedback';
 
+// ── Async section states (ADR 0003: pending / error-with-retry) ──────────────
+// Empty-with-CTA and success are rendered inline by each tab.
+function SectionLoading({ label = 'Loading...' }: { label?: string }) {
+  return (
+    <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+      {label}
+    </p>
+  );
+}
+
+function SectionError({ onRetry }: { onRetry: () => void }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="text-sm" style={{ color: 'var(--color-danger, #ef4444)' }}>
+        Failed to load. Please try again.
+      </span>
+      <button
+        onClick={onRetry}
+        className="px-3 py-1.5 text-xs font-medium border rounded-lg hover:bg-subtle transition-colors"
+        style={{ borderColor: 'var(--color-border)', color: 'var(--color-text)' }}
+      >
+        Retry
+      </button>
+    </div>
+  );
+}
+
 export function SettingsPage() {
   const user = useAuthStore((s) => s.user);
   const fetchMe = useAuthStore((s) => s.fetchMe);
@@ -73,7 +119,12 @@ export function SettingsPage() {
   const [colour, setColour] = useState(user?.colour || '#8A00E5');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [members, setMembers] = useState<UserType[]>([]);
+  const membersQuery = useWorkspaceMembers(workspace?.id);
+  const members = membersQuery.data ?? [];
+  const inviteMember = useInviteMember(workspace?.id);
+  const addMember = useAddMember(workspace?.id);
+  const updateMember = useUpdateMember(workspace?.id);
+  const removeMember = useRemoveMember(workspace?.id);
   const [inviting, setInviting] = useState(false);
   const [inviteName, setInviteName] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
@@ -110,21 +161,14 @@ export function SettingsPage() {
     setSaving(false);
   };
 
-  useEffect(() => {
-    if (workspace) {
-      membersApi.list(workspace.id).then((res) => setMembers(res.data));
-    }
-  }, [workspace]);
-
   const handleInvite = async () => {
     if (!workspace || !inviteName.trim() || !inviteEmail.trim()) return;
     try {
-      const { data } = await membersApi.invite(workspace.id, {
+      const data = await inviteMember.mutateAsync({
         name: inviteName.trim(),
         email: inviteEmail.trim(),
         role: inviteRole,
       });
-      setMembers((prev) => [...prev, data.user]);
       setTempPassword(data.temp_password);
       setInviteName('');
       setInviteEmail('');
@@ -138,8 +182,7 @@ export function SettingsPage() {
   const handleRemoveMember = async (memberId: string) => {
     if (!workspace) return;
     try {
-      await membersApi.remove(workspace.id, memberId);
-      setMembers((prev) => prev.filter((m) => m.id !== memberId));
+      await removeMember.mutateAsync(memberId);
       Toast.show('Member removed');
     } catch {
       Toast.show('Failed to remove member');
@@ -149,8 +192,7 @@ export function SettingsPage() {
   const handleAddMember = async () => {
     if (!workspace || !addName.trim()) return;
     try {
-      const { data } = await membersApi.add(workspace.id, { name: addName.trim() });
-      setMembers((prev) => [...prev, data]);
+      await addMember.mutateAsync({ name: addName.trim() });
       setAddName('');
       setAdding(false);
       Toast.show('Member added');
@@ -582,98 +624,123 @@ export function SettingsPage() {
               )}
 
               {/* Member list */}
-              <div className="space-y-1">
-                {members.map((m) => (
-                  <div
-                    key={m.id}
-                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-subtle transition-colors group"
-                  >
-                    <Avatar
-                      name={m.name}
-                      initials={m.initials || undefined}
-                      colour={m.colour}
-                      size={36}
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p
-                        className="text-sm font-medium truncate"
-                        style={{ color: 'var(--color-text)' }}
-                      >
-                        {m.name}
-                        {m.id === user?.id && (
-                          <span
-                            className="text-xs ml-2"
-                            style={{ color: 'var(--color-text-secondary)' }}
-                          >
-                            (you)
-                          </span>
-                        )}
-                      </p>
-                      <p
-                        className="text-xs truncate"
-                        style={{ color: 'var(--color-text-secondary)' }}
-                      >
-                        {m.email}
-                      </p>
-                    </div>
-                    {/* Role badge or dropdown */}
-                    {m.role === 'owner' ||
-                    m.id === user?.id ||
-                    !['owner', 'admin'].includes(user?.role || '') ? (
-                      <span
-                        className="text-xs px-2 py-0.5 rounded-full"
-                        style={{
-                          backgroundColor:
-                            m.role === 'owner'
-                              ? 'var(--color-primary-light)'
-                              : 'var(--color-grey-2)',
-                          color:
-                            m.role === 'owner'
-                              ? 'var(--color-primary)'
-                              : 'var(--color-text-secondary)',
-                        }}
-                      >
-                        {m.role}
-                      </span>
-                    ) : (
-                      <select
-                        value={m.role}
-                        onChange={async (e) => {
-                          if (!workspace) return;
-                          try {
-                            const { data } = await membersApi.update(workspace.id, m.id, {
-                              role: e.target.value,
-                            } as Partial<UserType>);
-                            setMembers((prev) => prev.map((p) => (p.id === m.id ? data : p)));
-                          } catch (err) {
-                            console.error('Failed to change role:', err);
-                          }
-                        }}
-                        className="text-xs px-2 py-0.5 rounded-full border-0 outline-none cursor-pointer"
-                        style={{
-                          backgroundColor: 'var(--color-grey-2)',
-                          color: 'var(--color-text-secondary)',
-                        }}
-                      >
-                        <option value="member">member</option>
-                        <option value="admin">admin</option>
-                      </select>
-                    )}
-                    {(user?.role === 'owner' || user?.role === 'admin') &&
-                      m.id !== user?.id &&
-                      m.role !== 'owner' && (
-                        <button
-                          onClick={() => handleRemoveMember(m.id)}
-                          className="p-1.5 rounded-lg hover:bg-muted opacity-0 group-hover:opacity-100 transition-opacity"
-                          style={{ color: 'var(--color-danger, #ef4444)' }}
-                          title="Remove member"
+              {membersQuery.isPending ? (
+                <SectionLoading label="Loading members..." />
+              ) : membersQuery.isError ? (
+                <SectionError onRetry={() => membersQuery.refetch()} />
+              ) : members.length === 0 ? (
+                <div className="py-6 text-center">
+                  <p className="text-sm mb-3" style={{ color: 'var(--color-text-secondary)' }}>
+                    No members yet.
+                  </p>
+                  {(user?.role === 'owner' || user?.role === 'admin') && (
+                    <button
+                      onClick={() => {
+                        setAdding(true);
+                        setInviting(false);
+                      }}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-white rounded-lg text-sm font-medium"
+                      style={{ backgroundColor: 'var(--color-primary)' }}
+                    >
+                      <UserPlus size={14} />
+                      Add your first member
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {members.map((m) => (
+                    <div
+                      key={m.id}
+                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-subtle transition-colors group"
+                    >
+                      <Avatar
+                        name={m.name}
+                        initials={m.initials || undefined}
+                        colour={m.colour}
+                        size={36}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p
+                          className="text-sm font-medium truncate"
+                          style={{ color: 'var(--color-text)' }}
                         >
-                          <Trash2 size={14} />
-                        </button>
+                          {m.name}
+                          {m.id === user?.id && (
+                            <span
+                              className="text-xs ml-2"
+                              style={{ color: 'var(--color-text-secondary)' }}
+                            >
+                              (you)
+                            </span>
+                          )}
+                        </p>
+                        <p
+                          className="text-xs truncate"
+                          style={{ color: 'var(--color-text-secondary)' }}
+                        >
+                          {m.email}
+                        </p>
+                      </div>
+                      {/* Role badge or dropdown */}
+                      {m.role === 'owner' ||
+                      m.id === user?.id ||
+                      !['owner', 'admin'].includes(user?.role || '') ? (
+                        <span
+                          className="text-xs px-2 py-0.5 rounded-full"
+                          style={{
+                            backgroundColor:
+                              m.role === 'owner'
+                                ? 'var(--color-primary-light)'
+                                : 'var(--color-grey-2)',
+                            color:
+                              m.role === 'owner'
+                                ? 'var(--color-primary)'
+                                : 'var(--color-text-secondary)',
+                          }}
+                        >
+                          {m.role}
+                        </span>
+                      ) : (
+                        <select
+                          value={m.role}
+                          onChange={async (e) => {
+                            if (!workspace) return;
+                            try {
+                              await updateMember.mutateAsync({
+                                userId: m.id,
+                                data: { role: e.target.value } as Partial<UserType>,
+                              });
+                            } catch (err) {
+                              console.error('Failed to change role:', err);
+                            }
+                          }}
+                          className="text-xs px-2 py-0.5 rounded-full border-0 outline-none cursor-pointer"
+                          style={{
+                            backgroundColor: 'var(--color-grey-2)',
+                            color: 'var(--color-text-secondary)',
+                          }}
+                        >
+                          <option value="member">member</option>
+                          <option value="admin">admin</option>
+                        </select>
                       )}
-                  </div>
-                ))}
-              </div>
+                      {(user?.role === 'owner' || user?.role === 'admin') &&
+                        m.id !== user?.id &&
+                        m.role !== 'owner' && (
+                          <button
+                            onClick={() => handleRemoveMember(m.id)}
+                            className="p-1.5 rounded-lg hover:bg-muted opacity-0 group-hover:opacity-100 transition-opacity"
+                            style={{ color: 'var(--color-danger, #ef4444)' }}
+                            title="Remove member"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -1380,27 +1447,25 @@ function TwoFactorTab() {
 }
 
 function WebhooksTab({ workspaceId }: { workspaceId?: string }) {
-  const [webhooks, setWebhooks] = useState<WebhookType[]>([]);
+  const webhooksQuery = useWebhooks(workspaceId);
+  const webhooks = webhooksQuery.data ?? [];
+  const createWebhook = useCreateWebhook(workspaceId);
+  const updateWebhook = useUpdateWebhook(workspaceId);
+  const deleteWebhook = useDeleteWebhook(workspaceId);
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
   const [events, setEvents] = useState('');
 
-  useEffect(() => {
-    if (!workspaceId) return;
-    webhooksApi.list(workspaceId).then((res) => setWebhooks(res.data));
-  }, [workspaceId]);
-
   const handleCreate = async () => {
     if (!workspaceId || !name.trim() || !url.trim()) return;
     try {
       const eventList = events.trim() ? events.split(',').map((e) => e.trim()) : undefined;
-      const { data } = await webhooksApi.create(workspaceId, {
+      await createWebhook.mutateAsync({
         name: name.trim(),
         url: url.trim(),
         events: eventList,
       });
-      setWebhooks((prev) => [data, ...prev]);
       setAdding(false);
       setName('');
       setUrl('');
@@ -1413,15 +1478,13 @@ function WebhooksTab({ workspaceId }: { workspaceId?: string }) {
 
   const handleDelete = async (id: string) => {
     if (!workspaceId) return;
-    await webhooksApi.delete(workspaceId, id);
-    setWebhooks((prev) => prev.filter((w) => w.id !== id));
+    await deleteWebhook.mutateAsync(id);
     Toast.show('Webhook deleted');
   };
 
   const handleToggle = async (wh: WebhookType) => {
     if (!workspaceId) return;
-    const { data } = await webhooksApi.update(workspaceId, wh.id, { is_active: !wh.is_active });
-    setWebhooks((prev) => prev.map((w) => (w.id === data.id ? data : w)));
+    await updateWebhook.mutateAsync({ webhookId: wh.id, data: { is_active: !wh.is_active } });
   };
 
   const AVAILABLE_EVENTS = [
@@ -1517,62 +1580,67 @@ function WebhooksTab({ workspaceId }: { workspaceId?: string }) {
         </div>
       )}
 
-      {webhooks.length === 0 && !adding && (
+      {webhooksQuery.isPending ? (
+        <SectionLoading label="Loading webhooks..." />
+      ) : webhooksQuery.isError ? (
+        <SectionError onRetry={() => webhooksQuery.refetch()} />
+      ) : webhooks.length === 0 && !adding ? (
         <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
           No webhooks configured.
         </p>
-      )}
-
-      <div className="space-y-2">
-        {webhooks.map((wh) => (
-          <div
-            key={wh.id}
-            className="flex items-center gap-3 p-3 rounded-lg border"
-            style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)' }}
-          >
+      ) : (
+        <div className="space-y-2">
+          {webhooks.map((wh) => (
             <div
-              className={`w-2 h-2 rounded-full ${wh.is_active ? 'bg-green-500' : 'bg-gray-400'}`}
-            />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate" style={{ color: 'var(--color-text)' }}>
-                {wh.name}
-              </p>
-              <p className="text-xs truncate" style={{ color: 'var(--color-text-secondary)' }}>
-                {wh.url}
-              </p>
+              key={wh.id}
+              className="flex items-center gap-3 p-3 rounded-lg border"
+              style={{
+                borderColor: 'var(--color-border)',
+                backgroundColor: 'var(--color-surface)',
+              }}
+            >
+              <div
+                className={`w-2 h-2 rounded-full ${wh.is_active ? 'bg-green-500' : 'bg-gray-400'}`}
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate" style={{ color: 'var(--color-text)' }}>
+                  {wh.name}
+                </p>
+                <p className="text-xs truncate" style={{ color: 'var(--color-text-secondary)' }}>
+                  {wh.url}
+                </p>
+              </div>
+              <button
+                onClick={() => handleToggle(wh)}
+                className="text-xs px-2 py-1 rounded border"
+                style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}
+              >
+                {wh.is_active ? 'Disable' : 'Enable'}
+              </button>
+              <button
+                onClick={() => handleDelete(wh.id)}
+                className="p-1.5 rounded hover:bg-muted"
+                style={{ color: 'var(--color-danger, #ef4444)' }}
+              >
+                <Trash2 size={14} />
+              </button>
             </div>
-            <button
-              onClick={() => handleToggle(wh)}
-              className="text-xs px-2 py-1 rounded border"
-              style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}
-            >
-              {wh.is_active ? 'Disable' : 'Enable'}
-            </button>
-            <button
-              onClick={() => handleDelete(wh.id)}
-              className="p-1.5 rounded hover:bg-muted"
-              style={{ color: 'var(--color-danger, #ef4444)' }}
-            >
-              <Trash2 size={14} />
-            </button>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
 function CustomFieldsTab({ workspaceId }: { workspaceId?: string }) {
-  const [fields, setFields] = useState<CustomField[]>([]);
+  const fieldsQuery = useCustomFields(workspaceId);
+  const fields = fieldsQuery.data ?? [];
+  const createField = useCreateCustomField(workspaceId);
+  const deleteField = useDeleteCustomField(workspaceId);
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState('');
   const [fieldType, setFieldType] = useState('text');
   const [options, setOptions] = useState('');
-
-  useEffect(() => {
-    if (!workspaceId) return;
-    customFieldsApi.list(workspaceId).then((res) => setFields(res.data));
-  }, [workspaceId]);
 
   const handleCreate = async () => {
     if (!workspaceId || !name.trim()) return;
@@ -1581,12 +1649,11 @@ function CustomFieldsTab({ workspaceId }: { workspaceId?: string }) {
         fieldType === 'select' && options.trim()
           ? JSON.stringify(options.split(',').map((o) => o.trim()))
           : undefined;
-      const { data } = await customFieldsApi.create(workspaceId, {
+      await createField.mutateAsync({
         name: name.trim(),
         field_type: fieldType,
         options: optionsJson,
       });
-      setFields((prev) => [...prev, data]);
       setAdding(false);
       setName('');
       setFieldType('text');
@@ -1599,8 +1666,7 @@ function CustomFieldsTab({ workspaceId }: { workspaceId?: string }) {
 
   const handleDelete = async (id: string) => {
     if (!workspaceId) return;
-    await customFieldsApi.delete(workspaceId, id);
-    setFields((prev) => prev.filter((f) => f.id !== id));
+    await deleteField.mutateAsync(id);
     Toast.show('Custom field deleted');
   };
 
@@ -1699,65 +1765,69 @@ function CustomFieldsTab({ workspaceId }: { workspaceId?: string }) {
         </div>
       )}
 
-      {fields.length === 0 && !adding && (
+      {fieldsQuery.isPending ? (
+        <SectionLoading label="Loading custom fields..." />
+      ) : fieldsQuery.isError ? (
+        <SectionError onRetry={() => fieldsQuery.refetch()} />
+      ) : fields.length === 0 && !adding ? (
         <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
           No custom fields defined.
         </p>
-      )}
-
-      <div className="space-y-2">
-        {fields.map((f) => (
-          <div
-            key={f.id}
-            className="flex items-center gap-3 p-3 rounded-lg border"
-            style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)' }}
-          >
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
-                {f.name}
-              </p>
-              <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
-                {FIELD_TYPES.find((t) => t.value === f.field_type)?.label || f.field_type}
-                {f.options && `, ${JSON.parse(f.options).join(', ')}`}
-              </p>
-            </div>
-            <button
-              onClick={() => handleDelete(f.id)}
-              className="p-1.5 rounded hover:bg-muted"
-              style={{ color: 'var(--color-danger, #ef4444)' }}
+      ) : (
+        <div className="space-y-2">
+          {fields.map((f) => (
+            <div
+              key={f.id}
+              className="flex items-center gap-3 p-3 rounded-lg border"
+              style={{
+                borderColor: 'var(--color-border)',
+                backgroundColor: 'var(--color-surface)',
+              }}
             >
-              <Trash2 size={14} />
-            </button>
-          </div>
-        ))}
-      </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+                  {f.name}
+                </p>
+                <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                  {FIELD_TYPES.find((t) => t.value === f.field_type)?.label || f.field_type}
+                  {f.options && `, ${JSON.parse(f.options).join(', ')}`}
+                </p>
+              </div>
+              <button
+                onClick={() => handleDelete(f.id)}
+                className="p-1.5 rounded hover:bg-muted"
+                style={{ color: 'var(--color-danger, #ef4444)' }}
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
 function TemplatesTab({ workspaceId }: { workspaceId?: string }) {
-  const [templates, setTemplates] = useState<TaskTemplate[]>([]);
+  const templatesQuery = useTaskTemplates(workspaceId);
+  const templates = templatesQuery.data ?? [];
+  const createTemplate = useCreateTemplate(workspaceId);
+  const deleteTemplate = useDeleteTemplate(workspaceId);
   const [adding, setAdding] = useState(false);
   const [tplName, setTplName] = useState('');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState('todo');
   const [estimate, setEstimate] = useState('');
 
-  useEffect(() => {
-    if (!workspaceId) return;
-    templatesApi.list(workspaceId).then((res) => setTemplates(res.data));
-  }, [workspaceId]);
-
   const handleCreate = async () => {
     if (!workspaceId || !tplName.trim()) return;
     try {
-      const { data } = await templatesApi.create(workspaceId, {
+      await createTemplate.mutateAsync({
         name: tplName.trim(),
         description: description.trim() || null,
         status,
         time_estimate_minutes: estimate ? parseInt(estimate) : null,
       });
-      setTemplates((prev) => [...prev, data]);
       setAdding(false);
       setTplName('');
       setDescription('');
@@ -1771,8 +1841,7 @@ function TemplatesTab({ workspaceId }: { workspaceId?: string }) {
 
   const handleDelete = async (id: string) => {
     if (!workspaceId) return;
-    await templatesApi.delete(workspaceId, id);
-    setTemplates((prev) => prev.filter((t) => t.id !== id));
+    await deleteTemplate.mutateAsync(id);
     Toast.show('Template deleted');
   };
 
@@ -1870,43 +1939,51 @@ function TemplatesTab({ workspaceId }: { workspaceId?: string }) {
           </div>
         </div>
       )}
-      {templates.length === 0 && !adding && (
+      {templatesQuery.isPending ? (
+        <SectionLoading label="Loading templates..." />
+      ) : templatesQuery.isError ? (
+        <SectionError onRetry={() => templatesQuery.refetch()} />
+      ) : templates.length === 0 && !adding ? (
         <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
           No templates created yet.
         </p>
-      )}
-      <div className="space-y-2">
-        {templates.map((tpl) => (
-          <div
-            key={tpl.id}
-            className="flex items-center gap-3 p-3 rounded-lg border"
-            style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)' }}
-          >
-            {tpl.colour && (
-              <div
-                className="w-3 h-3 rounded-full shrink-0"
-                style={{ backgroundColor: tpl.colour }}
-              />
-            )}
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
-                {tpl.name}
-              </p>
-              <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
-                {tpl.status}
-                {tpl.time_estimate_minutes && ` · ${tpl.time_estimate_minutes}m`}
-              </p>
-            </div>
-            <button
-              onClick={() => handleDelete(tpl.id)}
-              className="p-1.5 rounded hover:bg-muted"
-              style={{ color: 'var(--color-danger, #ef4444)' }}
+      ) : (
+        <div className="space-y-2">
+          {templates.map((tpl) => (
+            <div
+              key={tpl.id}
+              className="flex items-center gap-3 p-3 rounded-lg border"
+              style={{
+                borderColor: 'var(--color-border)',
+                backgroundColor: 'var(--color-surface)',
+              }}
             >
-              <Trash2 size={14} />
-            </button>
-          </div>
-        ))}
-      </div>
+              {tpl.colour && (
+                <div
+                  className="w-3 h-3 rounded-full shrink-0"
+                  style={{ backgroundColor: tpl.colour }}
+                />
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium" style={{ color: 'var(--color-text)' }}>
+                  {tpl.name}
+                </p>
+                <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                  {tpl.status}
+                  {tpl.time_estimate_minutes && ` · ${tpl.time_estimate_minutes}m`}
+                </p>
+              </div>
+              <button
+                onClick={() => handleDelete(tpl.id)}
+                className="p-1.5 rounded hover:bg-muted"
+                style={{ color: 'var(--color-danger, #ef4444)' }}
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -2103,25 +2180,13 @@ const LOOKUP_CATEGORIES: { key: string; label: string }[] = [
 ];
 
 function ReferenceDataTab({ workspaceId }: { workspaceId?: string }) {
-  const [data, setData] = useState<Record<string, LookupValue[]>>({});
+  const referenceQuery = useReferenceData(workspaceId);
+  const data = referenceQuery.data ?? {};
+  const createLookup = useCreateLookup(workspaceId);
+  const updateLookup = useUpdateLookup(workspaceId);
+  const deleteLookup = useDeleteLookup(workspaceId);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const [loading, setLoading] = useState(true);
   const invalidateLookups = useLookupStore((s) => s.invalidate);
-
-  const fetchAll = async () => {
-    if (!workspaceId) return;
-    try {
-      const res = await lookupsApi.listAll(workspaceId);
-      setData(res.data);
-    } catch {
-      Toast.show('Failed to load reference data');
-    }
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    fetchAll();
-  }, [workspaceId]);
 
   const toggleSection = (key: string) => {
     setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -2133,8 +2198,7 @@ function ReferenceDataTab({ workspaceId }: { workspaceId?: string }) {
       const payload: { value: string; label?: string; colour?: string } = { value: value.trim() };
       if (label.trim()) payload.label = label.trim();
       if (colour.trim()) payload.colour = colour.trim();
-      const { data: created } = await lookupsApi.create(workspaceId, category, payload);
-      setData((prev) => ({ ...prev, [category]: [...(prev[category] || []), created] }));
+      await createLookup.mutateAsync({ category, data: payload });
       invalidateLookups(category);
     } catch {
       Toast.show('Failed to add value');
@@ -2144,13 +2208,11 @@ function ReferenceDataTab({ workspaceId }: { workspaceId?: string }) {
   const handleToggleActive = async (category: string, item: LookupValue) => {
     if (!workspaceId) return;
     try {
-      const { data: updated } = await lookupsApi.update(workspaceId, category, item.id, {
-        is_active: !item.is_active,
+      await updateLookup.mutateAsync({
+        category,
+        id: item.id,
+        data: { is_active: !item.is_active },
       });
-      setData((prev) => ({
-        ...prev,
-        [category]: (prev[category] || []).map((v) => (v.id === updated.id ? updated : v)),
-      }));
       invalidateLookups(category);
     } catch {
       Toast.show('Failed to update value');
@@ -2160,11 +2222,7 @@ function ReferenceDataTab({ workspaceId }: { workspaceId?: string }) {
   const handleDelete = async (category: string, id: string) => {
     if (!workspaceId) return;
     try {
-      await lookupsApi.delete(workspaceId, category, id);
-      setData((prev) => ({
-        ...prev,
-        [category]: (prev[category] || []).filter((v) => v.id !== id),
-      }));
+      await deleteLookup.mutateAsync({ category, id });
       invalidateLookups(category);
       Toast.show('Value deleted');
     } catch {
@@ -2172,15 +2230,24 @@ function ReferenceDataTab({ workspaceId }: { workspaceId?: string }) {
     }
   };
 
-  if (loading) {
+  if (referenceQuery.isPending) {
     return (
       <div className="space-y-5">
         <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>
           Reference Data
         </h3>
-        <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-          Loading...
-        </p>
+        <SectionLoading />
+      </div>
+    );
+  }
+
+  if (referenceQuery.isError) {
+    return (
+      <div className="space-y-5">
+        <h3 className="text-lg font-medium" style={{ color: 'var(--color-text)' }}>
+          Reference Data
+        </h3>
+        <SectionError onRetry={() => referenceQuery.refetch()} />
       </div>
     );
   }
@@ -2408,21 +2475,9 @@ const STATUS_STYLES: Record<string, { bg: string; text: string; label: string }>
 };
 
 function FeedbackTab({ workspaceId }: { workspaceId?: string }) {
-  const [items, setItems] = useState<FeedbackItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const feedbackQuery = useFeedback(workspaceId);
+  const items = feedbackQuery.data ?? [];
   const [filter, setFilter] = useState<'all' | 'bug' | 'feature'>('all');
-
-  useEffect(() => {
-    if (!workspaceId) return;
-    setLoading(true);
-    feedbackApi
-      .list(workspaceId)
-      .then((res) => {
-        setItems(res.data);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, [workspaceId]);
 
   const filtered = filter === 'all' ? items : items.filter((i) => i.type === filter);
 
@@ -2468,9 +2523,13 @@ function FeedbackTab({ workspaceId }: { workspaceId?: string }) {
         ))}
       </div>
 
-      {loading ? (
+      {feedbackQuery.isPending ? (
         <div className="py-8 text-center text-sm" style={{ color: 'var(--color-text-secondary)' }}>
           Loading...
+        </div>
+      ) : feedbackQuery.isError ? (
+        <div className="py-8 flex justify-center">
+          <SectionError onRetry={() => feedbackQuery.refetch()} />
         </div>
       ) : filtered.length === 0 ? (
         <div className="py-8 text-center text-sm" style={{ color: 'var(--color-text-secondary)' }}>

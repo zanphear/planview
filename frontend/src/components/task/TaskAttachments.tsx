@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useRef, useState } from 'react';
 import {
   Paperclip,
   Upload,
@@ -10,6 +10,11 @@ import {
   Eye,
 } from 'lucide-react';
 import { attachmentsApi, type Attachment } from '../../api/attachments';
+import {
+  useTaskAttachments,
+  useUploadAttachments,
+  useDeleteAttachment,
+} from '../../api/queries/attachments';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
 import { useAuthStore } from '../../stores/authStore';
 import { FilePreview } from './FilePreview';
@@ -21,36 +26,24 @@ interface TaskAttachmentsProps {
 export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
   const workspace = useWorkspaceStore((s) => s.currentWorkspace);
   const user = useAuthStore((s) => s.user);
-  const [attachments, setAttachments] = useState<Attachment[]>([]);
-  const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [previewAtt, setPreviewAtt] = useState<Attachment | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const fetchAttachments = useCallback(async () => {
-    if (!workspace) return;
-    const { data } = await attachmentsApi.list(workspace.id, taskId);
-    setAttachments(data);
-  }, [workspace, taskId]);
+  const attachmentsQuery = useTaskAttachments(workspace?.id, taskId);
+  const attachments = attachmentsQuery.data ?? [];
+  const uploadAttachments = useUploadAttachments(workspace?.id, taskId);
+  const deleteAttachment = useDeleteAttachment(workspace?.id, taskId);
+  const uploading = uploadAttachments.isPending;
 
-  useEffect(() => {
-    fetchAttachments();
-  }, [fetchAttachments]);
-
-  const handleUpload = async (files: FileList | null) => {
+  const handleUpload = (files: FileList | null) => {
     if (!workspace || !files || files.length === 0) return;
-    setUploading(true);
-    for (const file of Array.from(files)) {
-      await attachmentsApi.upload(workspace.id, taskId, file);
-    }
-    setUploading(false);
-    await fetchAttachments();
+    uploadAttachments.mutate(Array.from(files));
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = (id: string) => {
     if (!workspace) return;
-    await attachmentsApi.delete(workspace.id, taskId, id);
-    await fetchAttachments();
+    deleteAttachment.mutate(id);
   };
 
   const formatSize = (bytes: number) => {
@@ -121,6 +114,28 @@ export function TaskAttachments({ taskId }: TaskAttachmentsProps) {
 
       {/* File list */}
       <div className="space-y-1.5">
+        {attachmentsQuery.isPending && (
+          <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+            Loading attachments…
+          </p>
+        )}
+        {attachmentsQuery.isError && (
+          <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--color-danger)' }}>
+            <span>Could not load attachments.</span>
+            <button
+              onClick={() => attachmentsQuery.refetch()}
+              className="underline"
+              style={{ color: 'var(--color-primary)' }}
+            >
+              Retry
+            </button>
+          </div>
+        )}
+        {attachmentsQuery.isSuccess && attachments.length === 0 && (
+          <p className="text-xs italic" style={{ color: 'var(--color-text-secondary)' }}>
+            No attachments yet
+          </p>
+        )}
         {attachments.map((att) => (
           <div
             key={att.id}

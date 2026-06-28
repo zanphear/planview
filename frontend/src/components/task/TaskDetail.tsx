@@ -1,8 +1,16 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { X, Users as UsersIcon, Clock, Play, Square, Timer, Plus, Trash2 } from 'lucide-react';
 import { tasksApi, type Task } from '../../api/tasks';
-import { timeEntriesApi, type TimeEntry as TimeEntryType } from '../../api/timeEntries';
-import { checklistsApi } from '../../api/checklists';
+import { timeEntriesApi } from '../../api/timeEntries';
+import {
+  checklistKeys,
+  useTaskChecklists,
+  useCreateChecklistItem,
+  useToggleChecklistItem,
+  useDeleteChecklistItem,
+} from '../../api/queries/checklists';
+import { timeEntryKeys, useTaskTimeEntries } from '../../api/queries/timeEntries';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
 import { useTaskStore } from '../../stores/taskStore';
 import { ColourPicker } from './ColourPicker';
@@ -30,9 +38,16 @@ interface TaskDetailProps {
 export function TaskDetail({ task: initialTask, members, onClose }: TaskDetailProps) {
   const workspace = useWorkspaceStore((s) => s.currentWorkspace);
   const updateTaskInStore = useTaskStore((s) => s.updateTask);
+  const qc = useQueryClient();
   const [task, setTask] = useState(initialTask);
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState(task.name);
+
+  const checklistsQuery = useTaskChecklists(workspace?.id, task.id);
+  const checklistItems = checklistsQuery.data ?? task.checklists;
+  const createChecklistItem = useCreateChecklistItem(workspace?.id, task.id);
+  const toggleChecklistItem = useToggleChecklistItem(workspace?.id, task.id);
+  const deleteChecklistItem = useDeleteChecklistItem(workspace?.id, task.id);
 
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -61,9 +76,11 @@ export function TaskDetail({ task: initialTask, members, onClose }: TaskDetailPr
         setTask(updated);
         setNameValue(updated.name);
         updateTaskInStore(updated);
+        // Checklist now lives in its own query cache; refresh it on remote edits.
+        qc.invalidateQueries({ queryKey: checklistKeys.byTask(workspace?.id ?? '', task.id) });
       }
     },
-    [currentUserId, task.id, updateTaskInStore],
+    [currentUserId, task.id, updateTaskInStore, qc, workspace?.id],
   );
 
   const save = useCallback(
@@ -90,22 +107,19 @@ export function TaskDetail({ task: initialTask, members, onClose }: TaskDetailPr
     updateTaskInStore(data);
   }, [workspace, task.id, updateTaskInStore]);
 
-  const handleChecklistAdd = async (title: string) => {
+  const handleChecklistAdd = (title: string) => {
     if (!workspace) return;
-    await checklistsApi.create(workspace.id, task.id, { title });
-    await refreshTask();
+    createChecklistItem.mutate(title);
   };
 
-  const handleChecklistToggle = async (id: string, completed: boolean) => {
+  const handleChecklistToggle = (id: string, completed: boolean) => {
     if (!workspace) return;
-    await checklistsApi.update(workspace.id, task.id, id, { is_completed: completed });
-    await refreshTask();
+    toggleChecklistItem.mutate({ id, is_completed: completed });
   };
 
-  const handleChecklistDelete = async (id: string) => {
+  const handleChecklistDelete = (id: string) => {
     if (!workspace) return;
-    await checklistsApi.delete(workspace.id, task.id, id);
-    await refreshTask();
+    deleteChecklistItem.mutate(id);
   };
 
   return (
@@ -348,12 +362,28 @@ export function TaskDetail({ task: initialTask, members, onClose }: TaskDetailPr
           <TaskSubtasks taskId={task.id} subtasks={task.subtasks || []} onRefresh={refreshTask} />
 
           {/* Checklist */}
-          <TaskChecklist
-            items={task.checklists}
-            onAdd={handleChecklistAdd}
-            onToggle={handleChecklistToggle}
-            onDelete={handleChecklistDelete}
-          />
+          {checklistsQuery.isError ? (
+            <div
+              className="flex items-center gap-2 text-xs"
+              style={{ color: 'var(--color-danger)' }}
+            >
+              <span>Could not load checklist.</span>
+              <button
+                onClick={() => checklistsQuery.refetch()}
+                className="underline"
+                style={{ color: 'var(--color-primary)' }}
+              >
+                Retry
+              </button>
+            </div>
+          ) : (
+            <TaskChecklist
+              items={checklistItems}
+              onAdd={handleChecklistAdd}
+              onToggle={handleChecklistToggle}
+              onDelete={handleChecklistDelete}
+            />
+          )}
 
           {/* Attachments */}
           <TaskAttachments taskId={task.id} />
@@ -393,27 +423,21 @@ function TimeTracker({
   estimate: number;
   onTimeUpdated: (newTotal: number) => void;
 }) {
+  const qc = useQueryClient();
   const [running, setRunning] = useState(false);
   const [elapsed, setElapsed] = useState(0);
-  const [entries, setEntries] = useState<TimeEntryType[]>([]);
   const [showEntries, setShowEntries] = useState(false);
   const [manualMinutes, setManualMinutes] = useState('');
   const startRef = useRef<number>(0);
   const intervalRef = useRef<ReturnType<typeof setInterval>>(undefined);
 
-  const loadEntries = useCallback(async () => {
-    if (!workspaceId) return;
-    try {
-      const { data } = await timeEntriesApi.listForTask(workspaceId, taskId);
-      setEntries(data);
-    } catch {
-      /* ignore */
-    }
-  }, [workspaceId, taskId]);
+  const entriesQuery = useTaskTimeEntries(workspaceId || undefined, taskId);
+  const entries = entriesQuery.data ?? [];
 
-  useEffect(() => {
-    if (showEntries) loadEntries();
-  }, [showEntries, loadEntries]);
+  const invalidateEntries = useCallback(() => {
+    if (!workspaceId) return;
+    qc.invalidateQueries({ queryKey: timeEntryKeys.byTask(workspaceId, taskId) });
+  }, [qc, workspaceId, taskId]);
 
   const start = () => {
     startRef.current = Date.now();
@@ -433,7 +457,7 @@ function TimeTracker({
     try {
       await timeEntriesApi.create(workspaceId, taskId, { minutes: mins });
       onTimeUpdated(logged + mins);
-      if (showEntries) loadEntries();
+      invalidateEntries();
     } catch {
       /* ignore */
     }
@@ -446,7 +470,7 @@ function TimeTracker({
       await timeEntriesApi.create(workspaceId, taskId, { minutes: mins });
       onTimeUpdated(logged + mins);
       setManualMinutes('');
-      if (showEntries) loadEntries();
+      invalidateEntries();
     } catch {
       /* ignore */
     }
@@ -457,7 +481,7 @@ function TimeTracker({
     try {
       await timeEntriesApi.delete(workspaceId, taskId, entryId);
       onTimeUpdated(Math.max(0, logged - entryMinutes));
-      setEntries((prev) => prev.filter((e) => e.id !== entryId));
+      invalidateEntries();
     } catch {
       /* ignore */
     }

@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
   Clock,
@@ -22,8 +21,8 @@ import {
 } from 'lucide-react';
 import { useWorkspaceStore } from '../stores/workspaceStore';
 import { useAuthStore } from '../stores/authStore';
-import { statsApi, type WorkspaceStats, type PeopleStats } from '../api/stats';
-import { activityApi, type Activity as ActivityType } from '../api/activity';
+import { useWorkspaceStats, usePeopleStats } from '../api/queries/stats';
+import { useActivityFeed } from '../api/queries/activity';
 import { Avatar } from '../components/shared/Avatar';
 import { DashboardSkeleton } from '../components/shared/Skeleton';
 import { StatCard } from '../components/shared/StatCard';
@@ -113,10 +112,13 @@ function Metric({ label, value }: { label: string; value: number | string }) {
 export function DashboardPage() {
   const workspace = useWorkspaceStore((s) => s.currentWorkspace);
   const user = useAuthStore((s) => s.user);
-  const [stats, setStats] = useState<WorkspaceStats | null>(null);
-  const [peopleStats, setPeopleStats] = useState<PeopleStats | null>(null);
-  const [activities, setActivities] = useState<ActivityType[]>([]);
-  const [loading, setLoading] = useState(true);
+
+  const statsQuery = useWorkspaceStats(workspace?.id);
+  // People stats are optional context — a failure here must not break the
+  // task-focused dashboard, so we tolerate it rather than gate on it.
+  const peopleStats = usePeopleStats(workspace?.id).data ?? null;
+  const activityQuery = useActivityFeed(workspace?.id);
+  const activities = (activityQuery.data?.pages.flat() ?? []).slice(0, 10);
 
   const enabledModules = workspace?.enabled_modules;
   const defaults: Record<string, boolean> = {
@@ -139,25 +141,68 @@ export function DashboardPage() {
     return defaults[key] ?? true;
   };
 
-  useEffect(() => {
-    if (!workspace) return;
-    setLoading(true);
-    Promise.all([
-      statsApi.get(workspace.id),
-      statsApi.peopleDashboard(workspace.id),
-      activityApi.list(workspace.id, { limit: 10 }),
-    ])
-      .then(([statsRes, peopleRes, actRes]) => {
-        setStats(statsRes.data);
-        setPeopleStats(peopleRes.data);
-        setActivities(actRes.data);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, [workspace]);
-
-  if (loading || !stats) {
+  // ── Four states ─────────────────────────────────────────────────────────
+  if (statsQuery.isPending) {
     return <DashboardSkeleton />;
+  }
+
+  if (statsQuery.isError) {
+    return (
+      <div className="p-4 sm:p-6 max-w-7xl mx-auto">
+        <div
+          className="rounded-xl border p-10 text-center"
+          style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+        >
+          <AlertTriangle
+            size={40}
+            className="mx-auto mb-3"
+            style={{ color: 'var(--color-danger)' }}
+          />
+          <p className="text-sm mb-4" style={{ color: 'var(--color-text-secondary)' }}>
+            Couldn't load your dashboard.
+          </p>
+          <button
+            onClick={() => statsQuery.refetch()}
+            className="text-sm font-medium rounded-lg px-4 py-2"
+            style={{ backgroundColor: 'var(--color-primary)', color: '#fff' }}
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const stats = statsQuery.data;
+
+  if (stats.total_tasks === 0 && stats.projects.length === 0) {
+    return (
+      <div className="p-4 sm:p-6 max-w-7xl mx-auto">
+        <div
+          className="rounded-xl border p-10 text-center"
+          style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+        >
+          <Inbox
+            size={40}
+            className="mx-auto mb-3"
+            style={{ color: 'var(--color-text-secondary)' }}
+          />
+          <p className="text-sm font-medium mb-1" style={{ color: 'var(--color-text)' }}>
+            Nothing here yet
+          </p>
+          <p className="text-sm mb-4" style={{ color: 'var(--color-text-secondary)' }}>
+            Create your first project and tasks to get the dashboard going.
+          </p>
+          <NavLink
+            to="/projects"
+            className="inline-block text-sm font-medium rounded-lg px-4 py-2"
+            style={{ backgroundColor: 'var(--color-primary)', color: '#fff' }}
+          >
+            Create a project
+          </NavLink>
+        </div>
+      </div>
+    );
   }
 
   const todo = stats.by_status['todo'] || 0;

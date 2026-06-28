@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { authApi } from '../api/users';
 import { useAuthStore } from '../stores/authStore';
@@ -7,38 +8,52 @@ export function OIDCCallbackPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const fetchMe = useAuthStore((s) => s.fetchMe);
-  const [error, setError] = useState('');
 
-  useEffect(() => {
-    const code = searchParams.get('code');
-    const state = searchParams.get('state');
-    const savedState = sessionStorage.getItem('oidc_state');
+  // The code-for-token exchange is a genuine one-shot side effect: model it as a
+  // mutation and fire it exactly once on mount (the ref guards StrictMode double-invoke).
+  const exchange = useMutation({
+    mutationFn: async () => {
+      const code = searchParams.get('code');
+      const state = searchParams.get('state');
+      const savedState = sessionStorage.getItem('oidc_state');
 
-    if (!code) {
-      setError('No authorization code received from identity provider.');
-      return;
-    }
-
-    if (state && savedState && state !== savedState) {
-      setError('State mismatch, possible CSRF attack. Please try again.');
-      return;
-    }
-
-    sessionStorage.removeItem('oidc_state');
-
-    (async () => {
-      try {
-        const { data } = await authApi.oidcCallback(code, state || '');
-        localStorage.setItem('access_token', data.access_token);
-        localStorage.setItem('refresh_token', data.refresh_token);
-        await fetchMe();
-        navigate('/', { replace: true });
-      } catch (err: unknown) {
-        const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
-        setError(msg || 'OIDC login failed. Please try again.');
+      if (!code) {
+        throw new Error('No authorization code received from identity provider.');
       }
-    })();
-  }, [searchParams, navigate, fetchMe]);
+      if (state && savedState && state !== savedState) {
+        throw new Error('State mismatch, possible CSRF attack. Please try again.');
+      }
+
+      sessionStorage.removeItem('oidc_state');
+
+      const { data } = await authApi.oidcCallback(code, state || '');
+      localStorage.setItem('access_token', data.access_token);
+      localStorage.setItem('refresh_token', data.refresh_token);
+      await fetchMe();
+      navigate('/', { replace: true });
+    },
+  });
+
+  const fired = useRef(false);
+  useEffect(() => {
+    if (fired.current) return;
+    fired.current = true;
+    exchange.mutate();
+  }, [exchange]);
+
+  const err = exchange.error;
+  let error = '';
+  if (err) {
+    if (typeof err === 'object' && err !== null && 'response' in err) {
+      // API failure: surface the server-provided detail, else a generic message.
+      error =
+        (err as { response?: { data?: { detail?: string } } }).response?.data?.detail ??
+        'OIDC login failed. Please try again.';
+    } else {
+      // Validation failure thrown above (no auth code / state mismatch).
+      error = err instanceof Error ? err.message : 'OIDC login failed. Please try again.';
+    }
+  }
 
   if (error) {
     return (

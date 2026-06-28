@@ -1,10 +1,14 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useRef } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Inbox, ChevronDown, ChevronUp, Plus, GripVertical, X, FileText } from 'lucide-react';
 import { tasksApi, type Task } from '../../api/tasks';
-import { templatesApi, type TaskTemplate } from '../../api/templates';
+import { taskKeys } from '../../api/queries/tasks';
+import { useTaskTemplates } from '../../api/queries/templates';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
 import { useAuthStore } from '../../stores/authStore';
 import { useUIStore } from '../../stores/uiStore';
+
+type CreateTaskInput = Parameters<typeof tasksApi.create>[1];
 
 export function Taskbox() {
   const workspace = useWorkspaceStore((s) => s.currentWorkspace);
@@ -12,61 +16,60 @@ export function Taskbox() {
   const taskboxOpen = useUIStore((s) => s.taskboxOpen);
   const setTaskboxOpen = useUIStore((s) => s.setTaskboxOpen);
 
-  const [tasks, setTasks] = useState<Task[]>([]);
   const [newTaskName, setNewTaskName] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [templates, setTemplates] = useState<TaskTemplate[]>([]);
   const [showTemplates, setShowTemplates] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const fetchUnscheduled = useCallback(async () => {
-    if (!workspace) return;
-    setLoading(true);
-    try {
-      const { data } = await tasksApi.list(workspace.id, { filter: 'backlog' });
-      setTasks(data);
-    } catch (err) {
-      console.error('Failed to fetch taskbox:', err);
-    }
-    setLoading(false);
-  }, [workspace]);
+  const qc = useQueryClient();
+  const backlogKey = taskKeys.list(workspace?.id ?? '', { filter: 'backlog' });
 
-  useEffect(() => {
-    if (taskboxOpen) {
-      fetchUnscheduled();
-      if (workspace) {
-        templatesApi
-          .list(workspace.id)
-          .then((res) => setTemplates(res.data))
-          .catch(() => {});
-      }
-    }
-  }, [taskboxOpen, fetchUnscheduled, workspace]);
+  // Unscheduled (backlog) tasks live in the query cache, not useState (ADR 0003).
+  const tasksQuery = useQuery({
+    queryKey: backlogKey,
+    queryFn: async () => (await tasksApi.list(workspace!.id, { filter: 'backlog' })).data,
+    enabled: taskboxOpen && !!workspace,
+  });
+  const tasks = tasksQuery.data ?? [];
 
-  const handleCreate = async () => {
+  // Templates only fetch while the taskbox is open.
+  const templatesQuery = useTaskTemplates(taskboxOpen ? workspace?.id : undefined);
+  const templates = templatesQuery.data ?? [];
+
+  const createTask = useMutation({
+    mutationFn: async (data: CreateTaskInput) => (await tasksApi.create(workspace!.id, data)).data,
+    onSuccess: (created) => {
+      qc.setQueryData<Task[]>(backlogKey, (old) => (old ? [...old, created] : [created]));
+    },
+  });
+
+  const deleteTask = useMutation({
+    mutationFn: async (taskId: string) => {
+      await tasksApi.delete(workspace!.id, taskId);
+      return taskId;
+    },
+    onSuccess: (taskId) => {
+      qc.setQueryData<Task[]>(backlogKey, (old) =>
+        old ? old.filter((t) => t.id !== taskId) : old,
+      );
+    },
+  });
+
+  const handleCreate = () => {
     if (!workspace || !newTaskName.trim()) return;
-    try {
-      const { data } = await tasksApi.create(workspace.id, {
-        name: newTaskName.trim(),
-        status: 'todo',
-        assignee_ids: user ? [user.id] : [],
-      });
-      setTasks((prev) => [...prev, data]);
-      setNewTaskName('');
-      inputRef.current?.focus();
-    } catch (err) {
-      console.error('Failed to create task:', err);
-    }
+    createTask.mutate(
+      { name: newTaskName.trim(), status: 'todo', assignee_ids: user ? [user.id] : [] },
+      {
+        onSuccess: () => {
+          setNewTaskName('');
+          inputRef.current?.focus();
+        },
+      },
+    );
   };
 
-  const handleDelete = async (taskId: string) => {
+  const handleDelete = (taskId: string) => {
     if (!workspace) return;
-    try {
-      await tasksApi.delete(workspace.id, taskId);
-      setTasks((prev) => prev.filter((t) => t.id !== taskId));
-    } catch (err) {
-      console.error('Failed to delete task:', err);
-    }
+    deleteTask.mutate(taskId);
   };
 
   // Collapsed state, just a little tab
@@ -126,12 +129,12 @@ export function Taskbox() {
 
       {/* Task list */}
       <div className="flex-1 overflow-y-auto px-2 py-2 space-y-1">
-        {loading && tasks.length === 0 && (
+        {tasksQuery.isLoading && tasks.length === 0 && (
           <p className="text-xs text-center py-4" style={{ color: 'var(--color-text-secondary)' }}>
             Loading...
           </p>
         )}
-        {!loading && tasks.length === 0 && (
+        {!tasksQuery.isLoading && tasks.length === 0 && (
           <p className="text-xs text-center py-4" style={{ color: 'var(--color-text-secondary)' }}>
             No unscheduled tasks. Add one below!
           </p>
@@ -167,7 +170,7 @@ export function Taskbox() {
       </div>
 
       {/* Templates dropdown */}
-      {showTemplates && templates.length > 0 && (
+      {showTemplates && (
         <div
           className="px-3 py-2 border-t space-y-1 max-h-40 overflow-y-auto"
           style={{ borderColor: 'var(--color-border)' }}
@@ -178,12 +181,21 @@ export function Taskbox() {
           >
             Create from template
           </p>
+          {templatesQuery.isLoading && (
+            <p className="text-xs py-1" style={{ color: 'var(--color-text-secondary)' }}>
+              Loading templates...
+            </p>
+          )}
+          {!templatesQuery.isLoading && templates.length === 0 && (
+            <p className="text-xs py-1" style={{ color: 'var(--color-text-secondary)' }}>
+              No templates yet.
+            </p>
+          )}
           {templates.map((tpl) => (
             <button
               key={tpl.id}
-              onClick={async () => {
-                if (!workspace) return;
-                const { data } = await tasksApi.create(workspace.id, {
+              onClick={() => {
+                createTask.mutate({
                   name: tpl.name,
                   description: tpl.description,
                   colour: tpl.colour,
@@ -191,7 +203,6 @@ export function Taskbox() {
                   time_estimate_minutes: tpl.time_estimate_minutes,
                   assignee_ids: user ? [user.id] : [],
                 });
-                setTasks((prev) => [...prev, data]);
                 setShowTemplates(false);
               }}
               className="w-full text-left px-2 py-1.5 text-sm rounded-lg hover:bg-subtle transition-colors truncate"
@@ -228,18 +239,16 @@ export function Taskbox() {
               } as React.CSSProperties
             }
           />
-          {templates.length > 0 && (
-            <button
-              onClick={() => setShowTemplates((s) => !s)}
-              className="p-1.5 rounded-lg hover:bg-subtle"
-              style={{
-                color: showTemplates ? 'var(--color-primary)' : 'var(--color-text-secondary)',
-              }}
-              title="Create from template"
-            >
-              <FileText size={14} />
-            </button>
-          )}
+          <button
+            onClick={() => setShowTemplates((s) => !s)}
+            className="p-1.5 rounded-lg hover:bg-subtle"
+            style={{
+              color: showTemplates ? 'var(--color-primary)' : 'var(--color-text-secondary)',
+            }}
+            title="Create from template"
+          >
+            <FileText size={14} />
+          </button>
           <button
             onClick={handleCreate}
             disabled={!newTaskName.trim()}
