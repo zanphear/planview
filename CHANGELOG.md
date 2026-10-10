@@ -5,7 +5,7 @@ All notable changes to Planview. Format loosely follows Keep a Changelog; dates 
 ## [Unreleased]
 
 ### Deployment paused (2026-10-09)
-- Planview taken offline on lxc-testbed: `docker compose down` and the built images removed. Data volumes (`planview_postgres_data`, `planview_uploads`) and the stack dir with `.env` are preserved.
+- Planview taken offline on lxc-testbed: `docker compose down` and the built images removed. Data volumes (`planview_postgres_data`, `planview_uploads`) are preserved. The stack dir (with `.env`) was moved from `/opt/stacks/planview` to `/opt/paused/planview` so Dockge no longer lists it; move it back before rebuilding.
 - Reverse proxy, Authentik forwardauth app, Technitium/Cloudflare DNS and the tunnel ingress for planview.envy.sh removed by traefik-config (commit c05d3a8). Restore material: `traefik-support/baselines/paused-2026-10-09/`.
 - Anyone holding a planview.envy.sh or planview.local.envy.sh link now gets NXDOMAIN; no data was lost.
 
