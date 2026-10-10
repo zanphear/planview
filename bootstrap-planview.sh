@@ -1,5 +1,5 @@
 #!/bin/bash
-# Planview — Project Bootstrap
+# Planview, Project Bootstrap
 # Run this from your WSL home directory before launching Claude Code
 # Usage: bash bootstrap-planview.sh
 

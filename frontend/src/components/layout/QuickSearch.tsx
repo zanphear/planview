@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Search, X, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { tasksApi, type Task } from '../../api/tasks';
+import { tasksApi } from '../../api/tasks';
 import { membersApi } from '../../api/users';
 import { useWorkspaceStore } from '../../stores/workspaceStore';
 import { useProjectStore } from '../../stores/projectStore';
@@ -17,8 +18,8 @@ interface SearchResult {
 
 export function QuickSearch() {
   const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState('');
-  const [results, setResults] = useState<SearchResult[]>([]);
+  const [query, setQuery] = useState(''); // immediate input value
+  const [debounced, setDebounced] = useState(''); // debounced search term
   const [selectedIdx, setSelectedIdx] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
@@ -41,21 +42,35 @@ export function QuickSearch() {
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- resets input UI state on open, not server data */
   useEffect(() => {
     if (open) {
       inputRef.current?.focus();
       setQuery('');
-      setResults([]);
+      setDebounced('');
     }
   }, [open]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
-  const search = useCallback(
-    async (q: string) => {
-      if (!workspace || !q.trim()) {
-        setResults([]);
-        return;
-      }
+  // Debounce the raw input into the search term that drives the query.
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(query), 200);
+    return () => clearTimeout(timer);
+  }, [query]);
 
+  // Reset the keyboard selection whenever the search term changes.
+  /* eslint-disable react-hooks/set-state-in-effect -- resets keyboard selection UI state */
+  useEffect(() => {
+    setSelectedIdx(0);
+  }, [debounced]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  // Server state lives in the query cache, keyed on the debounced term (ADR 0003).
+  const searchQuery = useQuery({
+    queryKey: ['search', workspace?.id ?? '', debounced.trim()],
+    enabled: open && !!workspace && debounced.trim().length > 0,
+    queryFn: async () => {
+      const q = debounced.trim();
       const lowerQ = q.toLowerCase();
       const matched: SearchResult[] = [];
 
@@ -64,7 +79,12 @@ export function QuickSearch() {
         .filter((p) => p.name.toLowerCase().includes(lowerQ))
         .slice(0, 3)
         .forEach((p) => {
-          matched.push({ type: 'project', id: p.id, name: p.name, link: `/projects/${p.id}/board` });
+          matched.push({
+            type: 'project',
+            id: p.id,
+            name: p.name,
+            link: `/projects/${p.id}/board`,
+          });
         });
 
       // Search teams locally
@@ -75,23 +95,31 @@ export function QuickSearch() {
           matched.push({ type: 'team', id: t.id, name: t.name, link: `/teams/${t.id}` });
         });
 
-      // Search members via API
+      // Search members via API (swallow errors so partial results still show)
       try {
-        const { data: memberData } = await membersApi.list(workspace.id);
+        const { data: memberData } = await membersApi.list(workspace!.id);
         memberData
-          .filter((m) => m.name.toLowerCase().includes(lowerQ) || m.email?.toLowerCase().includes(lowerQ))
+          .filter(
+            (m) => m.name.toLowerCase().includes(lowerQ) || m.email?.toLowerCase().includes(lowerQ),
+          )
           .slice(0, 3)
           .forEach((m) => {
-            matched.push({ type: 'member', id: m.id, name: m.name, meta: m.email || undefined, link: '/settings' });
+            matched.push({
+              type: 'member',
+              id: m.id,
+              name: m.name,
+              meta: m.email || undefined,
+              link: '/settings',
+            });
           });
       } catch {
         // Ignore
       }
 
-      // Search tasks via API
+      // Search tasks via API (swallow errors so partial results still show)
       try {
-        const { data } = await tasksApi.list(workspace.id, { search: q });
-        (data as Task[]).slice(0, 5).forEach((t) => {
+        const { data } = await tasksApi.list(workspace!.id, { search: q });
+        data.slice(0, 5).forEach((t) => {
           matched.push({
             type: 'task',
             id: t.id,
@@ -104,16 +132,11 @@ export function QuickSearch() {
         // Ignore search errors
       }
 
-      setResults(matched);
-      setSelectedIdx(0);
+      return matched;
     },
-    [workspace, projects, teams]
-  );
+  });
 
-  useEffect(() => {
-    const timer = setTimeout(() => search(query), 200);
-    return () => clearTimeout(timer);
-  }, [query, search]);
+  const results = searchQuery.data ?? [];
 
   const handleSelect = (result: SearchResult) => {
     setOpen(false);
@@ -145,7 +168,10 @@ export function QuickSearch() {
         style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center gap-3 px-4 py-3 border-b" style={{ borderColor: 'var(--color-border)' }}>
+        <div
+          className="flex items-center gap-3 px-4 py-3 border-b"
+          style={{ borderColor: 'var(--color-border)' }}
+        >
           <Search size={18} style={{ color: 'var(--color-text-secondary)' }} />
           <input
             ref={inputRef}
@@ -156,10 +182,23 @@ export function QuickSearch() {
             className="flex-1 text-sm outline-none bg-transparent"
             style={{ color: 'var(--color-text)' }}
           />
-          <button onClick={() => setOpen(false)} style={{ color: 'var(--color-text-secondary)' }} className="hover:opacity-80">
+          <button
+            onClick={() => setOpen(false)}
+            style={{ color: 'var(--color-text-secondary)' }}
+            className="hover:opacity-80"
+          >
             <X size={16} />
           </button>
         </div>
+
+        {searchQuery.isFetching && results.length === 0 && (
+          <div
+            className="px-4 py-8 text-center text-sm"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            Searching...
+          </div>
+        )}
 
         {results.length > 0 && (
           <div className="max-h-80 overflow-y-auto py-2">
@@ -172,25 +211,66 @@ export function QuickSearch() {
                   backgroundColor: idx === selectedIdx ? 'var(--color-primary-light)' : undefined,
                 }}
               >
-                <span className="text-[10px] font-medium uppercase w-14" style={{ color: 'var(--color-text-secondary)' }}>
+                <span
+                  className="text-[10px] font-medium uppercase w-14"
+                  style={{ color: 'var(--color-text-secondary)' }}
+                >
                   {r.type}
                 </span>
-                <span className="flex-1 truncate" style={{ color: 'var(--color-text)' }}>{r.name}</span>
-                {r.meta && <span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>{r.meta}</span>}
+                <span className="flex-1 truncate" style={{ color: 'var(--color-text)' }}>
+                  {r.name}
+                </span>
+                {r.meta && (
+                  <span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+                    {r.meta}
+                  </span>
+                )}
                 <ArrowRight size={14} style={{ color: 'var(--color-text-secondary)' }} />
               </button>
             ))}
           </div>
         )}
 
-        {query && results.length === 0 && (
-          <div className="px-4 py-8 text-center text-sm" style={{ color: 'var(--color-text-secondary)' }}>No results found</div>
+        {debounced.trim().length > 0 && !searchQuery.isFetching && results.length === 0 && (
+          <div
+            className="px-4 py-8 text-center text-sm"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
+            No results found
+          </div>
         )}
 
-        <div className="px-4 py-2 border-t text-[11px] flex gap-4" style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}>
-          <span><kbd className="px-1 py-0.5 rounded text-[10px]" style={{ backgroundColor: 'var(--color-grey-2)' }}>↑↓</kbd> Navigate</span>
-          <span><kbd className="px-1 py-0.5 rounded text-[10px]" style={{ backgroundColor: 'var(--color-grey-2)' }}>↵</kbd> Select</span>
-          <span><kbd className="px-1 py-0.5 rounded text-[10px]" style={{ backgroundColor: 'var(--color-grey-2)' }}>Esc</kbd> Close</span>
+        <div
+          className="px-4 py-2 border-t text-[11px] flex gap-4"
+          style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}
+        >
+          <span>
+            <kbd
+              className="px-1 py-0.5 rounded text-[10px]"
+              style={{ backgroundColor: 'var(--color-grey-2)' }}
+            >
+              ↑↓
+            </kbd>{' '}
+            Navigate
+          </span>
+          <span>
+            <kbd
+              className="px-1 py-0.5 rounded text-[10px]"
+              style={{ backgroundColor: 'var(--color-grey-2)' }}
+            >
+              ↵
+            </kbd>{' '}
+            Select
+          </span>
+          <span>
+            <kbd
+              className="px-1 py-0.5 rounded text-[10px]"
+              style={{ backgroundColor: 'var(--color-grey-2)' }}
+            >
+              Esc
+            </kbd>{' '}
+            Close
+          </span>
         </div>
       </div>
     </div>

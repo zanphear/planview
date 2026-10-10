@@ -15,8 +15,7 @@ export interface TaskTemplate {
 }
 
 export const templatesApi = {
-  list: (workspaceId: string) =>
-    api.get<TaskTemplate[]>(`/workspaces/${workspaceId}/templates`),
+  list: (workspaceId: string) => api.get<TaskTemplate[]>(`/workspaces/${workspaceId}/templates`),
 
   create: (workspaceId: string, data: Partial<TaskTemplate>) =>
     api.post<TaskTemplate>(`/workspaces/${workspaceId}/templates`, data),

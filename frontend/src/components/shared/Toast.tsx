@@ -8,7 +8,8 @@ interface ToastItem {
   action?: { label: string; onClick: () => void };
 }
 
-let addToast: ((message: string, action?: { label: string; onClick: () => void }) => void) | null = null;
+let addToast: ((message: string, action?: { label: string; onClick: () => void }) => void) | null =
+  null;
 let nextId = 0;
 
 function ToastContainer() {
@@ -17,9 +18,12 @@ function ToastContainer() {
   const add = useCallback((message: string, action?: { label: string; onClick: () => void }) => {
     const id = nextId++;
     setToasts((prev) => [...prev, { id, message, action }]);
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, action ? 6000 : 4000);
+    setTimeout(
+      () => {
+        setToasts((prev) => prev.filter((t) => t.id !== id));
+      },
+      action ? 6000 : 4000,
+    );
   }, []);
 
   const remove = useCallback((id: number) => {
@@ -28,7 +32,9 @@ function ToastContainer() {
 
   useEffect(() => {
     addToast = add;
-    return () => { addToast = null; };
+    return () => {
+      addToast = null;
+    };
   }, [add]);
 
   if (toasts.length === 0) return null;
@@ -55,7 +61,7 @@ function ToastContainer() {
           )}
           <button
             onClick={() => remove(toast.id)}
-            className="text-gray-400 hover:text-white shrink-0"
+            className="text-muted-foreground hover:text-white shrink-0"
           >
             <X size={14} />
           </button>

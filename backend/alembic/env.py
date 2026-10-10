@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
 
-from app.models import Base  # noqa: F401 — triggers all model imports
+from app.models import Base  # noqa: F401, triggers all model imports
 
 config = context.config
 

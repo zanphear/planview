@@ -15,8 +15,12 @@ export const tagsApi = {
   create: (workspaceId: string, projectId: string, data: { name: string; colour?: string }) =>
     api.post<Tag>(`/workspaces/${workspaceId}/projects/${projectId}/tags`, data),
 
-  update: (workspaceId: string, projectId: string, tagId: string, data: { name?: string; colour?: string }) =>
-    api.put<Tag>(`/workspaces/${workspaceId}/projects/${projectId}/tags/${tagId}`, data),
+  update: (
+    workspaceId: string,
+    projectId: string,
+    tagId: string,
+    data: { name?: string; colour?: string },
+  ) => api.put<Tag>(`/workspaces/${workspaceId}/projects/${projectId}/tags/${tagId}`, data),
 
   delete: (workspaceId: string, projectId: string, tagId: string) =>
     api.delete(`/workspaces/${workspaceId}/projects/${projectId}/tags/${tagId}`),

@@ -1,64 +1,119 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 @plugin "@tailwindcss/typography";
 
 :root {
   /* Siemens Energy brand colours */
-  --color-primary: #8A00E5;
-  --color-primary-hover: #7200BD;
-  --color-primary-light: #F3E5FF;
+  --color-primary: #8a00e5;
+  --color-primary-hover: #7200bd;
+  --color-primary-light: #f3e5ff;
   --color-teal: #009999;
-  --color-teal-hover: #007A7A;
-  --color-sidebar-bg: #1B1534;
-  --color-sidebar-text: #E0D8F0;
-  --color-sidebar-hover: #2D2450;
-  --color-sidebar-active: #4D217A;
+  --color-teal-hover: #007a7a;
+  --color-sidebar-bg: #1b1534;
+  --color-sidebar-text: #e0d8f0;
+  --color-sidebar-hover: #2d2450;
+  --color-sidebar-active: #4d217a;
   --color-topbar-bg: #ffffff;
-  --color-bg: #F8F8F8;
+  --color-bg: #f8f8f8;
   --color-surface: #ffffff;
-  --color-text: #1B1534;
-  --color-text-secondary: #6B6B8D;
-  --color-border: #E0E0E0;
-  --color-danger: #E44332;
-  --color-success: #5CBF4D;
-  --color-warning: #F0C239;
-  --color-grey-1: #F8F8F8;
-  --color-grey-2: #F0F0F0;
+  --color-text: #1b1534;
+  --color-text-secondary: #6b6b8d;
+  --color-border: #e0e0e0;
+  --color-danger: #e44332;
+  --color-success: #5cbf4d;
+  --color-warning: #f0c239;
+  --color-grey-1: #f8f8f8;
+  --color-grey-2: #f0f0f0;
+  /* Foreground partners + focus ring (new tokens authored in OKLCH per fleet std).
+     Existing brand hex above is preserved pending a verified OKLCH migration (see
+     docs/adr/0004-design-tokens-and-styling.md). */
+  --color-primary-foreground: oklch(1 0 0);
+  --color-on-accent: oklch(1 0 0);
+  --color-warning-foreground: oklch(0.21 0.05 295);
+  --color-ring: #8a00e5;
 }
 
 .dark {
-  --color-primary: #A855F7;
-  --color-primary-hover: #9333EA;
-  --color-primary-light: #2D1B4E;
-  --color-teal: #2DD4BF;
-  --color-teal-hover: #14B8A6;
-  --color-sidebar-bg: #0F0D1A;
-  --color-sidebar-text: #C4B5D8;
-  --color-sidebar-hover: #1E1A2E;
-  --color-sidebar-active: #3B1F5E;
-  --color-topbar-bg: #1A1826;
+  --color-primary: #a855f7;
+  --color-primary-hover: #9333ea;
+  --color-primary-light: #2d1b4e;
+  --color-teal: #2dd4bf;
+  --color-teal-hover: #14b8a6;
+  --color-sidebar-bg: #0f0d1a;
+  --color-sidebar-text: #c4b5d8;
+  --color-sidebar-hover: #1e1a2e;
+  --color-sidebar-active: #3b1f5e;
+  --color-topbar-bg: #1a1826;
   --color-bg: #121020;
-  --color-surface: #1E1C2A;
-  --color-text: #E8E4F0;
-  --color-text-secondary: #9B92B0;
-  --color-border: #2E2B3D;
-  --color-danger: #F87171;
-  --color-success: #4ADE80;
-  --color-warning: #FBBF24;
-  --color-grey-1: #1A1826;
+  --color-surface: #1e1c2a;
+  --color-text: #e8e4f0;
+  --color-text-secondary: #9b92b0;
+  --color-border: #2e2b3d;
+  --color-danger: #f87171;
+  --color-success: #4ade80;
+  --color-warning: #fbbf24;
+  --color-grey-1: #1a1826;
   --color-grey-2: #252336;
+  --color-primary-foreground: oklch(1 0 0);
+  --color-on-accent: oklch(1 0 0);
+  --color-warning-foreground: oklch(0.21 0.05 295);
+  --color-ring: #a855f7;
+}
+
+/* Semantic token layer (forbidden-8 migration target). `@theme inline` exposes
+   Tailwind utilities (bg-background, text-foreground, bg-card, text-muted-foreground,
+   bg-accent, bg-destructive, bg-positive, bg-caution, border-outline, bg-sidebar, ...)
+   that resolve to the runtime CSS vars above, so dark mode stays a token swap. New
+   code should use these instead of bg-[var(--color-...)] arbitrary literals. */
+@theme inline {
+  --color-background: var(--color-bg);
+  --color-foreground: var(--color-text);
+  --color-card: var(--color-surface);
+  --color-card-foreground: var(--color-text);
+  --color-muted: var(--color-grey-2);
+  --color-muted-foreground: var(--color-text-secondary);
+  --color-accent: var(--color-primary);
+  --color-accent-foreground: var(--color-primary-foreground);
+  --color-destructive: var(--color-danger);
+  --color-destructive-foreground: var(--color-on-accent);
+  --color-positive: var(--color-success);
+  --color-positive-foreground: var(--color-on-accent);
+  --color-caution: var(--color-warning);
+  --color-caution-foreground: var(--color-warning-foreground);
+  --color-outline: var(--color-border);
+  --color-subtle: var(--color-grey-1);
+  --color-topbar: var(--color-topbar-bg);
+  --color-accent-subtle: var(--color-primary-light);
+  --color-sidebar: var(--color-sidebar-bg);
+  --color-sidebar-foreground: var(--color-sidebar-text);
+  --color-sidebar-accent: var(--color-sidebar-hover);
+  --color-sidebar-selected: var(--color-sidebar-active);
 }
 
 @layer base {
-  html, body {
+  /* Visible keyboard focus everywhere (forbidden-26): never a bare outline:none. */
+  :focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+  }
+
+  html,
+  body {
     height: 100%;
     margin: 0;
   }
 
   body {
-    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+    font-family:
+      'Segoe UI',
+      -apple-system,
+      BlinkMacSystemFont,
+      Roboto,
+      sans-serif;
     background-color: var(--color-bg);
     color: var(--color-text);
-    transition: background-color 0.2s, color 0.2s;
+    transition:
+      background-color 0.2s,
+      color 0.2s;
   }
 
   #root {
@@ -68,8 +123,14 @@
 }
 
 @keyframes slide-in {
-  from { transform: translateX(100%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 .animate-slide-in {
@@ -77,8 +138,12 @@
 }
 
 @keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .animate-fade-in {
@@ -111,9 +176,11 @@
   background: var(--color-text-secondary);
 }
 
-/* Print styles — Export to PDF */
+/* Print styles, Export to PDF */
 @media print {
-  @page { margin: 15mm 20mm; }
+  @page {
+    margin: 15mm 20mm;
+  }
 
   body {
     background: #fff !important;
@@ -121,7 +188,12 @@
   }
 
   /* Hide everything except the printable area */
-  nav, aside, header, [data-no-print], button, .no-print {
+  nav,
+  aside,
+  header,
+  [data-no-print],
+  button,
+  .no-print {
     display: none !important;
   }
 

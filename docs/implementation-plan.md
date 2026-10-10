@@ -1,4 +1,7 @@
-# Planview — Implementation Plan & Repo Structure
+# Planview: Implementation Plan & Repo Structure
+
+> HISTORICAL build-time document. It records the original plan, not necessarily the current state. For current architecture see ARCHITECTURE.md; for decisions and deviations see docs/adr/.
+
 
 **Repository:** github.com/zanphear/planview
 **Docker Image:** wgf007/planview
@@ -217,7 +220,7 @@ planview/
 
 ## Implementation Phases
 
-### Phase 1 — Foundation (Weeks 1–2)
+### Phase 1: Foundation (Weeks 1-2)
 **Goal:** Backend API skeleton, database schema, auth, and basic frontend shell.
 
 **Backend:**
@@ -247,8 +250,8 @@ planview/
 
 ---
 
-### Phase 2 — Projects & Tasks CRUD (Weeks 3–4)
-**Goal:** Full task lifecycle without the timeline — board view first.
+### Phase 2: Projects & Tasks CRUD (Weeks 3-4)
+**Goal:** Full task lifecycle without the timeline, board view first.
 
 **Backend:**
 - [ ] Models: Project, Client, Segment, Tag, Task, task_assignees, task_tags
@@ -280,8 +283,8 @@ planview/
 
 ---
 
-### Phase 3 — Timeline Views (Weeks 5–7)
-**Goal:** The core feature — horizontal timeline with drag-and-drop.
+### Phase 3: Timeline Views (Weeks 5-7)
+**Goal:** The core feature, horizontal timeline with drag-and-drop.
 
 This is the hardest phase. Budget extra time here.
 
@@ -319,11 +322,11 @@ This is the hardest phase. Budget extra time here.
 - [ ] Project Timeline page (swimlane = segment, collapsible)
 - [ ] My Work page (filtered to current user)
 
-**Deliverable:** Fully interactive timelines — drag tasks around, zoom in/out, switch between team/project views.
+**Deliverable:** Fully interactive timelines, drag tasks around, zoom in/out, switch between team/project views.
 
 ---
 
-### Phase 4 — Real-time & Collaboration (Week 8)
+### Phase 4: Real-time & Collaboration (Week 8)
 **Goal:** Multi-user live updates, comments, notifications.
 
 **Backend:**
@@ -344,7 +347,7 @@ This is the hardest phase. Budget extra time here.
 
 ---
 
-### Phase 5 — Polish & Extended Features (Weeks 9–10)
+### Phase 5: Polish & Extended Features (Weeks 9-10)
 **Goal:** Feature parity with Toggl Plan free/standard tier.
 
 **Backend:**
@@ -377,7 +380,7 @@ This is the hardest phase. Budget extra time here.
 
 ---
 
-### Phase 6 — Hardening & Release (Week 11)
+### Phase 6: Hardening & Release (Week 11)
 **Goal:** Production-ready self-hosted release.
 
 - [ ] Error handling audit (backend: proper HTTP codes + messages, frontend: error boundaries)
@@ -408,8 +411,8 @@ This is the hardest phase. Budget extra time here.
 | ORM | SQLAlchemy (async) | 2.0+ |
 | Migrations | Alembic | 1.13+ |
 | Validation | Pydantic | 2.0+ |
-| Auth | PyJWT + passlib[bcrypt] | — |
-| Task queue (future) | Celery + Redis | — |
+| Auth | PyJWT + passlib[bcrypt] |, |
+| Task queue (future) | Celery + Redis |, |
 | Language (frontend) | TypeScript | 5.x |
 | UI framework | React | 19+ |
 | Build tool | Vite | 6+ |
@@ -419,7 +422,7 @@ This is the hardest phase. Budget extra time here.
 | CSS | Tailwind CSS | 4+ |
 | Database | PostgreSQL | 16+ |
 | Cache / Pub-sub | Redis | 7+ |
-| File storage | Local fs → MinIO (optional) | — |
+| File storage | Local fs → MinIO (optional) |, |
 | Reverse proxy | Nginx | 1.27+ |
 | Containerisation | Docker + Compose | 27+ |
 
@@ -429,12 +432,12 @@ This is the hardest phase. Budget extra time here.
 
 | Phase | Duration | Complexity |
 |-------|----------|------------|
-| 1 — Foundation | 2 weeks | Low |
-| 2 — Projects & Tasks | 2 weeks | Medium |
-| 3 — Timeline Views | 3 weeks | **High** |
-| 4 — Real-time | 1 week | Medium |
-| 5 — Polish & Features | 2 weeks | Medium |
-| 6 — Hardening & Release | 1 week | Low-Medium |
+| 1, Foundation | 2 weeks | Low |
+| 2, Projects & Tasks | 2 weeks | Medium |
+| 3, Timeline Views | 3 weeks | **High** |
+| 4, Real-time | 1 week | Medium |
+| 5, Polish & Features | 2 weeks | Medium |
+| 6, Hardening & Release | 1 week | Low-Medium |
 | **Total** | **~11 weeks** | |
 
 Phase 3 is the critical path. The timeline drag-and-drop with zoom levels, virtual scrolling, and multi-interaction support is the most technically demanding piece. Everything else is standard CRUD/UI work.

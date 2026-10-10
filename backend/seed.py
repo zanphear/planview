@@ -1,5 +1,5 @@
 """
-Seed script — populates the database with realistic sample data.
+Seed script, populates the database with realistic sample data.
 
 Usage:
     cd backend
@@ -47,7 +47,7 @@ async def seed():
         # Check if already seeded
         result = await db.execute(text("SELECT count(*) FROM workspaces"))
         if result.scalar_one() > 0:
-            print("Database already has data — skipping seed.")
+            print("Database already has data, skipping seed.")
             return
 
         print("Seeding database...")
@@ -57,7 +57,7 @@ async def seed():
         db.add(ws)
         await db.flush()
 
-        # Users — 20 people across the org
+        # Users, 20 people across the org
         users_data = [
             ("Bill Sherwood",      "billforrestuk@gmail.com", "#4186E0", "BS", "owner"),
             ("Bob Smith",          "bob@acme.com",           "#E44332", "BS", "admin"),
@@ -160,7 +160,7 @@ async def seed():
             tags.append(t)
         await db.flush()
 
-        # Tasks — spread over next 4 weeks
+        # Tasks, spread over next 4 weeks
         today = date.today()
         tasks_data = [
             ("Design homepage mockup",          projects[0].id, segments[0].id, 0, 3,   "done",        users[3]),
@@ -367,7 +367,7 @@ async def _seed_people(db: AsyncSession, ws, users, today):
         db.add(pp)
     await db.flush()
 
-    # --- 1:1 Meetings — 20 meetings across 10 weeks for various pairs ---
+    # --- 1:1 Meetings, 20 meetings across 10 weeks for various pairs ---
     meetings = []
     meeting_pairs = [
         (0, 1), (0, 2), (0, 3), (0, 4), (0, 5),
@@ -390,7 +390,7 @@ async def _seed_people(db: AsyncSession, ws, users, today):
             actual_date=sched if completed else None,
             status="completed" if completed else "scheduled",
             mood=moods[i % len(moods)] if completed else None,
-            notes=f"Regular 1:1 — discussed progress and blockers" if completed else None,
+            notes=f"Regular 1:1, discussed progress and blockers" if completed else None,
         )
         db.add(m)
         meetings.append(m)
@@ -457,7 +457,7 @@ async def _seed_people(db: AsyncSession, ws, users, today):
         ("Optimise database query performance",                12, "performance",  "active",    55, period_h1),
         ("Improve NPS score from 42 to 55",                    14, "business",     "active",    20, period_h1),
         ("Reduce infrastructure costs by 20%",                 9,  "performance",  "cancelled", 30, period_h1),
-        # Prior period — completed
+        # Prior period, completed
         ("Launch website redesign",                            0,  "business",     "completed", 100, period_h2),
         ("Hire 5 engineers",                                   0,  "business",     "completed", 100, period_h2),
         ("Set up design system foundations",                   3,  "development",  "completed", 100, period_h2),
@@ -506,7 +506,7 @@ async def _seed_people(db: AsyncSession, ws, users, today):
         db.add(kr)
     await db.flush()
 
-    # --- Compliance — lots of items with varied expiry dates ---
+    # --- Compliance, lots of items with varied expiry dates ---
     compliance_data = [
         # (user_idx, type, title, status, expiry_offset_days)
         (0,  "certification",  "AWS Solutions Architect Pro",     "active",        365),
@@ -588,7 +588,7 @@ async def _seed_people(db: AsyncSession, ws, users, today):
         competencies.append(c)
     await db.flush()
 
-    # User competency assignments — wide coverage
+    # User competency assignments, wide coverage
     levels = ["awareness", "practitioner", "expert"]
     uc_assignments = [
         # Engineering
@@ -690,7 +690,7 @@ async def _seed_people(db: AsyncSession, ws, users, today):
         db.add(lr)
     await db.flush()
 
-    # --- Recruitment — 15 candidates at various stages ---
+    # --- Recruitment, 15 candidates at various stages ---
     cand_data = [
         ("Alice Johnson",     "alice.j@mail.com",       "Senior Developer",     "screening",     "referral",  -25),
         ("Frank Wilson",      "frank.w@mail.com",       "DevOps Engineer",      "interviewing",  "agency",    -30),
@@ -719,7 +719,7 @@ async def _seed_people(db: AsyncSession, ws, users, today):
         candidates.append(c)
     await db.flush()
 
-    # Candidate events — progression through pipeline
+    # Candidate events, progression through pipeline
     event_types_list = ["cv_review", "phone_screen", "interview", "technical_test", "offer"]
     status_to_events = {
         "applied": 0, "screening": 1, "interviewing": 3,
@@ -745,7 +745,7 @@ async def _seed_people(db: AsyncSession, ws, users, today):
             db.add(ce)
     await db.flush()
 
-    # --- Development Plans — one per user, varied states ---
+    # --- Development Plans, one per user, varied states ---
     dev_plans = []
     aspirations = [
         "CTO", "Tech Lead", "Principal Engineer", "Design Director", "CMO",
@@ -832,7 +832,7 @@ async def _seed_people(db: AsyncSession, ws, users, today):
     db.add_all([cycle_current, cycle_prev])
     await db.flush()
 
-    # Current cycle reviews — various stages
+    # Current cycle reviews, various stages
     current_review_data = [
         # (user_idx, reviewer_idx, status, rating, strengths, improvements)
         (0,  0,  "finalised",        5, "Exceptional technical leadership, drives architectural excellence", "Could delegate more to develop others"),
@@ -866,7 +866,7 @@ async def _seed_people(db: AsyncSession, ws, users, today):
         )
         db.add(r)
 
-    # Previous cycle — all finalised
+    # Previous cycle, all finalised
     prev_ratings = [4, 3, 3, 4, 3, 3, 3, 3, 4, 4, 3, 4, 3, 3, 3, 5, 3, 3, 4, 3]
     for i in range(min(len(users), 20)):
         r = Review(
@@ -880,7 +880,7 @@ async def _seed_people(db: AsyncSession, ws, users, today):
         db.add(r)
     await db.flush()
 
-    # --- Wellbeing — 4 surveys across 4 months ---
+    # --- Wellbeing, 4 surveys across 4 months ---
     surveys = []
     survey_data = [
         ("January Pulse",  "closed",  date(2026, 1, 31)),
@@ -894,10 +894,10 @@ async def _seed_people(db: AsyncSession, ws, users, today):
         surveys.append(s)
     await db.flush()
 
-    # Responses — most people respond to each survey, with realistic variation
+    # Responses, most people respond to each survey, with realistic variation
     for survey_idx, survey in enumerate(surveys):
         respondents = list(range(20))
-        # Not everyone responds — simulate ~80% response rate
+        # Not everyone responds, simulate ~80% response rate
         random.shuffle(respondents)
         respondents = respondents[:random.randint(14, 18)]
         for u_idx in respondents:
@@ -930,28 +930,28 @@ async def _seed_people(db: AsyncSession, ws, users, today):
             db.add(pr)
     await db.flush()
 
-    # Kudos — 20 entries spread across teams
+    # Kudos, 20 entries spread across teams
     kudos_messages = [
-        (0,  1,  "Outstanding work on the API migration — zero downtime!"),
+        (0,  1,  "Outstanding work on the API migration, zero downtime!"),
         (1,  2,  "Thanks for the thorough code review, caught a nasty bug"),
         (3,  6,  "The new dashboard designs are absolutely brilliant"),
-        (0,  3,  "Love the new design system — it's transformed our velocity"),
+        (0,  3,  "Love the new design system, it's transformed our velocity"),
         (2,  0,  "Thanks for unblocking the deployment pipeline issue"),
-        (4,  7,  "Great blog post — the engagement numbers are incredible"),
+        (4,  7,  "Great blog post, the engagement numbers are incredible"),
         (9,  5,  "Your Kubernetes setup saved us hours of debugging"),
         (1,  8,  "Brilliant full-stack work on the customer portal"),
-        (11, 14, "Excellent product discovery work — really insightful"),
-        (3,  10, "Beautiful component library — the team loves it"),
+        (11, 14, "Excellent product discovery work, really insightful"),
+        (3,  10, "Beautiful component library, the team loves it"),
         (15, 9,  "Thanks for the quick incident response last night"),
         (0,  15, "The security audit report was exceptional work"),
-        (4,  13, "Great social media campaign — best metrics this quarter"),
-        (18, 12, "Solid data pipeline work — love the monitoring you added"),
-        (1,  18, "Impressive ML model accuracy — well researched approach"),
-        (11, 16, "Great analysis work — really helped shape the roadmap"),
-        (6,  17, "Stunning UI work on the new feature — pixel perfect"),
+        (4,  13, "Great social media campaign, best metrics this quarter"),
+        (18, 12, "Solid data pipeline work, love the monitoring you added"),
+        (1,  18, "Impressive ML model accuracy, well researched approach"),
+        (11, 16, "Great analysis work, really helped shape the roadmap"),
+        (6,  17, "Stunning UI work on the new feature, pixel perfect"),
         (0,  11, "Excellent product strategy presentation to the board"),
-        (5,  9,  "Thanks for the Terraform modules — massive time saver"),
-        (7,  4,  "Brilliant campaign strategy — exceeding all targets"),
+        (5,  9,  "Thanks for the Terraform modules, massive time saver"),
+        (7,  4,  "Brilliant campaign strategy, exceeding all targets"),
     ]
     for from_idx, to_idx, msg in kudos_messages:
         k = Kudos(
@@ -981,8 +981,8 @@ async def _seed_people(db: AsyncSession, ws, users, today):
     await db.flush()
 
     eng_items = [
-        ("IT setup — laptop, monitors, peripherals", "it", 0),
-        ("Create accounts — GitHub, Jira, Slack, AWS", "it", 1),
+        ("IT setup, laptop, monitors, peripherals", "it", 0),
+        ("Create accounts, GitHub, Jira, Slack, AWS", "it", 1),
         ("HR induction session", "hr", 2),
         ("Meet the team lunch", "manager", 3),
         ("Dev environment setup walkthrough", "manager", 4),
@@ -1002,7 +1002,7 @@ async def _seed_people(db: AsyncSession, ws, users, today):
         db.add(ti)
 
     general_items = [
-        ("IT setup — laptop and accounts", "it", 0),
+        ("IT setup, laptop and accounts", "it", 0),
         ("HR induction session", "hr", 1),
         ("Meet the team lunch", "manager", 2),
         ("Complete compliance training", "new_starter", 3),
@@ -1018,11 +1018,11 @@ async def _seed_people(db: AsyncSession, ws, users, today):
         db.add(ti)
     await db.flush()
 
-    # Active onboarding checklists — 3 recent starters
+    # Active onboarding checklists, 3 recent starters
     checklist_data = [
-        (16, templates[0], 8),   # Quinn — engineering, 8 of 12 done
-        (19, templates[1], 4),   # Tanya — general, 4 of 7 done
-        (17, templates[1], 6),   # Rachel — general, 6 of 7 done
+        (16, templates[0], 8),   # Quinn, engineering, 8 of 12 done
+        (19, templates[1], 4),   # Tanya, general, 4 of 7 done
+        (17, templates[1], 6),   # Rachel, general, 6 of 7 done
     ]
     for u_idx, template, items_done in checklist_data:
         cl = OnboardingChecklist(
@@ -1185,7 +1185,7 @@ async def _seed_people(db: AsyncSession, ws, users, today):
     # Rotations for graduate programme
     grad_rotations = []
     rotation_data = [
-        ("Software Engineering", "Engineering", 26, "Core development rotation — backend and frontend."),
+        ("Software Engineering", "Engineering", 26, "Core development rotation, backend and frontend."),
         ("DevOps & Platform", "Platform Engineering", 26, "Infrastructure, CI/CD, and cloud platform work."),
         ("Data Engineering", "Data", 26, "Data pipelines, analytics, and ML infrastructure."),
         ("Cyber Security", "Security", 26, "Security operations, penetration testing, and compliance."),
@@ -1200,7 +1200,7 @@ async def _seed_people(db: AsyncSession, ws, users, today):
         grad_rotations.append(rot)
     await db.flush()
 
-    # Participants — use some of the existing users as grads/apprentices
+    # Participants, use some of the existing users as grads/apprentices
     # Users 16, 17, 18, 19 are the most junior
     grad_participants = []
     grad_part_data = [
@@ -1307,7 +1307,7 @@ async def _seed_people(db: AsyncSession, ws, users, today):
          "**Team Size:** 20 members across Engineering, Design, Marketing, Product, and Data\n\n"
          "**Key Highlights:**\n"
          "- 30 objectives tracked, averaging ~50% progress across the board\n"
-         "- 12 compliance items expiring within 90 days — several need urgent attention\n"
+         "- 12 compliance items expiring within 90 days, several need urgent attention\n"
          "- 8 pending leave requests awaiting approval\n"
          "- Team morale trending upward at 3.8/5 in the latest pulse survey\n"
          "- 10 active candidates in the recruitment pipeline\n"

@@ -33,7 +33,7 @@ async def get_workspace_stats(
         .group_by(Task.status)
     )
     status_result = await db.execute(status_q)
-    by_status = dict(status_result.all())
+    by_status: dict[str, int] = {row[0]: row[1] for row in status_result.all()}
 
     # Total tasks
     total = sum(by_status.values())
@@ -193,7 +193,7 @@ async def get_burndown(
         .order_by("day")
     )
     created_rows = await db.execute(created_q)
-    created_map = {str(r.day.date()): r.count for r in created_rows.all()}
+    created_map = {str(r.day.date()): r[1] for r in created_rows.all()}
 
     # Completed per day (using updated_at as proxy)
     completed_q = (
@@ -206,7 +206,7 @@ async def get_burndown(
         .order_by("day")
     )
     completed_rows = await db.execute(completed_q)
-    completed_map = {str(r.day.date()): r.count for r in completed_rows.all()}
+    completed_map = {str(r.day.date()): r[1] for r in completed_rows.all()}
 
     # Build daily series
     points = []

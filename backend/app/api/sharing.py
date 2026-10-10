@@ -84,7 +84,7 @@ async def delete_shared_timeline(
     await db.commit()
 
 
-# Public endpoint — no auth required
+# Public endpoint, no auth required
 @router.get("/shared/{token}/tasks")
 async def get_shared_timeline_tasks(
     token: str,

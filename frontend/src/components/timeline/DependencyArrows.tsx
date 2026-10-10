@@ -5,26 +5,34 @@ import type { Task } from '../../api/tasks';
 
 interface DependencyArrowsProps {
   tasks: Task[];
-  getTaskPosition: (taskId: string) => { x: number; y: number; width: number; height: number } | null;
+  getTaskPosition: (
+    taskId: string,
+  ) => { x: number; y: number; width: number; height: number } | null;
   scrollLeft: number;
   scrollTop: number;
 }
 
-export function DependencyArrows({ tasks, getTaskPosition, scrollLeft, scrollTop }: DependencyArrowsProps) {
+export function DependencyArrows({
+  tasks,
+  getTaskPosition,
+  scrollLeft,
+  scrollTop,
+}: DependencyArrowsProps) {
   const workspace = useWorkspaceStore((s) => s.currentWorkspace);
   const [deps, setDeps] = useState<TaskDependency[]>([]);
 
   useEffect(() => {
     if (!workspace) return;
-    dependenciesApi.list(workspace.id).then((res) => setDeps(res.data)).catch(() => {});
+    dependenciesApi
+      .list(workspace.id)
+      .then((res) => setDeps(res.data))
+      .catch(() => {});
   }, [workspace, tasks]);
 
   if (deps.length === 0) return null;
 
   const taskIds = new Set(tasks.map((t) => t.id));
-  const visibleDeps = deps.filter(
-    (d) => taskIds.has(d.blocker_id) && taskIds.has(d.blocked_id)
-  );
+  const visibleDeps = deps.filter((d) => taskIds.has(d.blocker_id) && taskIds.has(d.blocked_id));
 
   if (visibleDeps.length === 0) return null;
 
@@ -53,19 +61,8 @@ export function DependencyArrows({ tasks, getTaskPosition, scrollLeft, scrollTop
       style={{ overflow: 'visible', zIndex: 5 }}
     >
       <defs>
-        <marker
-          id="arrowhead"
-          markerWidth="8"
-          markerHeight="6"
-          refX="8"
-          refY="3"
-          orient="auto"
-        >
-          <polygon
-            points="0 0, 8 3, 0 6"
-            fill="var(--color-danger, #ef4444)"
-            fillOpacity="0.7"
-          />
+        <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="var(--color-danger, #ef4444)" fillOpacity="0.7" />
         </marker>
       </defs>
       {arrows.map((arrow) => (

@@ -26,7 +26,10 @@ export const useLookupStore = create<LookupState>((set, get) => ({
     set({ loading: { ...get().loading, [category]: true } });
     try {
       const res = await lookupsApi.list(workspaceId, category);
-      set({ cache: { ...get().cache, [category]: res.data }, loading: { ...get().loading, [category]: false } });
+      set({
+        cache: { ...get().cache, [category]: res.data },
+        loading: { ...get().loading, [category]: false },
+      });
     } catch {
       set({ loading: { ...get().loading, [category]: false } });
     }

@@ -1,6 +1,7 @@
 import uuid
+from typing import cast
 
-from sqlalchemy import select, update
+from sqlalchemy import CursorResult, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -112,7 +113,8 @@ async def mark_read(db: AsyncSession, user_id: uuid.UUID, notification_ids: list
         .values(is_read=True)
     )
     await db.commit()
-    return result.rowcount
+    # A Core UPDATE yields a CursorResult at runtime, which exposes rowcount.
+    return cast(CursorResult, result).rowcount
 
 
 async def unread_count(db: AsyncSession, user_id: uuid.UUID, workspace_id: uuid.UUID) -> int:

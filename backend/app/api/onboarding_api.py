@@ -169,12 +169,12 @@ async def toggle_checklist_item(
     await db.commit()
 
     # Return full checklist
-    result = await db.execute(
+    checklist_result = await db.execute(
         select(OnboardingChecklist)
         .where(OnboardingChecklist.id == checklist_id)
         .options(selectinload(OnboardingChecklist.checklist_items))
     )
-    checklist = result.scalar_one()
+    checklist = checklist_result.scalar_one()
 
     # Auto-complete checklist if all items done
     all_done = all(i.completed for i in checklist.checklist_items)

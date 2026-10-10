@@ -46,12 +46,12 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
   return (
     <div
       ref={ref}
-      className="fixed z-[100] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-lg shadow-xl py-1 min-w-[180px] animate-fade-in"
+      className="fixed z-[100] bg-card border border-outline rounded-lg shadow-xl py-1 min-w-[180px] animate-fade-in"
       style={{ left: x, top: y }}
     >
       {items.map((item, i) =>
         item.separator ? (
-          <div key={i} className="border-t border-[var(--color-border)] my-1" />
+          <div key={i} className="border-t border-outline my-1" />
         ) : (
           <button
             key={i}
@@ -62,14 +62,16 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
             }}
             className={`w-full flex items-center gap-2.5 px-3 py-1.5 text-sm text-left transition-colors ${
               item.danger
-                ? 'text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30'
-                : 'text-[var(--color-text)] hover:bg-[var(--color-grey-2)]'
+                ? 'text-destructive hover:bg-red-50 dark:hover:bg-red-950/30'
+                : 'text-foreground hover:bg-muted'
             }`}
           >
-            {item.icon && <span className="w-4 h-4 flex items-center justify-center">{item.icon}</span>}
+            {item.icon && (
+              <span className="w-4 h-4 flex items-center justify-center">{item.icon}</span>
+            )}
             {item.label}
           </button>
-        )
+        ),
       )}
     </div>
   );

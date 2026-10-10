@@ -1,4 +1,4 @@
-"""Webhook delivery service — fires HTTP POST to registered webhook URLs."""
+"""Webhook delivery service, fires HTTP POST to registered webhook URLs."""
 import hashlib
 import hmac
 import json

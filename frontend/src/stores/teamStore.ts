@@ -23,6 +23,5 @@ export const useTeamStore = create<TeamState>((set) => ({
   addTeam: (team) => set((state) => ({ teams: [...state.teams, team] })),
   updateTeam: (team) =>
     set((state) => ({ teams: state.teams.map((t) => (t.id === team.id ? team : t)) })),
-  removeTeam: (teamId) =>
-    set((state) => ({ teams: state.teams.filter((t) => t.id !== teamId) })),
+  removeTeam: (teamId) => set((state) => ({ teams: state.teams.filter((t) => t.id !== teamId) })),
 }));

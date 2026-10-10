@@ -1,6 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useWorkspaceStore } from '../stores/workspaceStore';
-import { analysisApi, type AnalysisType, type AnalysisReport, type AnalysisReportListItem } from '../api/analysis';
+import {
+  analysisApi,
+  type AnalysisType,
+  type AnalysisReport,
+  type AnalysisReportListItem,
+} from '../api/analysis';
 import { useWSEvent } from '../hooks/WebSocketContext';
 import { Toast } from '../components/shared/Toast';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
@@ -8,14 +13,37 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useReactToPrint } from 'react-to-print';
 import {
-  LayoutDashboard, HeartPulse, Shield, Award, CalendarDays, Target,
-  UserPlus, GraduationCap, ClipboardCheck, ClipboardList,
-  Sparkles, Clock, Trash2, ArrowLeft, FileText, AlertCircle, PlayCircle, Download,
+  LayoutDashboard,
+  HeartPulse,
+  Shield,
+  Award,
+  CalendarDays,
+  Target,
+  UserPlus,
+  GraduationCap,
+  ClipboardCheck,
+  ClipboardList,
+  Sparkles,
+  Clock,
+  Trash2,
+  ArrowLeft,
+  FileText,
+  AlertCircle,
+  PlayCircle,
+  Download,
 } from 'lucide-react';
 
 const ICON_MAP: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
-  LayoutDashboard, HeartPulse, Shield, Award, CalendarDays, Target,
-  UserPlus, GraduationCap, ClipboardCheck, ClipboardList,
+  LayoutDashboard,
+  HeartPulse,
+  Shield,
+  Award,
+  CalendarDays,
+  Target,
+  UserPlus,
+  GraduationCap,
+  ClipboardCheck,
+  ClipboardList,
 };
 
 type View = 'types' | 'detail';
@@ -46,24 +74,29 @@ export function AnalysisReportsPage() {
     }
   }, [workspace]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   // WS listener for real-time status updates
-  useWSEvent('report.status_changed', useCallback((data: Record<string, unknown>) => {
-    const reportId = data.report_id as string;
-    const status = data.status as string;
-    const genTime = data.generation_time_seconds as number | undefined;
+  useWSEvent(
+    'report.status_changed',
+    useCallback((data: Record<string, unknown>) => {
+      const reportId = data.report_id as string;
+      const status = data.status as string;
+      const genTime = data.generation_time_seconds as number | undefined;
 
-    setReports((prev) =>
-      prev.map((r) =>
-        r.id === reportId
-          ? { ...r, status, generation_time_seconds: genTime ?? r.generation_time_seconds }
-          : r
-      )
-    );
-  }, []));
+      setReports((prev) =>
+        prev.map((r) =>
+          r.id === reportId
+            ? { ...r, status, generation_time_seconds: genTime ?? r.generation_time_seconds }
+            : r,
+        ),
+      );
+    }, []),
+  );
 
-  // Polling fallback — while any report is queued/generating, poll every 10s
+  // Polling fallback, while any report is queued/generating, poll every 10s
   const hasActive = reports.some((r) => r.status === 'queued' || r.status === 'generating');
 
   useEffect(() => {
@@ -72,10 +105,14 @@ export function AnalysisReportsPage() {
         try {
           const { data } = await analysisApi.list(workspace.id);
           setReports(data);
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
       }, 10_000);
     }
-    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
   }, [hasActive, workspace]);
 
   const handleGenerate = async (reportType: string) => {
@@ -83,12 +120,19 @@ export function AnalysisReportsPage() {
     try {
       const { data } = await analysisApi.generate(workspace.id, reportType);
       setReports((prev) => [
-        { id: data.id, report_type: data.report_type, title: data.title, status: data.status, generation_time_seconds: null, created_at: data.created_at },
+        {
+          id: data.id,
+          report_type: data.report_type,
+          title: data.title,
+          status: data.status,
+          generation_time_seconds: null,
+          created_at: data.created_at,
+        },
         ...prev,
       ]);
       Toast.show('Report queued');
-    } catch (err: any) {
-      const detail = err?.response?.data?.detail;
+    } catch (err) {
+      const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
       Toast.show(detail || 'Failed to queue report');
     }
   };
@@ -140,7 +184,10 @@ export function AnalysisReportsPage() {
         <>
           <div className="mb-8 flex items-start justify-between">
             <div>
-              <h1 className="text-2xl font-bold mb-1" style={{ color: 'var(--color-text-primary)' }}>
+              <h1
+                className="text-2xl font-bold mb-1"
+                style={{ color: 'var(--color-text-primary)' }}
+              >
                 AI Analysis Reports
               </h1>
               <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
@@ -165,19 +212,28 @@ export function AnalysisReportsPage() {
                 <div
                   key={t.key}
                   className="rounded-xl border p-5 flex flex-col"
-                  style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+                  style={{
+                    backgroundColor: 'var(--color-surface)',
+                    borderColor: 'var(--color-border)',
+                  }}
                 >
                   <div className="flex items-start gap-3 mb-3">
                     <div className="p-2 rounded-lg bg-purple-500/10">
                       <Icon size={20} className="text-purple-500" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-sm" style={{ color: 'var(--color-text-primary)' }}>
+                      <h3
+                        className="font-semibold text-sm"
+                        style={{ color: 'var(--color-text-primary)' }}
+                      >
                         {t.label}
                       </h3>
                     </div>
                   </div>
-                  <p className="text-xs mb-4 flex-1" style={{ color: 'var(--color-text-secondary)' }}>
+                  <p
+                    className="text-xs mb-4 flex-1"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                  >
                     {t.description}
                   </p>
                   <button
@@ -195,7 +251,10 @@ export function AnalysisReportsPage() {
           {/* Previous reports */}
           {reports.length > 0 && (
             <div>
-              <h2 className="text-lg font-semibold mb-4" style={{ color: 'var(--color-text-primary)' }}>
+              <h2
+                className="text-lg font-semibold mb-4"
+                style={{ color: 'var(--color-text-primary)' }}
+              >
                 Previous Reports
               </h2>
               <div className="space-y-2">
@@ -210,23 +269,36 @@ export function AnalysisReportsPage() {
                     >
                       <FileText size={16} style={{ color: 'var(--color-text-secondary)' }} />
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium truncate" style={{ color: 'var(--color-text-primary)' }}>
+                        <div
+                          className="text-sm font-medium truncate"
+                          style={{ color: 'var(--color-text-primary)' }}
+                        >
                           {r.title}
                         </div>
                         <div className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
                           {typeInfo?.label || r.report_type}
-                          {r.generation_time_seconds != null && ` \u00b7 ${r.generation_time_seconds}s`}
+                          {r.generation_time_seconds != null &&
+                            ` \u00b7 ${r.generation_time_seconds}s`}
                           {' \u00b7 '}
-                          {new Date(r.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          {new Date(r.created_at).toLocaleDateString('en-GB', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
                         </div>
                       </div>
                       <StatusBadge status={r.status} />
                       <button
-                        onClick={(e) => { e.stopPropagation(); handleDelete(r.id); }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(r.id);
+                        }}
                         className="p-1.5 rounded hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
                         title="Delete report"
                       >
-                        <Trash2 size={14} className="text-red-500" />
+                        <Trash2 size={14} className="text-destructive" />
                       </button>
                     </div>
                   );
@@ -242,15 +314,21 @@ export function AnalysisReportsPage() {
 
 function StatusBadge({ status }: { status: string }) {
   const styles =
-    status === 'completed' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
-    status === 'failed' ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400' :
-    status === 'queued' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' :
-    status === 'generating' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
-    'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400';
+    status === 'completed'
+      ? 'bg-green-100 text-positive dark:bg-green-900/30 dark:text-positive'
+      : status === 'failed'
+        ? 'bg-red-100 text-destructive dark:bg-red-900/30 dark:text-destructive'
+        : status === 'queued'
+          ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+          : status === 'generating'
+            ? 'bg-yellow-100 text-caution dark:bg-yellow-900/30 dark:text-caution'
+            : 'bg-gray-100 text-muted-foreground dark:bg-gray-900/30 dark:text-muted-foreground';
 
   return (
     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${styles}`}>
-      {status === 'generating' && <Sparkles size={10} className="inline mr-1 -mt-0.5 animate-pulse" />}
+      {status === 'generating' && (
+        <Sparkles size={10} className="inline mr-1 -mt-0.5 animate-pulse" />
+      )}
       {status}
     </span>
   );
@@ -284,9 +362,18 @@ function ReportDetailView({
           <h1 className="text-xl font-bold truncate" style={{ color: 'var(--color-text-primary)' }}>
             {report.title}
           </h1>
-          <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+          <div
+            className="flex items-center gap-2 text-xs"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
             <Clock size={12} />
-            {new Date(report.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+            {new Date(report.created_at).toLocaleDateString('en-GB', {
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
             {report.generation_time_seconds != null && (
               <span> &middot; Generated in {report.generation_time_seconds}s</span>
             )}
@@ -306,16 +393,18 @@ function ReportDetailView({
           className="p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
           title="Delete report"
         >
-          <Trash2 size={16} className="text-red-500" />
+          <Trash2 size={16} className="text-destructive" />
         </button>
       </div>
 
       {report.status === 'failed' ? (
-        <div className="flex items-start gap-3 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-          <AlertCircle size={18} className="text-red-500 mt-0.5" />
+        <div className="flex items-start gap-3 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-destructive dark:border-destructive">
+          <AlertCircle size={18} className="text-destructive mt-0.5" />
           <div>
-            <p className="text-sm font-medium text-red-700 dark:text-red-400">Report generation failed</p>
-            <p className="text-xs mt-1 text-red-600 dark:text-red-300">{report.content}</p>
+            <p className="text-sm font-medium text-destructive dark:text-destructive">
+              Report generation failed
+            </p>
+            <p className="text-xs mt-1 text-destructive dark:text-destructive">{report.content}</p>
           </div>
         </div>
       ) : report.status === 'queued' || report.status === 'generating' ? (
@@ -332,8 +421,15 @@ function ReportDetailView({
         <div ref={contentRef}>
           <div className="print-header hidden mb-6">
             <h1 className="text-2xl font-bold">{report.title}</h1>
-            <p className="text-sm text-gray-500 mt-1">
-              Generated {new Date(report.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+            <p className="text-sm text-muted-foreground mt-1">
+              Generated{' '}
+              {new Date(report.created_at).toLocaleDateString('en-GB', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
             </p>
             <hr className="mt-4" />
           </div>

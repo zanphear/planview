@@ -22,11 +22,12 @@ export interface WebhookLog {
 }
 
 export const webhooksApi = {
-  list: (workspaceId: string) =>
-    api.get<Webhook[]>(`/workspaces/${workspaceId}/webhooks`),
+  list: (workspaceId: string) => api.get<Webhook[]>(`/workspaces/${workspaceId}/webhooks`),
 
-  create: (workspaceId: string, data: { name: string; url: string; secret?: string; events?: string[] }) =>
-    api.post<Webhook>(`/workspaces/${workspaceId}/webhooks`, data),
+  create: (
+    workspaceId: string,
+    data: { name: string; url: string; secret?: string; events?: string[] },
+  ) => api.post<Webhook>(`/workspaces/${workspaceId}/webhooks`, data),
 
   update: (workspaceId: string, webhookId: string, data: Partial<Webhook>) =>
     api.put<Webhook>(`/workspaces/${workspaceId}/webhooks/${webhookId}`, data),

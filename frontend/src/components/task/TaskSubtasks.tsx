@@ -26,18 +26,24 @@ export function TaskSubtasks({ taskId, subtasks, onRefresh }: TaskSubtasksProps)
     onRefresh();
   }, [workspace, taskId, newName, onRefresh]);
 
-  const handleToggle = useCallback(async (subtask: SubtaskBrief) => {
-    if (!workspace) return;
-    const newStatus = subtask.status === 'done' ? 'todo' : 'done';
-    await tasksApi.update(workspace.id, subtask.id, { status: newStatus });
-    onRefresh();
-  }, [workspace, onRefresh]);
+  const handleToggle = useCallback(
+    async (subtask: SubtaskBrief) => {
+      if (!workspace) return;
+      const newStatus = subtask.status === 'done' ? 'todo' : 'done';
+      await tasksApi.update(workspace.id, subtask.id, { status: newStatus });
+      onRefresh();
+    },
+    [workspace, onRefresh],
+  );
 
-  const handleDelete = useCallback(async (subtaskId: string) => {
-    if (!workspace) return;
-    await tasksApi.delete(workspace.id, subtaskId);
-    onRefresh();
-  }, [workspace, onRefresh]);
+  const handleDelete = useCallback(
+    async (subtaskId: string) => {
+      if (!workspace) return;
+      await tasksApi.delete(workspace.id, subtaskId);
+      onRefresh();
+    },
+    [workspace, onRefresh],
+  );
 
   const doneCount = subtasks.filter((s) => s.status === 'done').length;
   const total = subtasks.length;
@@ -46,19 +52,27 @@ export function TaskSubtasks({ taskId, subtasks, onRefresh }: TaskSubtasksProps)
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <label className="block text-xs font-medium" style={{ color: 'var(--color-text-secondary)' }}>
+        <label
+          className="block text-xs font-medium"
+          style={{ color: 'var(--color-text-secondary)' }}
+        >
           Subtasks
           {total > 0 && (
-            <span className="ml-1.5">({doneCount}/{total})</span>
+            <span className="ml-1.5">
+              ({doneCount}/{total})
+            </span>
           )}
         </label>
       </div>
 
       {/* Progress bar */}
       {total > 0 && (
-        <div className="h-1.5 rounded-full overflow-hidden mb-2" style={{ backgroundColor: 'var(--color-grey-2)' }}>
+        <div
+          className="h-1.5 rounded-full overflow-hidden mb-2"
+          style={{ backgroundColor: 'var(--color-grey-2)' }}
+        >
           <div
-            className="h-full rounded-full transition-all"
+            className="h-full rounded-full transition-colors"
             style={{ width: `${pct}%`, backgroundColor: 'var(--color-success)' }}
           />
         </div>
@@ -69,12 +83,15 @@ export function TaskSubtasks({ taskId, subtasks, onRefresh }: TaskSubtasksProps)
         {subtasks.map((st) => (
           <div
             key={st.id}
-            className="flex items-center gap-2 group py-1 px-1 rounded hover:bg-[var(--color-grey-1)] transition-colors"
+            className="flex items-center gap-2 group py-1 px-1 rounded hover:bg-subtle transition-colors"
           >
             <button
               onClick={() => handleToggle(st)}
               className="shrink-0"
-              style={{ color: st.status === 'done' ? 'var(--color-success)' : 'var(--color-text-secondary)' }}
+              style={{
+                color:
+                  st.status === 'done' ? 'var(--color-success)' : 'var(--color-text-secondary)',
+              }}
             >
               {st.status === 'done' ? <CheckCircle2 size={16} /> : <Circle size={16} />}
             </button>
@@ -104,12 +121,27 @@ export function TaskSubtasks({ taskId, subtasks, onRefresh }: TaskSubtasksProps)
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleAdd();
-              if (e.key === 'Escape') { setAdding(false); setNewName(''); }
+              if (e.key === 'Escape') {
+                setAdding(false);
+                setNewName('');
+              }
             }}
-            onBlur={() => { if (!newName.trim()) { setAdding(false); setNewName(''); } }}
+            onBlur={() => {
+              if (!newName.trim()) {
+                setAdding(false);
+                setNewName('');
+              }
+            }}
             placeholder="Subtask name..."
             className="flex-1 px-2 py-1 text-sm border rounded-lg outline-none focus:ring-1"
-            style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)', '--tw-ring-color': 'var(--color-primary)' } as React.CSSProperties}
+            style={
+              {
+                borderColor: 'var(--color-border)',
+                backgroundColor: 'var(--color-surface)',
+                color: 'var(--color-text)',
+                '--tw-ring-color': 'var(--color-primary)',
+              } as React.CSSProperties
+            }
           />
         </div>
       ) : (

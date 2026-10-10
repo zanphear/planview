@@ -55,6 +55,7 @@ def _task_query(workspace_id: uuid.UUID):
 async def list_tasks(
     workspace_id: uuid.UUID,
     project_id: uuid.UUID | None = None,
+    unassigned: bool = Query(False, description="Only tasks with no project"),
     status: str | None = None,
     assignee: uuid.UUID | None = None,
     segment_id: uuid.UUID | None = None,
@@ -72,6 +73,8 @@ async def list_tasks(
 
     if project_id:
         query = query.where(Task.project_id == project_id)
+    if unassigned:
+        query = query.where(Task.project_id.is_(None))
     if status:
         query = query.where(Task.status == status)
     if segment_id:
@@ -125,7 +128,7 @@ async def create_task(
     db.add(task)
     await db.flush()
 
-    # Assignees — insert directly into join table to avoid lazy-load on new object
+    # Assignees, insert directly into join table to avoid lazy-load on new object
     if data.assignee_ids:
         for uid in data.assignee_ids:
             await db.execute(task_assignees.insert().values(task_id=task.id, user_id=uid))
@@ -333,6 +336,8 @@ async def _create_next_recurrence(
     actor: User,
 ):
     """Create the next occurrence of a recurring task."""
+    if not task.recurrence_rule:
+        return
     task_start = task.date_from or date.today()
     duration_days = 0
     if task.date_from and task.date_to:

@@ -7,7 +7,7 @@ export const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// Request interceptor — attach JWT
+// Request interceptor, attach JWT
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('access_token');
   if (token) {
@@ -16,7 +16,7 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Response interceptor — auto-refresh on 401
+// Response interceptor, auto-refresh on 401
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -41,5 +41,5 @@ api.interceptors.response.use(
       }
     }
     return Promise.reject(error);
-  }
+  },
 );

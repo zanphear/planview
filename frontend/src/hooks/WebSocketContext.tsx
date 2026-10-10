@@ -33,7 +33,7 @@ export function useWSEvent(eventType: string, handler: EventHandler, deps: unkno
 
 /**
  * Get the raw `on` function from WebSocket context.
- * Use useWSEvent for most cases — this is for dynamic subscription patterns.
+ * Use useWSEvent for most cases, this is for dynamic subscription patterns.
  */
 export function useWSOn(): OnFn | null {
   return useContext(WSContext);

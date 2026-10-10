@@ -1,11 +1,28 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Heart, ThumbsUp, Plus, BarChart3, MessageCircle, Smile, X, Send, Award } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import {
+  Heart,
+  ThumbsUp,
+  Plus,
+  BarChart3,
+  MessageCircle,
+  Smile,
+  X,
+  Send,
+  Award,
+} from 'lucide-react';
 import { useWorkspaceStore } from '../stores/workspaceStore';
 import { useAuthStore } from '../stores/authStore';
-import { wellbeingApi } from '../api/wellbeing';
 import { membersApi } from '../api/users';
 import type { PulseSurvey, Kudos } from '../api/wellbeing';
 import type { User } from '../api/users';
+import {
+  useSurveys,
+  useKudos,
+  useCreateSurvey,
+  useSubmitResponse,
+  useGiveKudos,
+} from '../api/queries/wellbeing';
 import { Toast } from '../components/shared/Toast';
 import { StatCard } from '../components/shared/StatCard';
 import { BarChart } from '../components/charts/BarChart';
@@ -49,38 +66,25 @@ function getScoreColour(score: number): string {
 export function WellbeingPage() {
   const workspace = useWorkspaceStore((s) => s.currentWorkspace);
   const user = useAuthStore((s) => s.user);
+  const workspaceId = workspace?.id;
+
+  // Client/UI state only, server data lives in TanStack Query (ADR 0003).
   const [tab, setTab] = useState<Tab>('surveys');
-  const [surveys, setSurveys] = useState<PulseSurvey[]>([]);
-  const [kudos, setKudos] = useState<Kudos[]>([]);
-  const [members, setMembers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
   const [expandedSurvey, setExpandedSurvey] = useState<string | null>(null);
   const [showNewSurvey, setShowNewSurvey] = useState(false);
   const [showGiveKudos, setShowGiveKudos] = useState(false);
 
-  const loadData = async () => {
-    if (!workspace) return;
-    setLoading(true);
-    try {
-      const [surveysRes, kudosRes, membersRes] = await Promise.all([
-        wellbeingApi.listSurveys(workspace.id),
-        wellbeingApi.listKudos(workspace.id),
-        membersApi.list(workspace.id),
-      ]);
-      setSurveys(surveysRes.data);
-      setKudos(kudosRes.data);
-      setMembers(membersRes.data);
-    } catch (err) {
-      console.error('Failed to load wellbeing data:', err);
-      Toast.show('Failed to load wellbeing data');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const surveysQuery = useSurveys(workspaceId);
+  const kudosQuery = useKudos(workspaceId);
+  const membersQuery = useQuery({
+    queryKey: ['members', workspaceId ?? ''],
+    queryFn: async (): Promise<User[]> => (await membersApi.list(workspaceId!)).data,
+    enabled: !!workspaceId,
+  });
 
-  useEffect(() => {
-    loadData();
-  }, [workspace]);
+  const surveys = surveysQuery.data ?? [];
+  const kudos = kudosQuery.data ?? [];
+  const members = membersQuery.data ?? [];
 
   const getMemberName = (userId: string): string => {
     const m = members.find((u) => u.id === userId);
@@ -91,19 +95,19 @@ export function WellbeingPage() {
     return members.find((u) => u.id === userId);
   };
 
-  // Computed stats
-  const allResponses = useMemo(() => surveys.flatMap((s) => s.responses), [surveys]);
+  // Computed stats, derive purely from query data, no input mutation.
+  const allResponses = useMemo(
+    () => (surveysQuery.data ?? []).flatMap((s) => s.responses),
+    [surveysQuery.data],
+  );
   const totalResponses = allResponses.length;
-  const avgMoraleNum = totalResponses > 0
-    ? allResponses.reduce((sum, r) => sum + r.morale, 0) / totalResponses
-    : 0;
+  const avgMoraleNum =
+    totalResponses > 0 ? allResponses.reduce((sum, r) => sum + r.morale, 0) / totalResponses : 0;
   const avgMorale = totalResponses > 0 ? avgMoraleNum.toFixed(1) : '\u2014';
-  const avgWorkload = totalResponses > 0
-    ? allResponses.reduce((sum, r) => sum + r.workload, 0) / totalResponses
-    : 0;
-  const avgSupport = totalResponses > 0
-    ? allResponses.reduce((sum, r) => sum + r.support, 0) / totalResponses
-    : 0;
+  const avgWorkload =
+    totalResponses > 0 ? allResponses.reduce((sum, r) => sum + r.workload, 0) / totalResponses : 0;
+  const avgSupport =
+    totalResponses > 0 ? allResponses.reduce((sum, r) => sum + r.support, 0) / totalResponses : 0;
   const now = new Date();
   const kudosThisMonth = kudos.filter((k) => {
     const d = new Date(k.created_at);
@@ -116,14 +120,65 @@ export function WellbeingPage() {
     { label: 'Support', value: avgSupport, colour: COLOURS.green },
   ];
 
-  if (loading) {
+  // ── PENDING ────────────────────────────────────────────────────────────────
+  if (surveysQuery.isPending || kudosQuery.isPending || membersQuery.isPending) {
     return (
       <div className="flex items-center justify-center h-full">
-        <div className="animate-spin w-6 h-6 border-2 border-t-transparent rounded-full" style={{ borderColor: 'var(--color-primary)', borderTopColor: 'transparent' }} />
+        <div
+          className="animate-spin w-6 h-6 border-2 border-t-transparent rounded-full"
+          style={{ borderColor: 'var(--color-primary)', borderTopColor: 'transparent' }}
+        />
       </div>
     );
   }
 
+  // ── ERROR (with retry) ───────────────────────────────────────────────────────
+  if (surveysQuery.isError || kudosQuery.isError || membersQuery.isError) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-3 p-6 text-center">
+        <Heart size={40} className="opacity-30" style={{ color: 'var(--color-text-secondary)' }} />
+        <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+          Couldn't load wellbeing data.
+        </p>
+        <button
+          onClick={() => {
+            surveysQuery.refetch();
+            kudosQuery.refetch();
+            membersQuery.refetch();
+          }}
+          className="px-4 py-2 text-sm font-medium rounded-lg text-white"
+          style={{ backgroundColor: 'var(--color-primary)' }}
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  // ── EMPTY (with CTA) ─────────────────────────────────────────────────────────
+  if (surveys.length === 0 && kudos.length === 0 && !showNewSurvey) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-3 p-6 text-center">
+        <Heart size={48} className="opacity-30" style={{ color: 'var(--color-text-secondary)' }} />
+        <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+          No wellbeing activity yet. Start by sending a pulse survey to check in with your team.
+        </p>
+        <button
+          onClick={() => {
+            setTab('surveys');
+            setShowNewSurvey(true);
+          }}
+          className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg text-white"
+          style={{ background: 'linear-gradient(135deg, #8A00E5, #4D217A)' }}
+        >
+          <Plus size={14} />
+          New Survey
+        </button>
+      </div>
+    );
+  }
+
+  // ── SUCCESS ──────────────────────────────────────────────────────────────────
   return (
     <div className="p-4 sm:p-6 h-full flex flex-col">
       {/* Header */}
@@ -136,10 +191,13 @@ export function WellbeingPage() {
         </div>
 
         {/* Tab switcher */}
-        <div className="flex items-center gap-1 p-1 rounded-lg" style={{ backgroundColor: 'var(--color-grey-1)' }}>
+        <div
+          className="flex items-center gap-1 p-1 rounded-lg"
+          style={{ backgroundColor: 'var(--color-grey-1)' }}
+        >
           <button
             onClick={() => setTab('surveys')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
               tab === 'surveys' ? 'shadow-sm' : ''
             }`}
             style={{
@@ -152,7 +210,7 @@ export function WellbeingPage() {
           </button>
           <button
             onClick={() => setTab('kudos')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
               tab === 'kudos' ? 'shadow-sm' : ''
             }`}
             style={{
@@ -168,16 +226,41 @@ export function WellbeingPage() {
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard label="Surveys Sent" value={surveys.length} icon={<Send size={20} />} colour={COLOURS.blue} />
-        <StatCard label="Total Responses" value={totalResponses} icon={<BarChart3 size={20} />} colour={COLOURS.purple} />
-        <StatCard label="Avg Morale" value={avgMorale} icon={<Heart size={20} />} colour={COLOURS.pink} />
-        <StatCard label="Kudos This Month" value={kudosThisMonth} icon={<Award size={20} />} colour={COLOURS.green} />
+        <StatCard
+          label="Surveys Sent"
+          value={surveys.length}
+          icon={<Send size={20} />}
+          colour={COLOURS.blue}
+        />
+        <StatCard
+          label="Total Responses"
+          value={totalResponses}
+          icon={<BarChart3 size={20} />}
+          colour={COLOURS.purple}
+        />
+        <StatCard
+          label="Avg Morale"
+          value={avgMorale}
+          icon={<Heart size={20} />}
+          colour={COLOURS.pink}
+        />
+        <StatCard
+          label="Kudos This Month"
+          value={kudosThisMonth}
+          icon={<Award size={20} />}
+          colour={COLOURS.green}
+        />
       </div>
 
       {/* Wellbeing chart */}
       {allResponses.length > 0 && (
-        <div className="rounded-xl border p-5 mb-6" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
-          <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-text)' }}>Wellbeing Averages</h3>
+        <div
+          className="rounded-xl border p-5 mb-6"
+          style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+        >
+          <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-text)' }}>
+            Wellbeing Averages
+          </h3>
           <BarChart bars={wellbeingBars} height={130} />
         </div>
       )}
@@ -193,7 +276,6 @@ export function WellbeingPage() {
             onToggleExpand={(id) => setExpandedSurvey(expandedSurvey === id ? null : id)}
             showNewSurvey={showNewSurvey}
             onToggleNewSurvey={() => setShowNewSurvey(!showNewSurvey)}
-            onRefresh={loadData}
           />
         ) : (
           <KudosTab
@@ -205,14 +287,12 @@ export function WellbeingPage() {
             onToggleGiveKudos={() => setShowGiveKudos(!showGiveKudos)}
             workspace={workspace}
             user={user}
-            onRefresh={loadData}
           />
         )}
       </div>
     </div>
   );
 }
-
 
 // --- Surveys Tab ---
 
@@ -224,7 +304,6 @@ function SurveysTab({
   onToggleExpand,
   showNewSurvey,
   onToggleNewSurvey,
-  onRefresh,
 }: {
   surveys: PulseSurvey[];
   workspace: { id: string } | null;
@@ -233,7 +312,6 @@ function SurveysTab({
   onToggleExpand: (id: string) => void;
   showNewSurvey: boolean;
   onToggleNewSurvey: () => void;
-  onRefresh: () => void;
 }) {
   return (
     <div className="space-y-4">
@@ -253,7 +331,7 @@ function SurveysTab({
       {showNewSurvey && workspace && (
         <CreateSurveyForm
           workspaceId={workspace.id}
-          onCreated={() => { onToggleNewSurvey(); onRefresh(); }}
+          onCreated={onToggleNewSurvey}
           onCancel={onToggleNewSurvey}
         />
       )}
@@ -261,7 +339,11 @@ function SurveysTab({
       {/* Survey list */}
       {surveys.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16">
-          <BarChart3 size={48} className="mb-3 opacity-30" style={{ color: 'var(--color-text-secondary)' }} />
+          <BarChart3
+            size={48}
+            className="mb-3 opacity-30"
+            style={{ color: 'var(--color-text-secondary)' }}
+          />
           <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
             No pulse surveys yet. Create one to check in with your team.
           </p>
@@ -275,14 +357,12 @@ function SurveysTab({
             onToggle={() => onToggleExpand(survey.id)}
             workspace={workspace}
             user={user}
-            onRefresh={onRefresh}
           />
         ))
       )}
     </div>
   );
 }
-
 
 // --- Create Survey Form ---
 
@@ -297,24 +377,22 @@ function CreateSurveyForm({
 }) {
   const [title, setTitle] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [saving, setSaving] = useState(false);
+  const createSurvey = useCreateSurvey(workspaceId);
+  const saving = createSurvey.isPending;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
-    setSaving(true);
-    try {
-      await wellbeingApi.createSurvey(workspaceId, {
-        title: title.trim(),
-        end_date: endDate || undefined,
-      });
-      onCreated();
-    } catch (err) {
-      console.error('Failed to create survey:', err);
-      Toast.show('Failed to create survey');
-    } finally {
-      setSaving(false);
-    }
+    createSurvey.mutate(
+      { title: title.trim(), end_date: endDate || undefined },
+      {
+        onSuccess: () => onCreated(),
+        onError: (err) => {
+          console.error('Failed to create survey:', err);
+          Toast.show('Failed to create survey');
+        },
+      },
+    );
   };
 
   return (
@@ -323,14 +401,22 @@ function CreateSurveyForm({
       style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)' }}
     >
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>New Pulse Survey</h3>
-        <button onClick={onCancel} className="p-1 rounded hover:bg-[var(--color-grey-1)]" style={{ color: 'var(--color-text-secondary)' }}>
+        <h3 className="text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
+          New Pulse Survey
+        </h3>
+        <button
+          onClick={onCancel}
+          className="p-1 rounded hover:bg-subtle"
+          style={{ color: 'var(--color-text-secondary)' }}
+        >
           <X size={16} />
         </button>
       </div>
       <form onSubmit={handleSubmit} className="flex items-end gap-3 flex-wrap">
         <div className="flex-1 min-w-[200px]">
-          <label className="block text-xs mb-1" style={{ color: 'var(--color-text-secondary)' }}>Title</label>
+          <label className="block text-xs mb-1" style={{ color: 'var(--color-text-secondary)' }}>
+            Title
+          </label>
           <input
             type="text"
             value={title}
@@ -338,17 +424,27 @@ function CreateSurveyForm({
             required
             placeholder="e.g. Weekly Check-in"
             className="w-full px-3 py-2 text-sm rounded-lg border"
-            style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+            style={{
+              borderColor: 'var(--color-border)',
+              backgroundColor: 'var(--color-surface)',
+              color: 'var(--color-text)',
+            }}
           />
         </div>
         <div>
-          <label className="block text-xs mb-1" style={{ color: 'var(--color-text-secondary)' }}>End Date (optional)</label>
+          <label className="block text-xs mb-1" style={{ color: 'var(--color-text-secondary)' }}>
+            End Date (optional)
+          </label>
           <input
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
             className="px-3 py-2 text-sm rounded-lg border"
-            style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+            style={{
+              borderColor: 'var(--color-border)',
+              backgroundColor: 'var(--color-surface)',
+              color: 'var(--color-text)',
+            }}
           />
         </div>
         <button
@@ -364,7 +460,6 @@ function CreateSurveyForm({
   );
 }
 
-
 // --- Survey Card ---
 
 function SurveyCard({
@@ -373,25 +468,24 @@ function SurveyCard({
   onToggle,
   workspace,
   user,
-  onRefresh,
 }: {
   survey: PulseSurvey;
   expanded: boolean;
   onToggle: () => void;
   workspace: { id: string } | null;
   user: User | null;
-  onRefresh: () => void;
 }) {
   const responseCount = survey.responses.length;
   const hasResponded = user ? survey.responses.some((r) => r.user_id === user.id) : false;
 
-  const averages = responseCount > 0
-    ? {
-        morale: survey.responses.reduce((sum, r) => sum + r.morale, 0) / responseCount,
-        workload: survey.responses.reduce((sum, r) => sum + r.workload, 0) / responseCount,
-        support: survey.responses.reduce((sum, r) => sum + r.support, 0) / responseCount,
-      }
-    : null;
+  const averages =
+    responseCount > 0
+      ? {
+          morale: survey.responses.reduce((sum, r) => sum + r.morale, 0) / responseCount,
+          workload: survey.responses.reduce((sum, r) => sum + r.workload, 0) / responseCount,
+          support: survey.responses.reduce((sum, r) => sum + r.support, 0) / responseCount,
+        }
+      : null;
 
   return (
     <div
@@ -401,7 +495,7 @@ function SurveyCard({
       {/* Survey header */}
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between px-4 py-3 hover:bg-[var(--color-grey-1)] transition-colors text-left"
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-subtle transition-colors text-left"
       >
         <div className="flex items-center gap-3">
           <div
@@ -411,23 +505,38 @@ function SurveyCard({
             <BarChart3 size={16} />
           </div>
           <div>
-            <div className="font-semibold text-sm" style={{ color: 'var(--color-text)' }}>{survey.title}</div>
-            <div className="text-xs flex items-center gap-2" style={{ color: 'var(--color-text-secondary)' }}>
+            <div className="font-semibold text-sm" style={{ color: 'var(--color-text)' }}>
+              {survey.title}
+            </div>
+            <div
+              className="text-xs flex items-center gap-2"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
               <span
                 className="px-1.5 py-0.5 rounded text-[10px] font-medium"
                 style={{
-                  backgroundColor: survey.status === 'active' ? 'rgba(34,197,94,0.1)' : 'var(--color-grey-1)',
+                  backgroundColor:
+                    survey.status === 'active' ? 'rgba(34,197,94,0.1)' : 'var(--color-grey-1)',
                   color: survey.status === 'active' ? '#22c55e' : 'var(--color-text-secondary)',
                 }}
               >
                 {survey.status}
               </span>
-              <span>{responseCount} response{responseCount !== 1 ? 's' : ''}</span>
+              <span>
+                {responseCount} response{responseCount !== 1 ? 's' : ''}
+              </span>
               {averages && (
                 <span className="flex items-center gap-1">
                   <span
                     className="w-2 h-2 rounded-full inline-block"
-                    style={{ backgroundColor: averages.morale >= 4 ? COLOURS.green : averages.morale >= 3 ? COLOURS.amber : COLOURS.red }}
+                    style={{
+                      backgroundColor:
+                        averages.morale >= 4
+                          ? COLOURS.green
+                          : averages.morale >= 3
+                            ? COLOURS.amber
+                            : COLOURS.red,
+                    }}
                   />
                   <span>{averages.morale.toFixed(1)}</span>
                 </span>
@@ -438,7 +547,10 @@ function SurveyCard({
         </div>
         <div
           className="text-xs transition-transform"
-          style={{ color: 'var(--color-text-secondary)', transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)' }}
+          style={{
+            color: 'var(--color-text-secondary)',
+            transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
+          }}
         >
           &#9660;
         </div>
@@ -446,11 +558,17 @@ function SurveyCard({
 
       {/* Expanded content */}
       {expanded && (
-        <div className="border-t px-4 py-4 space-y-4" style={{ borderColor: 'var(--color-border)' }}>
+        <div
+          className="border-t px-4 py-4 space-y-4"
+          style={{ borderColor: 'var(--color-border)' }}
+        >
           {/* Results summary */}
           {averages && (
             <div>
-              <h4 className="text-xs font-semibold mb-3 flex items-center gap-1.5" style={{ color: 'var(--color-text-secondary)' }}>
+              <h4
+                className="text-xs font-semibold mb-3 flex items-center gap-1.5"
+                style={{ color: 'var(--color-text-secondary)' }}
+              >
                 <BarChart3 size={12} />
                 Results Summary
               </h4>
@@ -464,15 +582,14 @@ function SurveyCard({
 
           {/* Respond form */}
           {survey.status === 'active' && !hasResponded && workspace && (
-            <RespondForm
-              workspaceId={workspace.id}
-              surveyId={survey.id}
-              onSubmitted={onRefresh}
-            />
+            <RespondForm workspaceId={workspace.id} surveyId={survey.id} />
           )}
 
           {hasResponded && (
-            <div className="text-xs py-2 text-center" style={{ color: 'var(--color-text-secondary)' }}>
+            <div
+              className="text-xs py-2 text-center"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
               You've already responded to this survey.
             </div>
           )}
@@ -482,7 +599,6 @@ function SurveyCard({
   );
 }
 
-
 // --- Score Bar ---
 
 function ScoreBar({ label, value }: { label: string; value: number }) {
@@ -491,10 +607,15 @@ function ScoreBar({ label, value }: { label: string; value: number }) {
 
   return (
     <div className="flex items-center gap-3">
-      <span className="text-xs w-16 shrink-0" style={{ color: 'var(--color-text-secondary)' }}>{label}</span>
-      <div className="flex-1 h-5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--color-grey-1)' }}>
+      <span className="text-xs w-16 shrink-0" style={{ color: 'var(--color-text-secondary)' }}>
+        {label}
+      </span>
+      <div
+        className="flex-1 h-5 rounded-full overflow-hidden"
+        style={{ backgroundColor: 'var(--color-grey-1)' }}
+      >
         <div
-          className="h-full rounded-full transition-all"
+          className="h-full rounded-full transition-colors"
           style={{ width: `${percentage}%`, backgroundColor: colour }}
         />
       </div>
@@ -505,41 +626,30 @@ function ScoreBar({ label, value }: { label: string; value: number }) {
   );
 }
 
-
 // --- Respond Form ---
 
-function RespondForm({
-  workspaceId,
-  surveyId,
-  onSubmitted,
-}: {
-  workspaceId: string;
-  surveyId: string;
-  onSubmitted: () => void;
-}) {
+function RespondForm({ workspaceId, surveyId }: { workspaceId: string; surveyId: string }) {
   const [morale, setMorale] = useState(3);
   const [workload, setWorkload] = useState(3);
   const [support, setSupport] = useState(3);
   const [comments, setComments] = useState('');
-  const [saving, setSaving] = useState(false);
+  const submitResponse = useSubmitResponse(workspaceId);
+  const saving = submitResponse.isPending;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
-    try {
-      await wellbeingApi.submitResponse(workspaceId, surveyId, {
-        morale,
-        workload,
-        support,
-        comments: comments.trim() || undefined,
-      });
-      onSubmitted();
-    } catch (err) {
-      console.error('Failed to submit response:', err);
-      Toast.show('Failed to submit response');
-    } finally {
-      setSaving(false);
-    }
+    submitResponse.mutate(
+      {
+        surveyId,
+        data: { morale, workload, support, comments: comments.trim() || undefined },
+      },
+      {
+        onError: (err) => {
+          console.error('Failed to submit response:', err);
+          Toast.show('Failed to submit response');
+        },
+      },
+    );
   };
 
   return (
@@ -547,7 +657,10 @@ function RespondForm({
       className="rounded-lg border p-4"
       style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-bg)' }}
     >
-      <h4 className="text-xs font-semibold mb-3 flex items-center gap-1.5" style={{ color: 'var(--color-text-secondary)' }}>
+      <h4
+        className="text-xs font-semibold mb-3 flex items-center gap-1.5"
+        style={{ color: 'var(--color-text-secondary)' }}
+      >
         <Smile size={12} />
         Your Response
       </h4>
@@ -567,7 +680,11 @@ function RespondForm({
             rows={2}
             placeholder="Anything you'd like to share..."
             className="w-full px-3 py-2 text-sm rounded-lg border resize-none"
-            style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+            style={{
+              borderColor: 'var(--color-border)',
+              backgroundColor: 'var(--color-surface)',
+              color: 'var(--color-text)',
+            }}
           />
         </div>
 
@@ -586,7 +703,6 @@ function RespondForm({
   );
 }
 
-
 // --- Slider Field ---
 
 function SliderField({
@@ -601,7 +717,9 @@ function SliderField({
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <label className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>{label}</label>
+        <label className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+          {label}
+        </label>
         <span className="text-lg">{EMOJI_FACES[value - 1]}</span>
       </div>
       <input
@@ -613,7 +731,10 @@ function SliderField({
         onChange={(e) => onChange(Number(e.target.value))}
         className="w-full accent-[var(--color-primary)]"
       />
-      <div className="flex justify-between text-[10px] px-0.5" style={{ color: 'var(--color-text-secondary)' }}>
+      <div
+        className="flex justify-between text-[10px] px-0.5"
+        style={{ color: 'var(--color-text-secondary)' }}
+      >
         <span>1</span>
         <span>2</span>
         <span>3</span>
@@ -623,7 +744,6 @@ function SliderField({
     </div>
   );
 }
-
 
 // --- Kudos Tab ---
 
@@ -636,7 +756,6 @@ function KudosTab({
   onToggleGiveKudos,
   workspace,
   user,
-  onRefresh,
 }: {
   kudos: Kudos[];
   members: User[];
@@ -646,7 +765,6 @@ function KudosTab({
   onToggleGiveKudos: () => void;
   workspace: { id: string } | null;
   user: User | null;
-  onRefresh: () => void;
 }) {
   const BORDER_COLOURS = ['#8A00E5', '#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#ec4899'];
 
@@ -671,14 +789,18 @@ function KudosTab({
           currentUserId={user.id}
           members={members}
           onClose={onToggleGiveKudos}
-          onSent={() => { onToggleGiveKudos(); onRefresh(); }}
+          onSent={onToggleGiveKudos}
         />
       )}
 
       {/* Kudos feed */}
       {kudos.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16">
-          <ThumbsUp size={48} className="mb-3 opacity-30" style={{ color: 'var(--color-text-secondary)' }} />
+          <ThumbsUp
+            size={48}
+            className="mb-3 opacity-30"
+            style={{ color: 'var(--color-text-secondary)' }}
+          />
           <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
             No kudos yet. Be the first to recognise a teammate!
           </p>
@@ -717,20 +839,21 @@ function KudosTab({
                 </div>
 
                 {/* Category badge */}
-                {(k as Kudos & { category?: string }).category && (() => {
-                  const cat = (k as Kudos & { category?: string }).category!;
-                  const categoryColour = KUDOS_COLOURS[cat] || COLOURS.slate;
-                  return (
-                    <div className="mb-2">
-                      <span
-                        className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
-                        style={{ backgroundColor: categoryColour + '18', color: categoryColour }}
-                      >
-                        {cat.replace(/_/g, ' ')}
-                      </span>
-                    </div>
-                  );
-                })()}
+                {(k as Kudos & { category?: string }).category &&
+                  (() => {
+                    const cat = (k as Kudos & { category?: string }).category!;
+                    const categoryColour = KUDOS_COLOURS[cat] || COLOURS.slate;
+                    return (
+                      <div className="mb-2">
+                        <span
+                          className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                          style={{ backgroundColor: categoryColour + '18', color: categoryColour }}
+                        >
+                          {cat.replace(/_/g, ' ')}
+                        </span>
+                      </div>
+                    );
+                  })()}
 
                 {/* Message */}
                 <p className="text-sm mb-2" style={{ color: 'var(--color-text)' }}>
@@ -750,7 +873,6 @@ function KudosTab({
   );
 }
 
-
 // --- Member Avatar ---
 
 function MemberAvatar({ member }: { member: User | undefined }) {
@@ -763,7 +885,6 @@ function MemberAvatar({ member }: { member: User | undefined }) {
     </div>
   );
 }
-
 
 // --- Give Kudos Modal ---
 
@@ -782,70 +903,96 @@ function GiveKudosModal({
 }) {
   const [recipientId, setRecipientId] = useState('');
   const [message, setMessage] = useState('');
-  const [saving, setSaving] = useState(false);
+  const giveKudos = useGiveKudos(workspaceId);
+  const saving = giveKudos.isPending;
 
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
 
   const otherMembers = members.filter((m) => m.id !== currentUserId);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!recipientId || !message.trim()) return;
-    setSaving(true);
-    try {
-      await wellbeingApi.giveKudos(workspaceId, {
-        to_user_id: recipientId,
-        message: message.trim(),
-      });
-      onSent();
-    } catch (err) {
-      console.error('Failed to give kudos:', err);
-      Toast.show('Failed to send kudos');
-    } finally {
-      setSaving(false);
-    }
+    giveKudos.mutate(
+      { to_user_id: recipientId, message: message.trim() },
+      {
+        onSuccess: () => onSent(),
+        onError: (err) => {
+          console.error('Failed to give kudos:', err);
+          Toast.show('Failed to send kudos');
+        },
+      },
+    );
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      onClick={onClose}
+    >
       <div
         className="w-full max-w-md rounded-xl shadow-2xl p-6"
         style={{ backgroundColor: 'var(--color-surface)' }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold flex items-center gap-2" style={{ color: 'var(--color-text)' }}>
+          <h3
+            className="text-lg font-bold flex items-center gap-2"
+            style={{ color: 'var(--color-text)' }}
+          >
             <ThumbsUp size={18} style={{ color: 'var(--color-primary)' }} />
             Give Kudos
           </h3>
-          <button onClick={onClose} className="p-1 rounded hover:bg-[var(--color-grey-1)]" style={{ color: 'var(--color-text-secondary)' }}>
+          <button
+            onClick={onClose}
+            className="p-1 rounded hover:bg-subtle"
+            style={{ color: 'var(--color-text-secondary)' }}
+          >
             <X size={18} />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Recipient</label>
+            <label
+              className="block text-sm font-medium mb-1"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
+              Recipient
+            </label>
             <select
               value={recipientId}
               onChange={(e) => setRecipientId(e.target.value)}
               required
               className="w-full px-3 py-2 text-sm rounded-lg border"
-              style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+              style={{
+                borderColor: 'var(--color-border)',
+                backgroundColor: 'var(--color-surface)',
+                color: 'var(--color-text)',
+              }}
             >
               <option value="">Select a teammate...</option>
               {otherMembers.map((m) => (
-                <option key={m.id} value={m.id}>{m.name}</option>
+                <option key={m.id} value={m.id}>
+                  {m.name}
+                </option>
               ))}
             </select>
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>Message</label>
+            <label
+              className="block text-sm font-medium mb-1"
+              style={{ color: 'var(--color-text-secondary)' }}
+            >
+              Message
+            </label>
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
@@ -853,7 +1000,11 @@ function GiveKudosModal({
               rows={3}
               placeholder="What did they do that was great?"
               className="w-full px-3 py-2 text-sm rounded-lg border resize-none"
-              style={{ borderColor: 'var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text)' }}
+              style={{
+                borderColor: 'var(--color-border)',
+                backgroundColor: 'var(--color-surface)',
+                color: 'var(--color-text)',
+              }}
             />
           </div>
 

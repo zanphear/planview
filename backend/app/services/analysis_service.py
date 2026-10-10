@@ -32,7 +32,7 @@ async def call_llm(messages: list[dict]) -> str:
 
     async with httpx.AsyncClient(timeout=180.0) as client:
         resp = await client.post(
-            f"{settings.ai_model_url}/v1/chat/completions",
+            settings.ai_chat_url,
             json={
                 "model": settings.ai_model_name,
                 "messages": messages,
@@ -48,7 +48,7 @@ async def call_llm(messages: list[dict]) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Context gatherers — each returns a plain-text summary for the LLM
+# Context gatherers, each returns a plain-text summary for the LLM
 # ---------------------------------------------------------------------------
 
 async def gather_team_health_context(db: AsyncSession, workspace_id: uuid.UUID) -> str:
@@ -169,7 +169,7 @@ async def gather_compliance_context(db: AsyncSession, workspace_id: uuid.UUID) -
         lines.append("\nItems expiring within 90 days or already expired:")
         for item in items:
             status = "EXPIRED" if item[2] and item[2] < today else "expiring"
-            lines.append(f"  - {item[4]}: {item[0]} ({item[1]}) — expires {item[2]} [{status}]")
+            lines.append(f"  - {item[4]}: {item[0]} ({item[1]}), expires {item[2]} [{status}]")
 
     return "\n".join(lines)
 
@@ -233,7 +233,7 @@ async def gather_skills_gap_context(db: AsyncSession, workspace_id: uuid.UUID) -
     if expiring:
         lines.append("\nExpiring certifications (next 90 days):")
         for e in expiring:
-            lines.append(f"  - {e[0]}: {e[1]} — expires {e[2]}")
+            lines.append(f"  - {e[0]}: {e[1]}, expires {e[2]}")
 
     return "\n".join(lines)
 
@@ -324,7 +324,7 @@ async def gather_objectives_context(db: AsyncSession, workspace_id: uuid.UUID) -
     if objectives:
         lines.append("\nObjectives (sorted by progress, lowest first):")
         for o in objectives:
-            lines.append(f"  - {o[0]}: \"{o[1]}\" — {o[3]}% [{o[2]}] ({o[4] or 'uncategorised'})")
+            lines.append(f"  - {o[0]}: \"{o[1]}\", {o[3]}% [{o[2]}] ({o[4] or 'uncategorised'})")
 
     # Key results summary
     result = await db.execute(
@@ -447,7 +447,7 @@ async def gather_development_context(db: AsyncSession, workspace_id: uuid.UUID) 
     if plans:
         lines.append("\nActive development plans:")
         for p in plans:
-            aspiration = f" — aspiration: {p[2][:80]}" if p[2] else ""
+            aspiration = f", aspiration: {p[2][:80]}" if p[2] else ""
             lines.append(f"  - {p[0]} [{p[1]}]{aspiration}")
 
     # Milestone status counts
@@ -517,7 +517,7 @@ async def gather_development_context(db: AsyncSession, workspace_id: uuid.UUID) 
     if overdue:
         lines.append("\nOverdue development goals:")
         for o in overdue:
-            lines.append(f"  - {o[0]}: \"{o[1]}\" — due {o[2]} [{o[3]}]")
+            lines.append(f"  - {o[0]}: \"{o[1]}\", due {o[2]} [{o[3]}]")
 
     # Budget totals: total_budget vs actual_cost
     result = await db.execute(
@@ -733,7 +733,7 @@ async def gather_early_talent_context(db: AsyncSession, workspace_id: uuid.UUID)
         lines.append("\nParticipants:")
         for p in participants:
             uni = f" ({p[5]})" if p[5] else ""
-            lines.append(f"  - {p[0]}: {p[1]} [{p[2]}] — {p[3]}, qual progress {p[4]}%{uni}")
+            lines.append(f"  - {p[0]}: {p[1]} [{p[2]}], {p[3]}, qual progress {p[4]}%{uni}")
 
     # Milestone status
     result = await db.execute(
@@ -764,7 +764,7 @@ async def gather_early_talent_context(db: AsyncSession, workspace_id: uuid.UUID)
     if overdue:
         lines.append(f"\nOverdue milestones ({len(overdue)}):")
         for o in overdue:
-            lines.append(f"  - {o[0]}: \"{o[1]}\" — due {o[2]}")
+            lines.append(f"  - {o[0]}: \"{o[1]}\", due {o[2]}")
 
     # Rotation completion
     result = await db.execute(
@@ -805,7 +805,7 @@ async def gather_early_talent_context(db: AsyncSession, workspace_id: uuid.UUID)
         for c in cohorts:
             lines.append(f"  - {c[0]} ({c[3]}): {c[1]}, intake {c[2]}")
 
-    # Mentor engagement — participants without mentors
+    # Mentor engagement, participants without mentors
     result = await db.execute(
         select(func.count(EarlyTalentParticipant.id))
         .where(EarlyTalentParticipant.workspace_id == workspace_id)
@@ -844,9 +844,9 @@ async def gather_context(report_type: str, db: AsyncSession, workspace_id: uuid.
                 sections.append(f"## {name}\n(Error gathering data: {e})")
         return "\n\n".join(sections)
 
-    fn = GATHERERS.get(report_type)
-    if fn:
-        return await fn(db, workspace_id)
+    gatherer = GATHERERS.get(report_type)
+    if gatherer is not None:
+        return await gatherer(db, workspace_id)
     return "(No context data available for this report type)"
 
 
@@ -864,10 +864,10 @@ Instructions:
 - Highlight key risks and items needing immediate attention
 - End with prioritised, actionable recommendations
 - Use tables where appropriate for clarity
-- Be specific — reference actual names, dates, and numbers from the data
+- Be specific, reference actual names, dates, and numbers from the data
 - If any area has no data, briefly note it and move on
 - Keep the tone professional but direct
-- Do not invent data — only use what is provided below"""
+- Do not invent data, only use what is provided below"""
 
     user = f"""Generate a comprehensive **{label}** report based on the following data:
 
@@ -889,7 +889,7 @@ async def generate_report(
 ) -> AnalysisReport:
     from app.schemas.analysis_report import ANALYSIS_TYPES
     type_info = ANALYSIS_TYPES.get(report_type, {})
-    title = f"{type_info.get('label', report_type)} — {date.today().strftime('%d %b %Y')}"
+    title = f"{type_info.get('label', report_type)}, {date.today().strftime('%d %b %Y')}"
 
     report = AnalysisReport(
         workspace_id=workspace_id,

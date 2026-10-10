@@ -62,6 +62,18 @@ class Settings(BaseSettings):
 
     model_config = {"env_file": ".env", "extra": "ignore"}
 
+    @property
+    def ai_chat_url(self) -> str:
+        """Full chat-completions URL, tolerant of a base that already ends in /v1.
+
+        The fleet endpoints are documented as `https://host/v1`, but the services
+        append `/v1/chat/completions`, which would double the /v1 and 404. Strip a
+        trailing /v1 (and slashes) so either form works."""
+        base = self.ai_model_url.rstrip("/")
+        if base.endswith("/v1"):
+            base = base[: -len("/v1")]
+        return f"{base}/v1/chat/completions"
+
 
 settings = Settings()
 

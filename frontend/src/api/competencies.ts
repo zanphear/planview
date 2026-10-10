@@ -44,9 +44,24 @@ export const competenciesApi = {
   matrix: (workspaceId: string, params?: { user_id?: string }) =>
     api.get<UserCompetency[]>(`/workspaces/${workspaceId}/competencies/matrix`, { params }),
 
-  assess: (workspaceId: string, competencyId: string, data: { user_id: string; level: string; notes?: string }) =>
-    api.post<UserCompetency>(`/workspaces/${workspaceId}/competencies/${competencyId}/assess`, data),
+  assess: (
+    workspaceId: string,
+    competencyId: string,
+    data: { user_id: string; level: string; notes?: string },
+  ) =>
+    api.post<UserCompetency>(
+      `/workspaces/${workspaceId}/competencies/${competencyId}/assess`,
+      data,
+    ),
 
-  updateAssessment: (workspaceId: string, competencyId: string, assessmentId: string, data: Partial<UserCompetency>) =>
-    api.put<UserCompetency>(`/workspaces/${workspaceId}/competencies/${competencyId}/assessments/${assessmentId}`, data),
+  updateAssessment: (
+    workspaceId: string,
+    competencyId: string,
+    assessmentId: string,
+    data: Partial<UserCompetency>,
+  ) =>
+    api.put<UserCompetency>(
+      `/workspaces/${workspaceId}/competencies/${competencyId}/assessments/${assessmentId}`,
+      data,
+    ),
 };

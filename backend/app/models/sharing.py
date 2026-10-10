@@ -24,7 +24,7 @@ class SharedTimeline(Base, UUIDPrimaryKey, TimestampMixin):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
 
-    # Filters — optional scope for which data to show
+    # Filters, optional scope for which data to show
     team_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("teams.id", ondelete="SET NULL"), nullable=True
     )

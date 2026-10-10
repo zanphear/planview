@@ -44,6 +44,9 @@ export const lookupsApi = {
   delete: (workspaceId: string, category: string, id: string) =>
     api.delete(`/workspaces/${workspaceId}/lookups/${category}/${id}`),
 
-  reorder: (workspaceId: string, category: string, items: { id: string; display_order: number }[]) =>
-    api.post(`/workspaces/${workspaceId}/lookups/${category}/reorder`, { items }),
+  reorder: (
+    workspaceId: string,
+    category: string,
+    items: { id: string; display_order: number }[],
+  ) => api.post(`/workspaces/${workspaceId}/lookups/${category}/reorder`, { items }),
 };

@@ -26,4 +26,4 @@ async def record_activity(
         details=details,
     )
     db.add(activity)
-    # Don't commit here — let the caller's transaction handle it
+    # Don't commit here, let the caller's transaction handle it

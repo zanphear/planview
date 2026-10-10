@@ -20,11 +20,9 @@ export const attachmentsApi = {
   upload: (workspaceId: string, taskId: string, file: File) => {
     const form = new FormData();
     form.append('file', file);
-    return api.post<Attachment>(
-      `/workspaces/${workspaceId}/tasks/${taskId}/attachments`,
-      form,
-      { headers: { 'Content-Type': 'multipart/form-data' } }
-    );
+    return api.post<Attachment>(`/workspaces/${workspaceId}/tasks/${taskId}/attachments`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
   },
 
   downloadUrl: (workspaceId: string, taskId: string, attachmentId: string) =>

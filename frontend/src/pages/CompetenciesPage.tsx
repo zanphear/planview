@@ -1,9 +1,31 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
-import { Award, Plus, Grid3X3, Users, ChevronDown, X, Edit3, Trash2, Shield, BookOpen, TrendingUp } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import {
+  Award,
+  Plus,
+  Grid3X3,
+  Users,
+  ChevronDown,
+  X,
+  Edit3,
+  Trash2,
+  Shield,
+  BookOpen,
+  TrendingUp,
+  AlertTriangle,
+} from 'lucide-react';
 import { useWorkspaceStore } from '../stores/workspaceStore';
 import { useAuthStore } from '../stores/authStore';
-import { competenciesApi } from '../api/competencies';
 import type { Competency, UserCompetency } from '../api/competencies';
+import {
+  useCompetencies,
+  useCompetencyMatrix,
+  useCreateCompetency,
+  useUpdateCompetency,
+  useDeleteCompetency,
+  useAssessCompetency,
+  useUpdateAssessment,
+} from '../api/queries/competencies';
 import { membersApi } from '../api/users';
 import type { User } from '../api/users';
 import { LoadingSpinner } from '../components/shared/LoadingSpinner';
@@ -49,48 +71,44 @@ export function CompetenciesPage() {
   const workspace = useWorkspaceStore((s) => s.currentWorkspace);
   const user = useAuthStore((s) => s.user);
   const [tab, setTab] = useState<Tab>('competencies');
-  const [competencies, setCompetencies] = useState<Competency[]>([]);
-  const [members, setMembers] = useState<User[]>([]);
-  const [matrix, setMatrix] = useState<UserCompetency[]>([]);
-  const [loading, setLoading] = useState(true);
+
+  // ── Server state (TanStack Query, ADR 0003) ────────────────────────────────
+  const competenciesQuery = useCompetencies(workspace?.id);
+  const matrixQuery = useCompetencyMatrix(workspace?.id);
+  const membersQuery = useQuery({
+    queryKey: ['members', workspace?.id],
+    queryFn: async (): Promise<User[]> => (await membersApi.list(workspace!.id)).data,
+    enabled: !!workspace,
+  });
+
+  const competencies = competenciesQuery.data ?? [];
+  const matrix = matrixQuery.data ?? [];
+  const members = membersQuery.data ?? [];
+
+  // ── Mutations ──────────────────────────────────────────────────────────────
+  const createMutation = useCreateCompetency(workspace?.id);
+  const updateMutation = useUpdateCompetency(workspace?.id);
+  const deleteMutation = useDeleteCompetency(workspace?.id);
+  const assessMutation = useAssessCompetency(workspace?.id);
+  const updateAssessmentMutation = useUpdateAssessment(workspace?.id);
 
   // Modal state
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<CompetencyFormData>(EMPTY_FORM);
-  const [saving, setSaving] = useState(false);
+  const saving = createMutation.isPending || updateMutation.isPending;
 
   // Popover state for matrix cell
-  const [popover, setPopover] = useState<{ userId: string; competencyId: string; rect: DOMRect } | null>(null);
+  const [popover, setPopover] = useState<{
+    userId: string;
+    competencyId: string;
+    rect: DOMRect;
+  } | null>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
 
   // Category filter
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
-
-  const loadData = async () => {
-    if (!workspace) return;
-    setLoading(true);
-    try {
-      const [compRes, membersRes, matrixRes] = await Promise.all([
-        competenciesApi.list(workspace.id),
-        membersApi.list(workspace.id),
-        competenciesApi.matrix(workspace.id),
-      ]);
-      setCompetencies(compRes.data);
-      setMembers(membersRes.data);
-      setMatrix(matrixRes.data);
-    } catch (err) {
-      console.error('Failed to load competencies:', err);
-      Toast.show('Failed to load competencies data');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadData();
-  }, [workspace]);
 
   // Close popover on outside click
   useEffect(() => {
@@ -136,7 +154,9 @@ export function CompetenciesPage() {
 
   const uniqueCategories = useMemo(() => {
     const cats = new Set<string>();
-    competencies.forEach((c) => { if (c.category) cats.add(c.category); });
+    competencies.forEach((c) => {
+      if (c.category) cats.add(c.category);
+    });
     return cats.size;
   }, [competencies]);
 
@@ -159,7 +179,18 @@ export function CompetenciesPage() {
       const cat = c.category || 'Uncategorised';
       counts[cat] = (counts[cat] || 0) + 1;
     });
-    const palette = [COLOURS.blue, COLOURS.purple, COLOURS.teal, COLOURS.amber, COLOURS.green, COLOURS.pink, COLOURS.indigo, COLOURS.cyan, COLOURS.red, COLOURS.slate];
+    const palette = [
+      COLOURS.blue,
+      COLOURS.purple,
+      COLOURS.teal,
+      COLOURS.amber,
+      COLOURS.green,
+      COLOURS.pink,
+      COLOURS.indigo,
+      COLOURS.cyan,
+      COLOURS.red,
+      COLOURS.slate,
+    ];
     return Object.entries(counts)
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([label, value], i) => ({ label, value, colour: palette[i % palette.length] }));
@@ -167,9 +198,22 @@ export function CompetenciesPage() {
 
   const categoryColourMap = useMemo(() => {
     const map: Record<string, string> = {};
-    const palette = [COLOURS.blue, COLOURS.purple, COLOURS.teal, COLOURS.amber, COLOURS.green, COLOURS.pink, COLOURS.indigo, COLOURS.cyan, COLOURS.red, COLOURS.slate];
+    const palette = [
+      COLOURS.blue,
+      COLOURS.purple,
+      COLOURS.teal,
+      COLOURS.amber,
+      COLOURS.green,
+      COLOURS.pink,
+      COLOURS.indigo,
+      COLOURS.cyan,
+      COLOURS.red,
+      COLOURS.slate,
+    ];
     const cats = Array.from(new Set(competencies.map((c) => c.category || 'Uncategorised'))).sort();
-    cats.forEach((cat, i) => { map[cat] = palette[i % palette.length]; });
+    cats.forEach((cat, i) => {
+      map[cat] = palette[i % palette.length];
+    });
     return map;
   }, [competencies]);
 
@@ -194,47 +238,45 @@ export function CompetenciesPage() {
 
   const parseLevels = (text: string): string[] | null => {
     if (!text.trim()) return null;
-    const result = text.split('\n').map((l) => l.trim()).filter(Boolean);
+    const result = text
+      .split('\n')
+      .map((l) => l.trim())
+      .filter(Boolean);
     return result.length > 0 ? result : null;
   };
 
   const handleSave = async () => {
     if (!workspace || !form.name.trim()) return;
-    setSaving(true);
+    const payload: Partial<Competency> = {
+      name: form.name.trim(),
+      category: form.category.trim() || null,
+      description: form.description.trim() || null,
+      requires_certification: form.requires_certification,
+      certification_validity_months: form.certification_validity_months
+        ? parseInt(form.certification_validity_months, 10)
+        : null,
+      levels: parseLevels(form.levels),
+    };
     try {
-      const payload: Partial<Competency> = {
-        name: form.name.trim(),
-        category: form.category.trim() || null,
-        description: form.description.trim() || null,
-        requires_certification: form.requires_certification,
-        certification_validity_months: form.certification_validity_months
-          ? parseInt(form.certification_validity_months, 10)
-          : null,
-        levels: parseLevels(form.levels),
-      };
       if (editingId) {
-        await competenciesApi.update(workspace.id, editingId, payload);
+        await updateMutation.mutateAsync({ competencyId: editingId, data: payload });
         Toast.show('Competency updated');
       } else {
-        await competenciesApi.create(workspace.id, payload);
+        await createMutation.mutateAsync(payload);
         Toast.show('Competency created');
       }
       setShowModal(false);
-      await loadData();
     } catch (err) {
       console.error('Failed to save competency:', err);
       Toast.show('Failed to save competency');
-    } finally {
-      setSaving(false);
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!workspace) return;
     try {
-      await competenciesApi.delete(workspace.id, id);
+      await deleteMutation.mutateAsync(id);
       Toast.show('Competency deleted');
-      await loadData();
     } catch (err) {
       console.error('Failed to delete competency:', err);
       Toast.show('Failed to delete competency');
@@ -244,15 +286,9 @@ export function CompetenciesPage() {
   const handleAssess = async (userId: string, competencyId: string, level: Level) => {
     if (!workspace || !user) return;
     try {
-      await competenciesApi.assess(workspace.id, competencyId, {
-        user_id: userId,
-        level,
-      });
+      await assessMutation.mutateAsync({ competencyId, data: { user_id: userId, level } });
       setPopover(null);
       Toast.show('Assessment saved');
-      // Reload matrix
-      const res = await competenciesApi.matrix(workspace.id);
-      setMatrix(res.data);
     } catch (err) {
       console.error('Failed to save assessment:', err);
       Toast.show('Failed to save assessment');
@@ -264,18 +300,52 @@ export function CompetenciesPage() {
     const uc = matrixLookup[`${userId}:${competencyId}`];
     if (!uc) return;
     try {
-      await competenciesApi.updateAssessment(workspace.id, competencyId, uc.id, { level: '' });
+      await updateAssessmentMutation.mutateAsync({
+        competencyId,
+        assessmentId: uc.id,
+        data: { level: '' },
+      });
       setPopover(null);
       Toast.show('Assessment cleared');
-      const res = await competenciesApi.matrix(workspace.id);
-      setMatrix(res.data);
     } catch (err) {
       console.error('Failed to clear assessment:', err);
       Toast.show('Failed to clear assessment');
     }
   };
 
-  if (loading) return <LoadingSpinner fullPage />;
+  // ── Four states ────────────────────────────────────────────────────────────
+  const isPending = competenciesQuery.isPending || matrixQuery.isPending || membersQuery.isPending;
+  const isError = competenciesQuery.isError || matrixQuery.isError || membersQuery.isError;
+
+  if (isPending) return <LoadingSpinner fullPage />;
+
+  if (isError) {
+    return (
+      <div className="flex-1 flex items-center justify-center h-full">
+        <div className="text-center">
+          <AlertTriangle
+            size={48}
+            className="mx-auto mb-3"
+            style={{ color: 'var(--color-danger, #ef4444)' }}
+          />
+          <p className="text-sm mb-3" style={{ color: 'var(--color-text-secondary)' }}>
+            Failed to load competencies data.
+          </p>
+          <button
+            onClick={() => {
+              competenciesQuery.refetch();
+              matrixQuery.refetch();
+              membersQuery.refetch();
+            }}
+            className="px-4 py-2 text-sm font-medium rounded-lg text-white"
+            style={{ background: 'var(--color-primary)' }}
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-6 h-full flex flex-col">
@@ -332,22 +402,68 @@ export function CompetenciesPage() {
 
       {/* Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard label="Total Competencies" value={competencies.length} icon={<Award size={20} />} colour={COLOURS.blue} />
-        <StatCard label="Categories" value={uniqueCategories} icon={<BookOpen size={20} />} colour={COLOURS.purple} />
-        <StatCard label="Team Members Assessed" value={assessedMembers} icon={<Users size={20} />} colour={COLOURS.teal} />
-        <StatCard label="Avg Coverage" value={avgCoverage + '%'} icon={<TrendingUp size={20} />} colour={COLOURS.green} />
+        <StatCard
+          label="Total Competencies"
+          value={competencies.length}
+          icon={<Award size={20} />}
+          colour={COLOURS.blue}
+        />
+        <StatCard
+          label="Categories"
+          value={uniqueCategories}
+          icon={<BookOpen size={20} />}
+          colour={COLOURS.purple}
+        />
+        <StatCard
+          label="Team Members Assessed"
+          value={assessedMembers}
+          icon={<Users size={20} />}
+          colour={COLOURS.teal}
+        />
+        <StatCard
+          label="Avg Coverage"
+          value={avgCoverage + '%'}
+          icon={<TrendingUp size={20} />}
+          colour={COLOURS.green}
+        />
       </div>
 
       {/* Category Chart */}
       {competencies.length > 0 && (
-        <div className="rounded-xl border p-5 mb-6" style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}>
-          <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-text)' }}>Competencies by Category</h3>
+        <div
+          className="rounded-xl border p-5 mb-6"
+          style={{ backgroundColor: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
+        >
+          <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-text)' }}>
+            Competencies by Category
+          </h3>
           <BarChart bars={categoryBars} height={150} />
         </div>
       )}
 
       {/* Content */}
-      {tab === 'competencies' ? (
+      {competencies.length === 0 ? (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <Award
+              size={48}
+              className="mx-auto mb-3 opacity-30"
+              style={{ color: 'var(--color-text-secondary)' }}
+            />
+            <p className="text-sm mb-3" style={{ color: 'var(--color-text-secondary)' }}>
+              No competencies defined yet. Add one to get started.
+            </p>
+            <button
+              onClick={openCreate}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-lg text-white transition-colors hover:opacity-90"
+              style={{ background: 'var(--color-primary)' }}
+            >
+              <Plus size={14} />
+              Add Competency
+            </button>
+          </div>
+        </div>
+      ) : tab === 'competencies' ? (
         <CompetenciesTab
           grouped={grouped}
           categories={categories}
@@ -366,9 +482,7 @@ export function CompetenciesPage() {
           matrixLookup={matrixLookup}
           popover={popover}
           popoverRef={popoverRef}
-          onCellClick={(userId, competencyId, rect) =>
-            setPopover({ userId, competencyId, rect })
-          }
+          onCellClick={(userId, competencyId, rect) => setPopover({ userId, competencyId, rect })}
           onAssess={handleAssess}
           onClear={handleClearAssessment}
           onClosePopover={() => setPopover(null)}
@@ -432,7 +546,7 @@ function CompetenciesTab({
         <div className="mb-4 relative" ref={dropdownRef}>
           <button
             onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border transition-colors hover:bg-[var(--color-grey-1)]"
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm border transition-colors hover:bg-subtle"
             style={{ borderColor: 'var(--color-border)', color: 'var(--color-text-secondary)' }}
           >
             <Users size={14} />
@@ -445,18 +559,28 @@ function CompetenciesTab({
               style={{ background: 'var(--color-surface)', borderColor: 'var(--color-border)' }}
             >
               <button
-                onClick={() => { setCategoryFilter('all'); setShowCategoryDropdown(false); }}
-                className="w-full text-left px-3 py-1.5 text-sm hover:bg-[var(--color-grey-1)] transition-colors"
-                style={{ color: categoryFilter === 'all' ? 'var(--color-primary)' : 'var(--color-text)' }}
+                onClick={() => {
+                  setCategoryFilter('all');
+                  setShowCategoryDropdown(false);
+                }}
+                className="w-full text-left px-3 py-1.5 text-sm hover:bg-subtle transition-colors"
+                style={{
+                  color: categoryFilter === 'all' ? 'var(--color-primary)' : 'var(--color-text)',
+                }}
               >
                 All Categories
               </button>
               {categories.map((cat) => (
                 <button
                   key={cat}
-                  onClick={() => { setCategoryFilter(cat); setShowCategoryDropdown(false); }}
-                  className="w-full text-left px-3 py-1.5 text-sm hover:bg-[var(--color-grey-1)] transition-colors"
-                  style={{ color: categoryFilter === cat ? 'var(--color-primary)' : 'var(--color-text)' }}
+                  onClick={() => {
+                    setCategoryFilter(cat);
+                    setShowCategoryDropdown(false);
+                  }}
+                  className="w-full text-left px-3 py-1.5 text-sm hover:bg-subtle transition-colors"
+                  style={{
+                    color: categoryFilter === cat ? 'var(--color-primary)' : 'var(--color-text)',
+                  }}
                 >
                   {cat}
                 </button>
@@ -478,97 +602,98 @@ function CompetenciesTab({
           {grouped.map(([category, comps]) => {
             const catColour = categoryColourMap[category] || 'var(--color-text-secondary)';
             return (
-            <div key={category}>
-              <div className="mb-3">
-                <span
-                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
-                  style={{ backgroundColor: catColour + '18', color: catColour }}
-                >
-                  {category}
-                </span>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {comps.map((comp) => (
-                  <div
-                    key={comp.id}
-                    className="rounded-lg border p-4 hover:shadow-md transition-shadow"
-                    style={{
-                      background: 'var(--color-surface)',
-                      borderColor: 'var(--color-border)',
-                    }}
+              <div key={category}>
+                <div className="mb-3">
+                  <span
+                    className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                    style={{ backgroundColor: catColour + '18', color: catColour }}
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <h4
-                            className="font-medium truncate"
-                            style={{ color: 'var(--color-text)' }}
-                          >
-                            {comp.name}
-                          </h4>
-                          {comp.requires_certification && (
-                            <span
-                              className="flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full shrink-0"
-                              style={{ background: '#dbeafe', color: '#1d4ed8' }}
-                              title={
-                                comp.certification_validity_months
-                                  ? `Certification valid for ${comp.certification_validity_months} months`
-                                  : 'Certification required'
-                              }
+                    {category}
+                  </span>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {comps.map((comp) => (
+                    <div
+                      key={comp.id}
+                      className="rounded-lg border p-4 hover:shadow-md transition-shadow"
+                      style={{
+                        background: 'var(--color-surface)',
+                        borderColor: 'var(--color-border)',
+                      }}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <h4
+                              className="font-medium truncate"
+                              style={{ color: 'var(--color-text)' }}
                             >
-                              <Shield size={10} />
-                              Cert
-                            </span>
+                              {comp.name}
+                            </h4>
+                            {comp.requires_certification && (
+                              <span
+                                className="flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full shrink-0"
+                                style={{ background: '#dbeafe', color: '#1d4ed8' }}
+                                title={
+                                  comp.certification_validity_months
+                                    ? `Certification valid for ${comp.certification_validity_months} months`
+                                    : 'Certification required'
+                                }
+                              >
+                                <Shield size={10} />
+                                Cert
+                              </span>
+                            )}
+                          </div>
+                          {comp.description && (
+                            <p
+                              className="text-sm mt-1 line-clamp-2"
+                              style={{ color: 'var(--color-text-secondary)' }}
+                            >
+                              {comp.description}
+                            </p>
+                          )}
+                          {comp.levels && comp.levels.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {comp.levels.map((lvl) => (
+                                <span
+                                  key={lvl}
+                                  className="text-xs px-1.5 py-0.5 rounded"
+                                  style={{
+                                    background: 'var(--color-grey-1)',
+                                    color: 'var(--color-text-secondary)',
+                                  }}
+                                >
+                                  {lvl}
+                                </span>
+                              ))}
+                            </div>
                           )}
                         </div>
-                        {comp.description && (
-                          <p
-                            className="text-sm mt-1 line-clamp-2"
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            onClick={() => onEdit(comp)}
+                            className="p-1.5 rounded hover:bg-subtle transition-colors"
                             style={{ color: 'var(--color-text-secondary)' }}
+                            title="Edit"
                           >
-                            {comp.description}
-                          </p>
-                        )}
-                        {comp.levels && comp.levels.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {comp.levels.map((lvl) => (
-                              <span
-                                key={lvl}
-                                className="text-xs px-1.5 py-0.5 rounded"
-                                style={{
-                                  background: 'var(--color-grey-1)',
-                                  color: 'var(--color-text-secondary)',
-                                }}
-                              >
-                                {lvl}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button
-                          onClick={() => onEdit(comp)}
-                          className="p-1.5 rounded hover:bg-[var(--color-grey-1)] transition-colors"
-                          style={{ color: 'var(--color-text-secondary)' }}
-                          title="Edit"
-                        >
-                          <Edit3 size={14} />
-                        </button>
-                        <button
-                          onClick={() => onDelete(comp.id)}
-                          className="p-1.5 rounded hover:bg-red-50 transition-colors text-red-500"
-                          title="Delete"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                            <Edit3 size={14} />
+                          </button>
+                          <button
+                            onClick={() => onDelete(comp.id)}
+                            className="p-1.5 rounded hover:bg-red-50 transition-colors text-destructive"
+                            title="Delete"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          )})}
+            );
+          })}
         </div>
       )}
     </div>
@@ -650,7 +775,7 @@ function MatrixTab({
           </thead>
           <tbody>
             {members.map((member) => (
-              <tr key={member.id} className="hover:bg-[var(--color-grey-1)] transition-colors">
+              <tr key={member.id} className="hover:bg-subtle transition-colors">
                 <td
                   className="sticky left-0 z-10 px-4 py-2.5 border-b"
                   style={{
@@ -690,7 +815,7 @@ function MatrixTab({
                           const rect = (e.target as HTMLElement).getBoundingClientRect();
                           onCellClick(member.id, comp.id, rect);
                         }}
-                        className="w-full h-8 rounded text-xs font-medium transition-all hover:scale-105"
+                        className="w-full h-8 rounded text-xs font-medium transition-colors hover:scale-105"
                         style={{
                           background: level ? level.bg : 'var(--color-grey-1)',
                           color: level ? level.colour : 'var(--color-text-secondary)',
@@ -728,7 +853,7 @@ function MatrixTab({
             </span>
             <button
               onClick={onClosePopover}
-              className="p-0.5 rounded hover:bg-[var(--color-grey-1)]"
+              className="p-0.5 rounded hover:bg-subtle"
               style={{ color: 'var(--color-text-secondary)' }}
             >
               <X size={12} />
@@ -749,7 +874,7 @@ function MatrixTab({
             {matrixLookup[`${popover.userId}:${popover.competencyId}`] && (
               <button
                 onClick={() => onClear(popover.userId, popover.competencyId)}
-                className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm hover:bg-[var(--color-grey-1)] transition-colors"
+                className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm hover:bg-subtle transition-colors"
                 style={{ color: 'var(--color-text-secondary)' }}
               >
                 <X size={12} />
@@ -777,10 +902,7 @@ function MatrixTab({
           </div>
         ))}
         <div className="flex items-center gap-1.5">
-          <div
-            className="w-3 h-3 rounded"
-            style={{ background: 'var(--color-grey-1)' }}
-          />
+          <div className="w-3 h-3 rounded" style={{ background: 'var(--color-grey-1)' }} />
           <span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
             Not Assessed
           </span>
@@ -808,7 +930,9 @@ function CompetencyModal({
   onClose: () => void;
 }) {
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
@@ -836,7 +960,7 @@ function CompetencyModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded hover:bg-[var(--color-grey-1)] transition-colors"
+            className="p-1.5 rounded hover:bg-subtle transition-colors"
             style={{ color: 'var(--color-text-secondary)' }}
           >
             <X size={18} />
@@ -915,10 +1039,14 @@ function CompetencyModal({
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => setForm((f) => ({ ...f, requires_certification: !f.requires_certification }))}
+              onClick={() =>
+                setForm((f) => ({ ...f, requires_certification: !f.requires_certification }))
+              }
               className="relative w-10 h-5 rounded-full transition-colors"
               style={{
-                background: form.requires_certification ? 'var(--color-primary)' : 'var(--color-grey-2, #d1d5db)',
+                background: form.requires_certification
+                  ? 'var(--color-primary)'
+                  : 'var(--color-grey-2, #d1d5db)',
               }}
             >
               <span
@@ -994,7 +1122,7 @@ function CompetencyModal({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-lg text-sm font-medium hover:bg-[var(--color-grey-1)] transition-colors"
+            className="px-4 py-2 rounded-lg text-sm font-medium hover:bg-subtle transition-colors"
             style={{ color: 'var(--color-text-secondary)' }}
           >
             Cancel

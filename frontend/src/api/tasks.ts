@@ -63,11 +63,16 @@ export const tasksApi = {
   list: (workspaceId: string, params?: Record<string, string>) =>
     api.get<Task[]>(`/workspaces/${workspaceId}/tasks`, { params }),
 
-  create: (workspaceId: string, data: Partial<Task> & { assignee_ids?: string[]; tag_ids?: string[] }) =>
-    api.post<Task>(`/workspaces/${workspaceId}/tasks`, data),
+  create: (
+    workspaceId: string,
+    data: Partial<Task> & { assignee_ids?: string[]; tag_ids?: string[] },
+  ) => api.post<Task>(`/workspaces/${workspaceId}/tasks`, data),
 
-  update: (workspaceId: string, taskId: string, data: Partial<Task> & { assignee_ids?: string[]; tag_ids?: string[] }) =>
-    api.put<Task>(`/workspaces/${workspaceId}/tasks/${taskId}`, data),
+  update: (
+    workspaceId: string,
+    taskId: string,
+    data: Partial<Task> & { assignee_ids?: string[]; tag_ids?: string[] },
+  ) => api.put<Task>(`/workspaces/${workspaceId}/tasks/${taskId}`, data),
 
   delete: (workspaceId: string, taskId: string) =>
     api.delete(`/workspaces/${workspaceId}/tasks/${taskId}`),
@@ -75,8 +80,10 @@ export const tasksApi = {
   duplicate: (workspaceId: string, taskId: string) =>
     api.post<Task>(`/workspaces/${workspaceId}/tasks/${taskId}/duplicate`),
 
-  bulkUpdate: (workspaceId: string, data: { task_ids: string[] } & Partial<Task> & { assignee_ids?: string[] }) =>
-    api.put<Task[]>(`/workspaces/${workspaceId}/tasks`, data),
+  bulkUpdate: (
+    workspaceId: string,
+    data: { task_ids: string[] } & Partial<Task> & { assignee_ids?: string[] },
+  ) => api.put<Task[]>(`/workspaces/${workspaceId}/tasks`, data),
 
   reorder: (workspaceId: string, items: { id: string; sort_order: number }[]) =>
     api.put<Task[]>(`/workspaces/${workspaceId}/tasks/reorder`, { items }),

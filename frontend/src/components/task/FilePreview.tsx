@@ -69,11 +69,7 @@ export function FilePreview({ url, filename, mimeType, onClose }: FilePreviewPro
           />
         )}
         {isPdf && (
-          <iframe
-            src={url}
-            className="w-[80vw] h-[85vh] bg-white rounded-lg"
-            title={filename}
-          />
+          <iframe src={url} className="w-[80vw] h-[85vh] bg-white rounded-lg" title={filename} />
         )}
         {isVideo && (
           <video src={url} controls className="max-w-[80vw] max-h-[80vh] rounded-lg">

@@ -109,6 +109,6 @@ async def exchange_code(code: str, redirect_uri: str, expected_nonce: str | None
     # Validate nonce to prevent ID token replay
     if expected_nonce:
         if claims.get("nonce") != expected_nonce:
-            raise ValueError("OIDC nonce mismatch — possible ID token replay")
+            raise ValueError("OIDC nonce mismatch, possible ID token replay")
 
     return claims

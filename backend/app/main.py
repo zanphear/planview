@@ -1,26 +1,22 @@
 import asyncio
-import logging
 import time
 import uuid as _uuid
 
 from fastapi import FastAPI, Query, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.api.router import api_router
 from app.config import settings
+from app.errors import register_error_handlers
+from app.logging_config import get_logger, request_id_var, setup_logging
 from app.middleware.rate_limit import RateLimitMiddleware
 from app.utils.auth import decode_token
 from app.websocket.manager import manager
 
-# Structured logging setup
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
-    datefmt="%Y-%m-%dT%H:%M:%S",
-)
-logger = logging.getLogger("planview")
+# Structured JSON logging + request-scoped correlation id (see app/logging_config.py)
+setup_logging()
+logger = get_logger("planview")
 
 app = FastAPI(
     title=settings.app_name,
@@ -31,19 +27,27 @@ app = FastAPI(
 )
 
 
-# Request ID + access logging middleware
+# Request ID + access logging middleware. The id is bound into a contextvar so it
+# survives `await` and reaches every log line and error body for this request.
 class RequestIDMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         request_id = request.headers.get("X-Request-ID", str(_uuid.uuid4()))
+        token = request_id_var.set(request_id)
         start = time.time()
-        response = await call_next(request)
-        elapsed = round((time.time() - start) * 1000, 1)
-        response.headers["X-Request-ID"] = request_id
-        logger.info(
-            "%s %s %s %sms [%s]",
-            request.method, request.url.path, response.status_code, elapsed, request_id,
-        )
-        return response
+        try:
+            response = await call_next(request)
+            elapsed = round((time.time() - start) * 1000, 1)
+            logger.info(
+                "request_completed",
+                method=request.method,
+                path=request.url.path,
+                status=response.status_code,
+                duration_ms=elapsed,
+            )
+            response.headers["X-Request-ID"] = request_id
+            return response
+        finally:
+            request_id_var.reset(token)
 
 
 # Middleware order: outermost evaluated first
@@ -62,15 +66,8 @@ app.add_middleware(
 
 app.include_router(api_router)
 
-
-# Global exception handler — catch unhandled errors and return clean JSON
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    logger.exception("Unhandled error on %s %s", request.method, request.url.path)
-    return JSONResponse(
-        status_code=500,
-        content={"detail": "Internal server error"},
-    )
+# RFC 9457 problem+json handlers (HTTPException, validation, catch-all 500).
+register_error_handlers(app)
 
 
 @app.get("/health")

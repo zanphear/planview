@@ -1,0 +1,42 @@
+# Fleet standard (forbidden-29): Ruff (Python) and Prettier + ESLint (TS, separate
+# steps, never eslint-plugin-prettier) own style via pre-commit AND CI. Plus the
+# em/en dash guard (forbidden-23) and a committed-secret guard (forbidden-34).
+#
+# Install once:  pip install pre-commit && pre-commit install
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.4
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^backend/
+      - id: ruff-format
+        files: ^backend/
+
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.1.0
+    hooks:
+      - id: prettier
+        files: ^frontend/src/.*\.(ts|tsx|css)$|^frontend/.*\.(json|html)$
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: detect-private-key
+      - id: check-added-large-files
+        args: [--maxkb=512]
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+
+  - repo: local
+    hooks:
+      - id: no-em-dashes
+        name: no em/en dashes (forbidden-23)
+        entry: scripts/check-no-dashes.sh
+        language: script
+        pass_filenames: false
+      - id: no-prod-env
+        name: block committing deploy/.env.production
+        entry: bash -c 'git diff --cached --name-only | grep -qE "(^|/)\.env\.production$" && { echo "Refusing to commit a .env.production file"; exit 1; } || exit 0'
+        language: system
+        pass_filenames: false

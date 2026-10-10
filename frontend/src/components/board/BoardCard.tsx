@@ -58,7 +58,10 @@ export function BoardCard({ task, onClick, selected, onToggleSelect }: BoardCard
       </p>
 
       {/* Meta row */}
-      <div className="flex items-center justify-between text-xs" style={{ color: 'var(--color-text-secondary)' }}>
+      <div
+        className="flex items-center justify-between text-xs"
+        style={{ color: 'var(--color-text-secondary)' }}
+      >
         <div className="flex items-center gap-2">
           {task.date_from && (
             <span className="flex items-center gap-1">
@@ -82,7 +85,10 @@ export function BoardCard({ task, onClick, selected, onToggleSelect }: BoardCard
           {task.assignees.length > 3 && (
             <span
               className="w-[22px] h-[22px] rounded-full flex items-center justify-center text-[10px] font-medium"
-              style={{ backgroundColor: 'var(--color-grey-2)', color: 'var(--color-text-secondary)' }}
+              style={{
+                backgroundColor: 'var(--color-grey-2)',
+                color: 'var(--color-text-secondary)',
+              }}
             >
               +{task.assignees.length - 3}
             </span>

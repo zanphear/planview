@@ -11,11 +11,12 @@ export interface Milestone {
 }
 
 export const milestonesApi = {
-  list: (workspaceId: string) =>
-    api.get<Milestone[]>(`/workspaces/${workspaceId}/milestones`),
+  list: (workspaceId: string) => api.get<Milestone[]>(`/workspaces/${workspaceId}/milestones`),
 
-  create: (workspaceId: string, data: { name: string; date: string; colour?: string; project_id?: string }) =>
-    api.post<Milestone>(`/workspaces/${workspaceId}/milestones`, data),
+  create: (
+    workspaceId: string,
+    data: { name: string; date: string; colour?: string; project_id?: string },
+  ) => api.post<Milestone>(`/workspaces/${workspaceId}/milestones`, data),
 
   update: (workspaceId: string, milestoneId: string, data: Partial<Milestone>) =>
     api.put<Milestone>(`/workspaces/${workspaceId}/milestones/${milestoneId}`, data),

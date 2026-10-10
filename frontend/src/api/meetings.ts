@@ -26,11 +26,15 @@ export interface MeetingAction {
 }
 
 export const meetingsApi = {
-  list: (workspaceId: string, params?: { report_id?: string; manager_id?: string; status?: string }) =>
-    api.get<Meeting[]>(`/workspaces/${workspaceId}/meetings`, { params }),
+  list: (
+    workspaceId: string,
+    params?: { report_id?: string; manager_id?: string; status?: string },
+  ) => api.get<Meeting[]>(`/workspaces/${workspaceId}/meetings`, { params }),
 
-  create: (workspaceId: string, data: { report_id: string; scheduled_date: string; notes?: string }) =>
-    api.post<Meeting>(`/workspaces/${workspaceId}/meetings`, data),
+  create: (
+    workspaceId: string,
+    data: { report_id: string; scheduled_date: string; notes?: string },
+  ) => api.post<Meeting>(`/workspaces/${workspaceId}/meetings`, data),
 
   get: (workspaceId: string, meetingId: string) =>
     api.get<Meeting>(`/workspaces/${workspaceId}/meetings/${meetingId}`),
@@ -41,8 +45,16 @@ export const meetingsApi = {
   addAction: (workspaceId: string, meetingId: string, data: { title: string; owner_id?: string }) =>
     api.post<MeetingAction>(`/workspaces/${workspaceId}/meetings/${meetingId}/actions`, data),
 
-  updateAction: (workspaceId: string, meetingId: string, actionId: string, data: Partial<MeetingAction>) =>
-    api.put<MeetingAction>(`/workspaces/${workspaceId}/meetings/${meetingId}/actions/${actionId}`, data),
+  updateAction: (
+    workspaceId: string,
+    meetingId: string,
+    actionId: string,
+    data: Partial<MeetingAction>,
+  ) =>
+    api.put<MeetingAction>(
+      `/workspaces/${workspaceId}/meetings/${meetingId}/actions/${actionId}`,
+      data,
+    ),
 
   carryForward: (workspaceId: string, meetingId: string, targetMeetingId: string) =>
     api.post<Meeting>(`/workspaces/${workspaceId}/meetings/${meetingId}/carry-forward`, null, {

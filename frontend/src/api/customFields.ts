@@ -20,8 +20,7 @@ export interface CustomFieldValue {
 }
 
 export const customFieldsApi = {
-  list: (workspaceId: string) =>
-    api.get<CustomField[]>(`/workspaces/${workspaceId}/custom-fields`),
+  list: (workspaceId: string) => api.get<CustomField[]>(`/workspaces/${workspaceId}/custom-fields`),
 
   create: (workspaceId: string, data: { name: string; field_type?: string; options?: string }) =>
     api.post<CustomField>(`/workspaces/${workspaceId}/custom-fields`, data),
@@ -35,6 +34,13 @@ export const customFieldsApi = {
   getValues: (workspaceId: string, taskId: string) =>
     api.get<CustomFieldValue[]>(`/workspaces/${workspaceId}/custom-fields/tasks/${taskId}/values`),
 
-  setValues: (workspaceId: string, taskId: string, data: { field_id: string; value: string | null }[]) =>
-    api.put<CustomFieldValue[]>(`/workspaces/${workspaceId}/custom-fields/tasks/${taskId}/values`, data),
+  setValues: (
+    workspaceId: string,
+    taskId: string,
+    data: { field_id: string; value: string | null }[],
+  ) =>
+    api.put<CustomFieldValue[]>(
+      `/workspaces/${workspaceId}/custom-fields/tasks/${taskId}/values`,
+      data,
+    ),
 };

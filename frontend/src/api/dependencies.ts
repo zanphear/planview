@@ -14,8 +14,10 @@ export const dependenciesApi = {
       params: taskId ? { task_id: taskId } : undefined,
     }),
 
-  create: (workspaceId: string, data: { blocker_id: string; blocked_id: string; dependency_type?: string }) =>
-    api.post<TaskDependency>(`/workspaces/${workspaceId}/dependencies`, data),
+  create: (
+    workspaceId: string,
+    data: { blocker_id: string; blocked_id: string; dependency_type?: string },
+  ) => api.post<TaskDependency>(`/workspaces/${workspaceId}/dependencies`, data),
 
   delete: (workspaceId: string, dependencyId: string) =>
     api.delete(`/workspaces/${workspaceId}/dependencies/${dependencyId}`),

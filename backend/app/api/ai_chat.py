@@ -163,7 +163,7 @@ async def quick_report(
     workspace_name = await _get_workspace_name(db, workspace_id)
     analysis_type = ai_service.QUICK_REPORT_TYPE_MAP.get(data.report_type, data.report_type)
     type_info = ANALYSIS_TYPES.get(analysis_type, {})
-    title = f"{type_info.get('label', data.report_type)} — {date.today().strftime('%d %b %Y')}"
+    title = f"{type_info.get('label', data.report_type)}, {date.today().strftime('%d %b %Y')}"
 
     async def generate():
         start = time.time()

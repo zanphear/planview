@@ -31,7 +31,12 @@ export function AssigneePicker({ members, selectedIds, onChange }: AssigneePicke
               boxShadow: selected ? 'inset 0 0 0 1px var(--color-primary)' : undefined,
             }}
           >
-            <Avatar name={member.name} initials={member.initials} colour={member.colour} size={20} />
+            <Avatar
+              name={member.name}
+              initials={member.initials}
+              colour={member.colour}
+              size={20}
+            />
             {member.name}
           </button>
         );

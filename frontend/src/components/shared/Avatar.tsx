@@ -18,7 +18,14 @@ export function Avatar({ name, initials, colour = '#4186E0', size = 28, avatarUr
     );
   }
 
-  const displayInitials = initials || name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  const displayInitials =
+    initials ||
+    name
+      .split(' ')
+      .map((w) => w[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase();
 
   return (
     <div

@@ -42,11 +42,8 @@ export function ProjectTimelinePage() {
   const project = projects.find((p) => p.id === projectId);
   const startDate = useMemo(() => startOfWeek(addDays(new Date(), -7), { weekStartsOn: 1 }), []);
 
-  // Real-time task updates — only include tasks for this project
-  const projectFilter = useCallback(
-    (task: Task) => task.project_id === projectId,
-    [projectId],
-  );
+  // Real-time task updates, only include tasks for this project
+  const projectFilter = useCallback((task: Task) => task.project_id === projectId, [projectId]);
   useRealtimeTasks(setTasks, projectFilter);
   const handleContextAction = useTaskContextActions(setTasks, setSelectedTask);
 
@@ -62,14 +59,18 @@ export function ProjectTimelinePage() {
       api.get<Segment[]>(`/workspaces/${workspace.id}/projects/${projectId}/segments`),
       milestonesApi.list(workspace.id),
       membersApi.list(workspace.id),
-    ]).then(([tasksRes, segmentsRes, milestonesRes, membersRes]) => {
-      setTasks(tasksRes.data);
-      setSegments(segmentsRes.data);
-      setMilestones(milestonesRes.data.filter((m) => !m.project_id || m.project_id === projectId));
-      setMembers(membersRes.data);
-    }).catch((err) => {
-      console.error('Failed to load project timeline:', err);
-    });
+    ])
+      .then(([tasksRes, segmentsRes, milestonesRes, membersRes]) => {
+        setTasks(tasksRes.data);
+        setSegments(segmentsRes.data);
+        setMilestones(
+          milestonesRes.data.filter((m) => !m.project_id || m.project_id === projectId),
+        );
+        setMembers(membersRes.data);
+      })
+      .catch((err) => {
+        console.error('Failed to load project timeline:', err);
+      });
   }, [workspace, projectId, zoom, startDate]);
 
   const swimlanes: Swimlane[] = useMemo(() => {
@@ -94,51 +95,61 @@ export function ProjectTimelinePage() {
     return lanes;
   }, [tasks, segments, project]);
 
-  const handleCreateTask = useCallback(async (laneId: string, date: string) => {
-    if (!workspace || !projectId) return;
-    try {
-      const { data } = await tasksApi.create(workspace.id, {
-        name: 'New task',
-        date_from: date,
-        date_to: date,
-        status: 'todo',
-        project_id: projectId,
-        segment_id: laneId === 'unsegmented' ? undefined : laneId,
-      });
-      setTasks((prev) => [...prev, data]);
-      setSelectedTask(data);
-    } catch (err) {
-      console.error('Failed to create task:', err);
-    }
-  }, [workspace, projectId]);
+  const handleCreateTask = useCallback(
+    async (laneId: string, date: string) => {
+      if (!workspace || !projectId) return;
+      try {
+        const { data } = await tasksApi.create(workspace.id, {
+          name: 'New task',
+          date_from: date,
+          date_to: date,
+          status: 'todo',
+          project_id: projectId,
+          segment_id: laneId === 'unsegmented' ? undefined : laneId,
+        });
+        setTasks((prev) => [...prev, data]);
+        setSelectedTask(data);
+      } catch (err) {
+        console.error('Failed to create task:', err);
+      }
+    },
+    [workspace, projectId],
+  );
 
-  const handleTaskUpdate = useCallback(async (taskId: string, updates: { date_from?: string; date_to?: string; laneId?: string }) => {
-    if (!workspace) return;
-    const apiData: Record<string, unknown> = {};
-    if (updates.date_from) apiData.date_from = updates.date_from;
-    if (updates.date_to) apiData.date_to = updates.date_to;
-    if (updates.laneId) {
-      apiData.segment_id = updates.laneId === 'unsegmented' ? null : updates.laneId;
-    }
+  const handleTaskUpdate = useCallback(
+    async (taskId: string, updates: { date_from?: string; date_to?: string; laneId?: string }) => {
+      if (!workspace) return;
+      const apiData: Record<string, unknown> = {};
+      if (updates.date_from) apiData.date_from = updates.date_from;
+      if (updates.date_to) apiData.date_to = updates.date_to;
+      if (updates.laneId) {
+        apiData.segment_id = updates.laneId === 'unsegmented' ? null : updates.laneId;
+      }
 
-    try {
-      const { data } = await tasksApi.update(workspace.id, taskId, apiData);
-      setTasks((prev) => prev.map((t) => (t.id === taskId ? data : t)));
-    } catch (err) {
-      console.error('Failed to update task:', err);
-    }
-  }, [workspace]);
+      try {
+        const { data } = await tasksApi.update(workspace.id, taskId, apiData);
+        setTasks((prev) => prev.map((t) => (t.id === taskId ? data : t)));
+      } catch (err) {
+        console.error('Failed to update task:', err);
+      }
+    },
+    [workspace],
+  );
 
   return (
     <div className="h-full flex flex-col">
       {project && (
-        <div className="px-6 py-3 bg-[var(--color-surface)] border-b border-[var(--color-border)] flex items-center gap-3 shrink-0">
+        <div className="px-6 py-3 bg-card border-b border-outline flex items-center gap-3 shrink-0">
           <div className="w-4 h-4 rounded" style={{ backgroundColor: project.colour }} />
-          <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>{project.name}</h2>
-          <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>Timeline</span>
+          <h2 className="text-lg font-semibold" style={{ color: 'var(--color-text)' }}>
+            {project.name}
+          </h2>
+          <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+            Timeline
+          </span>
           <button
             onClick={() => setShowShare(true)}
-            className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg hover:bg-[var(--color-grey-2)] transition-colors"
+            className="ml-auto flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg hover:bg-muted transition-colors"
             style={{ color: 'var(--color-text-secondary)' }}
           >
             <Share2 size={14} />
@@ -162,11 +173,7 @@ export function ProjectTimelinePage() {
       </div>
 
       {selectedTask && (
-        <TaskDetail
-          task={selectedTask}
-          members={members}
-          onClose={() => setSelectedTask(null)}
-        />
+        <TaskDetail task={selectedTask} members={members} onClose={() => setSelectedTask(null)} />
       )}
 
       {showShare && project && (

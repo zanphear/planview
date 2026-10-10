@@ -28,7 +28,9 @@ export interface RotaEntry {
 
 export const rotasApi = {
   list: (workspaceId: string, rotaType?: string) =>
-    api.get<Rota[]>(`/workspaces/${workspaceId}/rotas`, { params: rotaType ? { rota_type: rotaType } : undefined }),
+    api.get<Rota[]>(`/workspaces/${workspaceId}/rotas`, {
+      params: rotaType ? { rota_type: rotaType } : undefined,
+    }),
 
   get: (workspaceId: string, rotaId: string) =>
     api.get<Rota>(`/workspaces/${workspaceId}/rotas/${rotaId}`),
@@ -42,8 +44,11 @@ export const rotasApi = {
   delete: (workspaceId: string, rotaId: string) =>
     api.delete(`/workspaces/${workspaceId}/rotas/${rotaId}`),
 
-  createEntry: (workspaceId: string, rotaId: string, data: { user_id: string; date_from: string; date_to: string; notes?: string }) =>
-    api.post<RotaEntry>(`/workspaces/${workspaceId}/rotas/${rotaId}/entries`, data),
+  createEntry: (
+    workspaceId: string,
+    rotaId: string,
+    data: { user_id: string; date_from: string; date_to: string; notes?: string },
+  ) => api.post<RotaEntry>(`/workspaces/${workspaceId}/rotas/${rotaId}/entries`, data),
 
   updateEntry: (workspaceId: string, rotaId: string, entryId: string, data: Partial<RotaEntry>) =>
     api.put<RotaEntry>(`/workspaces/${workspaceId}/rotas/${rotaId}/entries/${entryId}`, data),

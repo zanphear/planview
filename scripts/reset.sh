@@ -1,5 +1,5 @@
 #!/bin/bash
-# Reset Planview database — drop everything, migrate, reseed
+# Reset Planview database, drop everything, migrate, reseed
 # Usage: ./scripts/reset.sh
 
 set -euo pipefail

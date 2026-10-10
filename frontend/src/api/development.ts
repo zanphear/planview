@@ -89,8 +89,21 @@ export const developmentApi = {
   list: (workspaceId: string, params?: { user_id?: string }) =>
     api.get<DevelopmentPlan[]>(base(workspaceId), { params }),
 
-  create: (workspaceId: string, data: { user_id: string; review_period_id?: string; career_aspiration?: string; horizon_years?: number; start_date?: string; end_date?: string; career_pathway_id?: string; total_budget?: number; goals?: Partial<DevelopmentGoal>[]; milestones?: Partial<DevelopmentMilestone>[] }) =>
-    api.post<DevelopmentPlan>(base(workspaceId), data),
+  create: (
+    workspaceId: string,
+    data: {
+      user_id: string;
+      review_period_id?: string;
+      career_aspiration?: string;
+      horizon_years?: number;
+      start_date?: string;
+      end_date?: string;
+      career_pathway_id?: string;
+      total_budget?: number;
+      goals?: Partial<DevelopmentGoal>[];
+      milestones?: Partial<DevelopmentMilestone>[];
+    },
+  ) => api.post<DevelopmentPlan>(base(workspaceId), data),
 
   update: (workspaceId: string, planId: string, data: Partial<DevelopmentPlan>) =>
     api.put<DevelopmentPlan>(`${base(workspaceId)}/${planId}`, data),
@@ -98,14 +111,23 @@ export const developmentApi = {
   addGoal: (workspaceId: string, planId: string, data: Partial<DevelopmentGoal>) =>
     api.post<DevelopmentGoal>(`${base(workspaceId)}/${planId}/goals`, data),
 
-  updateGoal: (workspaceId: string, planId: string, goalId: string, data: Partial<DevelopmentGoal>) =>
-    api.put<DevelopmentGoal>(`${base(workspaceId)}/${planId}/goals/${goalId}`, data),
+  updateGoal: (
+    workspaceId: string,
+    planId: string,
+    goalId: string,
+    data: Partial<DevelopmentGoal>,
+  ) => api.put<DevelopmentGoal>(`${base(workspaceId)}/${planId}/goals/${goalId}`, data),
 
   // Milestones
   addMilestone: (workspaceId: string, planId: string, data: Partial<DevelopmentMilestone>) =>
     api.post<DevelopmentMilestone>(`${base(workspaceId)}/${planId}/milestones`, data),
 
-  updateMilestone: (workspaceId: string, planId: string, milestoneId: string, data: Partial<DevelopmentMilestone>) =>
+  updateMilestone: (
+    workspaceId: string,
+    planId: string,
+    milestoneId: string,
+    data: Partial<DevelopmentMilestone>,
+  ) =>
     api.put<DevelopmentMilestone>(`${base(workspaceId)}/${planId}/milestones/${milestoneId}`, data),
 
   deleteMilestone: (workspaceId: string, planId: string, milestoneId: string) =>
@@ -118,12 +140,19 @@ export const developmentApi = {
   addCheckpoint: (workspaceId: string, planId: string, data: Partial<DevelopmentCheckpoint>) =>
     api.post<DevelopmentCheckpoint>(`${base(workspaceId)}/${planId}/checkpoints`, data),
 
-  updateCheckpoint: (workspaceId: string, planId: string, checkpointId: string, data: Partial<DevelopmentCheckpoint>) =>
-    api.put<DevelopmentCheckpoint>(`${base(workspaceId)}/${planId}/checkpoints/${checkpointId}`, data),
+  updateCheckpoint: (
+    workspaceId: string,
+    planId: string,
+    checkpointId: string,
+    data: Partial<DevelopmentCheckpoint>,
+  ) =>
+    api.put<DevelopmentCheckpoint>(
+      `${base(workspaceId)}/${planId}/checkpoints/${checkpointId}`,
+      data,
+    ),
 
   // Career Pathways
-  listPathways: (workspaceId: string) =>
-    api.get<CareerPathway[]>(`${base(workspaceId)}/pathways`),
+  listPathways: (workspaceId: string) => api.get<CareerPathway[]>(`${base(workspaceId)}/pathways`),
 
   createPathway: (workspaceId: string, data: Partial<CareerPathway>) =>
     api.post<CareerPathway>(`${base(workspaceId)}/pathways`, data),

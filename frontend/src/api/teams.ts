@@ -12,8 +12,7 @@ export interface Team {
 }
 
 export const teamsApi = {
-  list: (workspaceId: string) =>
-    api.get<Team[]>(`/workspaces/${workspaceId}/teams`),
+  list: (workspaceId: string) => api.get<Team[]>(`/workspaces/${workspaceId}/teams`),
 
   create: (workspaceId: string, data: { name: string }) =>
     api.post<Team>(`/workspaces/${workspaceId}/teams`, data),

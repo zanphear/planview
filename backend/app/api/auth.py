@@ -1,5 +1,4 @@
 import io
-import logging
 import secrets
 import time
 import uuid
@@ -12,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.database import get_db
+from app.logging_config import get_logger
 from app.models.user import User
 from app.models.workspace import Workspace
 from app.schemas.user import TokenRefresh, TokenResponse, UserLogin, UserRegister, UserResponse
@@ -25,7 +25,7 @@ from app.utils.auth import (
     verify_password,
 )
 
-logger = logging.getLogger(__name__)
+logger = get_logger("planview.auth")
 
 try:
     import pyotp
@@ -209,7 +209,9 @@ async def logout(data: TokenRefresh):
         if jti:
             await _revoke_refresh_jti(jti)
     except Exception:
-        pass  # Best-effort revocation
+        # Best-effort revocation: a malformed/expired token can't be revoked, but
+        # surface it to the logs rather than swallowing silently (forbidden-1).
+        logger.warning("refresh_revoke_failed", exc_info=True)
 
 
 @router.get("/me", response_model=UserResponse)
@@ -284,7 +286,7 @@ async def verify_2fa(
     if not HAS_TOTP:
         raise HTTPException(status_code=501, detail="2FA libraries not installed")
     if not current_user.totp_secret:
-        raise HTTPException(status_code=400, detail="2FA not set up — call /2fa/setup first")
+        raise HTTPException(status_code=400, detail="2FA not set up, call /2fa/setup first")
 
     totp = pyotp.TOTP(current_user.totp_secret)
     if not totp.verify(data.code):
@@ -372,7 +374,7 @@ async def oidc_authorize(redirect_uri: str):
     try:
         url = await oidc_service.get_authorization_url(redirect_uri, state, nonce=nonce)
     except Exception as e:
-        logger.error("Failed to build OIDC authorization URL: %s", e)
+        logger.error("oidc_authorize_url_failed", error=str(e))
         raise HTTPException(status_code=502, detail="Failed to contact OIDC provider")
 
     return OIDCAuthorizeResponse(redirect_url=url, state=state)
@@ -393,7 +395,7 @@ async def oidc_callback(data: OIDCCallbackRequest, db: AsyncSession = Depends(ge
     try:
         claims = await oidc_service.exchange_code(data.code, data.redirect_uri, expected_nonce=expected_nonce)
     except Exception as e:
-        logger.error("OIDC token exchange failed: %s", e)
+        logger.error("oidc_token_exchange_failed", error=str(e))
         raise HTTPException(status_code=502, detail="OIDC token exchange failed")
 
     sub = claims.get("sub")
@@ -412,7 +414,7 @@ async def oidc_callback(data: OIDCCallbackRequest, db: AsyncSession = Depends(ge
         await _store_refresh_jti(jti, str(user.id))
         return resp
 
-    # No existing OIDC user — check if there's a password user with same email we can link
+    # No existing OIDC user, check if there's a password user with same email we can link
     if email:
         result = await db.execute(select(User).where(User.email == email))
         existing = result.scalar_one_or_none()

@@ -1,4 +1,5 @@
 import asyncio
+import os
 import uuid
 
 import pytest
@@ -14,8 +15,10 @@ from app.utils.auth import create_access_token, hash_password
 from app.models.user import User
 from app.models.workspace import Workspace
 
-# Use the same DB URL but with a test suffix
-TEST_DB_URL = settings.database_url
+# Tests run against a DEDICATED disposable database, never the configured prod one.
+# CI sets TEST_DATABASE_URL to an ephemeral Postgres service; locally, point it at a
+# scratch DB. Falls back to settings.database_url only if nothing else is set.
+TEST_DB_URL = os.getenv("TEST_DATABASE_URL", settings.database_url)
 
 test_engine = create_async_engine(TEST_DB_URL, echo=False)
 test_session_factory = async_sessionmaker(test_engine, class_=AsyncSession, expire_on_commit=False)

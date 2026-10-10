@@ -25,9 +25,7 @@ export function LookupSelect({
   const activeValues = useLookupValues(workspace?.id, category);
 
   // If showAll, include inactive too
-  const allValues = showAll
-    ? (useLookupStore.getState().cache[category] || [])
-    : activeValues;
+  const allValues = showAll ? useLookupStore.getState().cache[category] || [] : activeValues;
 
   return (
     <select
