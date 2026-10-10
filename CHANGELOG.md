@@ -4,6 +4,11 @@ All notable changes to Planview. Format loosely follows Keep a Changelog; dates 
 
 ## [Unreleased]
 
+### Deployment paused (2026-10-09)
+- Planview taken offline on lxc-testbed: `docker compose down` and the built images removed. Data volumes (`planview_postgres_data`, `planview_uploads`) and the stack dir with `.env` are preserved.
+- Reverse proxy, Authentik forwardauth app, Technitium/Cloudflare DNS and the tunnel ingress for planview.envy.sh removed by traefik-config (commit c05d3a8). Restore material: `traefik-support/baselines/paused-2026-10-09/`.
+- Anyone holding a planview.envy.sh or planview.local.envy.sh link now gets NXDOMAIN; no data was lost.
+
 ### Deployment and field fixes (2026-06-28)
 - Redeployed fresh to lxc-testbed (`/opt/stacks/planview`, Dockge) from this branch with fresh secrets and a fresh database after the previous deploy's nginx died (its bind-mounted `nginx.conf` had become an empty directory).
 - **AI Assistant and AI Reports fixed:** the services appended `/v1/chat/completions` to a base URL that already ended in `/v1`, so every call hit `/v1/v1/...` and 404'd. Added `settings.ai_chat_url` (strips a trailing `/v1`) and pointed the default at the analyst load balancer. Chat and report generation verified working.
